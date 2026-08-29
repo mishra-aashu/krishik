@@ -403,47 +403,53 @@ export default function ChatScreen() {
               messages.map((msg) => {
                 const isUser = msg.role === 'user';
                 return (
-                  <View
-                    key={msg.id}
-                    style={[
-                      styles.messageRow,
-                      isUser ? styles.userRow : styles.botRow
-                    ]}
-                  >
+                  <View key={msg.id} style={styles.messageRowContainer}>
                     {!isUser && (
-                      <View style={[styles.avatarBubble, { backgroundColor: theme.primary }]}>
-                        <SymbolView
-                          name={{ ios: 'laurel.leading', android: 'spa', web: 'spa' } as any}
-                          size={15}
-                          tintColor="#ffffff"
-                        />
+                      <View style={styles.botHeaderRow}>
+                        <View style={[styles.avatarBubble, { backgroundColor: theme.primary }]}>
+                          <SymbolView
+                            name={{ ios: 'laurel.leading', android: 'spa', web: 'spa' } as any}
+                            size={12}
+                            tintColor="#ffffff"
+                          />
+                        </View>
+                        <ThemedText type="smallBold" style={[styles.botSenderName, { color: theme.textSecondary }]}>
+                          Krishi Mitra AI
+                        </ThemedText>
                       </View>
                     )}
 
                     <View
                       style={[
-                        styles.messageBubble,
-                        isUser
-                          ? [styles.userBubble, { backgroundColor: theme.chatUser }]
-                          : [styles.botBubble, { backgroundColor: theme.chatBot, borderColor: theme.border }]
+                        styles.messageRow,
+                        isUser ? styles.userRow : styles.botRow
                       ]}
                     >
-                      {isUser ? (
-                        <ThemedText type="small" style={{ color: '#000000' }}>
-                          {msg.content}
-                        </ThemedText>
-                      ) : (
-                        <CustomMarkdown text={msg.content} />
-                      )}
-                      <ThemedText
-                        type="code"
+                      <View
                         style={[
-                          styles.timestamp,
-                          { color: isUser ? 'rgba(0,0,0,0.5)' : theme.textSecondary }
+                          styles.messageBubble,
+                          isUser
+                            ? [styles.userBubble, { backgroundColor: theme.chatUser }]
+                            : [styles.botBubble, { backgroundColor: theme.chatBot, borderColor: theme.border }]
                         ]}
                       >
-                        {msg.timestamp}
-                      </ThemedText>
+                        {isUser ? (
+                          <ThemedText type="small" style={{ color: '#000000' }}>
+                            {msg.content}
+                          </ThemedText>
+                        ) : (
+                          <CustomMarkdown text={msg.content} />
+                        )}
+                        <ThemedText
+                          type="code"
+                          style={[
+                            styles.timestamp,
+                            { color: isUser ? 'rgba(0,0,0,0.5)' : theme.textSecondary }
+                          ]}
+                        >
+                          {msg.timestamp}
+                        </ThemedText>
+                      </View>
                     </View>
                   </View>
                 );
@@ -452,20 +458,27 @@ export default function ChatScreen() {
 
             {/* Loading Indicator / Bot Typing */}
             {isLoading && (
-              <View style={[styles.messageRow, styles.botRow]}>
-                <View style={[styles.avatarBubble, { backgroundColor: theme.primary }]}>
-                  <SymbolView
-                    name={{ ios: 'laurel.leading', android: 'spa', web: 'spa' } as any}
-                    size={15}
-                    tintColor="#ffffff"
-                  />
+              <View style={styles.messageRowContainer}>
+                <View style={styles.botHeaderRow}>
+                  <View style={[styles.avatarBubble, { backgroundColor: theme.primary }]}>
+                    <SymbolView
+                      name={{ ios: 'laurel.leading', android: 'spa', web: 'spa' } as any}
+                      size={12}
+                      tintColor="#ffffff"
+                    />
+                  </View>
+                  <ThemedText type="smallBold" style={[styles.botSenderName, { color: theme.textSecondary }]}>
+                    Krishi Mitra AI
+                  </ThemedText>
                 </View>
-                <View style={[styles.messageBubble, styles.botBubble, { backgroundColor: theme.chatBot, borderColor: theme.border, paddingVertical: Spacing.two }]}>
-                  <View style={styles.loadingRow}>
-                    <ActivityIndicator size="small" color={theme.primary} />
-                    <ThemedText type="code" style={{ color: theme.textSecondary, fontSize: 11 }}>
-                      Mitra is typing agricultural advice...
-                    </ThemedText>
+                <View style={[styles.messageRow, styles.botRow]}>
+                  <View style={[styles.messageBubble, styles.botBubble, { backgroundColor: theme.chatBot, borderColor: theme.border, paddingVertical: Spacing.two }]}>
+                    <View style={styles.loadingRow}>
+                      <ActivityIndicator size="small" color={theme.primary} />
+                      <ThemedText type="code" style={{ color: theme.textSecondary, fontSize: 11 }}>
+                        Mitra is typing agricultural advice...
+                      </ThemedText>
+                    </View>
                   </View>
                 </View>
               </View>
@@ -650,10 +663,23 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.two,
     padding: Spacing.two,
   },
+  messageRowContainer: {
+    width: '100%',
+    marginVertical: Spacing.one,
+  },
+  botHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    marginBottom: Spacing.one,
+    paddingLeft: Spacing.one,
+  },
+  botSenderName: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
   messageRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: Spacing.two,
     width: '100%',
   },
   userRow: {
@@ -663,23 +689,23 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   avatarBubble: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 2,
   },
   messageBubble: {
     borderRadius: Spacing.three,
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
-    maxWidth: '88%',
   },
   userBubble: {
+    maxWidth: '85%',
     borderBottomRightRadius: 2,
   },
   botBubble: {
+    width: '100%',
     borderWidth: 1,
     borderBottomLeftRadius: 2,
   },
