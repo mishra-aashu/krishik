@@ -32,6 +32,15 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
+      ],
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/Pravah-Regular.ttf",
+            "./assets/fonts/Pravah-Bold.ttf"
+          ]
+        }
       ]
     ],
     "experiments": {
