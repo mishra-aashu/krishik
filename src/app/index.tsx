@@ -8,7 +8,8 @@ import {
   Modal,
   FlatList,
   Platform,
-  ActivityIndicator
+  ActivityIndicator,
+  useWindowDimensions
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -48,6 +49,7 @@ const INITIAL_MANDI_PRICES = [
 export default function HomeScreen() {
   const router = useRouter();
   const theme = useTheme();
+  const { width } = useWindowDimensions();
   const { farmState, farmSoil, farmCrop, updateProfile, logout, userName } = useAuth();
 
   // Language state

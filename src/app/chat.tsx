@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -19,7 +20,7 @@ import { Colors, Spacing, BottomTabInset, MaxContentWidth } from '@/constants/th
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/context/auth-context';
 import { LocalStorage } from '@/utils/storage';
-import { sendMessageToGroq } from '@/services/chat-service';
+import { sendMessageToGroq, type ModelMode } from '@/services/chat-service';
 import { CustomMarkdown } from '@/components/custom-markdown';
 
 interface ChatMessage {
@@ -32,6 +33,7 @@ interface ChatMessage {
 export default function ChatScreen() {
   const router = useRouter();
   const theme = useTheme();
+  const { width } = useWindowDimensions();
   const params = useLocalSearchParams<{ prefill?: string }>();
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -40,7 +42,8 @@ export default function ChatScreen() {
 
   // Chat settings
   const [language, setLanguage] = useState<'hi' | 'en' | 'hinglish'>('hi');
-  const [model, setModel] = useState<'groq/compound-mini' | 'groq/compound'>('groq/compound-mini');
+  const isCompactHeader = width < 375;
+  const [model, setModel] = useState<ModelMode>('fast');
 
   // Messages state
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -60,7 +63,7 @@ export default function ChatScreen() {
 
       // Load model preference
       const savedModel = await LocalStorage.getItem('chat_model');
-      if (savedModel === 'groq/compound-mini' || savedModel === 'groq/compound') {
+      if (savedModel === 'smart' || savedModel === 'fast') {
         setModel(savedModel);
       }
 
@@ -136,11 +139,11 @@ export default function ChatScreen() {
     setIsLoading(true);
 
     try {
-      // Limit context to the last 15 messages and truncate individual messages to prevent "413 Content Too Large" errors
-      const historyPayload = newMessages.slice(-15).map(msg => ({
+      // Limit context window — the service layer will further trim if needed
+      const historyPayload = newMessages.slice(-10).map(msg => ({
         role: msg.role,
-        content: msg.content.length > 4000 
-          ? msg.content.slice(0, 4000) + '\n... [truncated for size/सीमा से अधिक होने पर छोटा किया गया]' 
+        content: msg.content.length > 2000 
+          ? msg.content.slice(0, 2000) + '\n... [truncated/छोटा किया गया]' 
           : msg.content
       }));
 
@@ -181,7 +184,7 @@ export default function ChatScreen() {
   };
 
   const toggleModel = async () => {
-    const nextModel = model === 'groq/compound-mini' ? 'groq/compound' : 'groq/compound-mini';
+    const nextModel: ModelMode = model === 'fast' ? 'smart' : 'fast';
     setModel(nextModel);
     await LocalStorage.setItem('chat_model', nextModel);
   };
@@ -195,7 +198,7 @@ export default function ChatScreen() {
         >
           {/* Header Panel */}
           <View style={[styles.headerPanel, { borderBottomColor: theme.border }]}>
-             <View style={styles.headerInfoRow}>
+             <View style={[styles.headerInfoRow, { flexShrink: 1 }]}>
               <View style={styles.avatarMini}>
                 <SymbolView
                   name={{ ios: 'cpu', android: 'smart_toy', web: 'smart_toy' } as any}
@@ -203,9 +206,9 @@ export default function ChatScreen() {
                   tintColor={theme.primary}
                 />
               </View>
-              <View>
-                <ThemedText type="smallBold">Krishi Mitra AI</ThemedText>
-                <ThemedText type="small" style={{ fontSize: 10, color: theme.textSecondary, fontWeight: '600' }}>
+              <View style={{ flexShrink: 1 }}>
+                <ThemedText type="smallBold" numberOfLines={1}>Krishi Mitra AI</ThemedText>
+                <ThemedText type="small" numberOfLines={1} style={{ fontSize: 10, color: theme.textSecondary, fontWeight: '600' }}>
                   Context: {farmState} • {farmCrop.split(' ')[0]}
                 </ThemedText>
               </View>
@@ -221,7 +224,9 @@ export default function ChatScreen() {
                 ]}
               >
                 <ThemedText type="small" style={[styles.controlBadgeText, { color: theme.text }]}>
-                  {model === 'groq/compound-mini' ? '⚡ Fast' : '🧠 Smart'}
+                  {isCompactHeader
+                    ? (model === 'fast' ? '⚡' : '🧠')
+                    : (model === 'fast' ? '⚡ Fast' : '🧠 Smart')}
                 </ThemedText>
               </Pressable>
 
@@ -233,15 +238,17 @@ export default function ChatScreen() {
                   pressed && { opacity: 0.8 }
                 ]}
               >
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.one }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: isCompactHeader ? 0 : Spacing.one }}>
                   <SymbolView
                     name={{ ios: 'trash.fill', android: 'delete', web: 'delete' } as any}
-                    size={10}
+                    size={isCompactHeader ? 12 : 10}
                     tintColor={theme.error}
                   />
-                  <ThemedText type="code" style={[styles.controlBadgeText, { color: theme.error }]}>
-                    Clear
-                  </ThemedText>
+                  {!isCompactHeader && (
+                    <ThemedText type="code" style={[styles.controlBadgeText, { color: theme.error }]}>
+                      Clear
+                    </ThemedText>
+                  )}
                 </View>
               </Pressable>
             </View>
@@ -646,7 +653,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   userRow: {
-    justifyContent: 'flex-end',
+    flexDirection: 'row-reverse',
   },
   botRow: {
     justifyContent: 'flex-start',

@@ -14,10 +14,25 @@ export interface Message {
 const GROQ_API_KEY = process.env.EXPO_PUBLIC_GROQ_API_KEY || '';
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
+// Model fallback chains — verified against account's available models
+const MODEL_CHAINS = {
+  smart: [
+    'groq/compound',           // Groq's agentic compound system (full)
+    'openai/gpt-oss-120b',     // OpenAI open-weight flagship
+    'qwen/qwen3.8-27b',        // Qwen 27B fallback
+  ],
+  fast: [
+    'groq/compound-mini',      // Groq's fast compound system
+    'qwen/qwen3.8-27b',        // Qwen 27B fallback
+  ],
+} as const;
+
+export type ModelMode = 'smart' | 'fast';
+
 export async function sendMessageToGroq(
   chatHistory: { role: 'user' | 'assistant'; content: string }[],
   farmProfile: FarmProfile,
-  model: 'groq/compound-mini' | 'groq/compound' = 'groq/compound-mini',
+  mode: ModelMode = 'fast',
   language: 'en' | 'hi' | 'hinglish' = 'hi'
 ): Promise<string> {
   const languageInstructions = {
@@ -43,41 +58,94 @@ Instructions:
 
 Strict Rule: Do not hallucinate. If you are unsure about a pest disease, crop behavior, or local weather conditions, advise the farmer to consult their local Krishi Vigyan Kendra (KVK) or Kisan Call Centre (1800-180-1551).`;
 
+  // Truncate individual messages and enforce a total payload character budget
+  const MAX_CHARS_PER_MSG = 1500;
+  const MAX_TOTAL_CHARS = 16000;
+
+  const truncateMsg = (content: string) =>
+    content.length > MAX_CHARS_PER_MSG
+      ? content.slice(0, MAX_CHARS_PER_MSG) + '\n... [truncated/छोटा किया गया]'
+      : content;
+
+  // Take only the most recent messages, then trim oldest if still over budget
+  let trimmedHistory = chatHistory.slice(-8).map(msg => ({
+    role: msg.role,
+    content: truncateMsg(msg.content),
+  }));
+
+  const systemChars = systemMessage.length;
+  while (trimmedHistory.length > 1) {
+    const totalChars = systemChars + trimmedHistory.reduce((sum, m) => sum + m.content.length, 0);
+    if (totalChars <= MAX_TOTAL_CHARS) break;
+    trimmedHistory = trimmedHistory.slice(1);
+  }
+
   const messagesPayload = [
     { role: 'system', content: systemMessage },
-    ...chatHistory.map(msg => ({
-      role: msg.role,
-      content: msg.content.length > 4000 
-        ? msg.content.slice(0, 4000) + '\n... [truncated for size/सीमा से अधिक होने पर छोटा किया गया]' 
-        : msg.content
-    }))
+    ...trimmedHistory,
   ];
 
-  try {
-    const response = await fetch(GROQ_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${GROQ_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: model,
+  // Try each model in the fallback chain
+  const modelsToTry = MODEL_CHAINS[mode];
+  let lastError: Error | null = null;
+
+  for (let i = 0; i < modelsToTry.length; i++) {
+    const modelId = modelsToTry[i];
+
+    try {
+      const bodyPayload = JSON.stringify({
+        model: modelId,
         messages: messagesPayload,
         temperature: 0.7,
-        max_tokens: 1024
-      })
-    });
+        max_tokens: 1024,
+      });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error("Groq API error response:", errorData);
-      throw new Error(errorData?.error?.message || `Server responded with status ${response.status}`);
+      console.log(`[Groq] Attempt ${i + 1}/${modelsToTry.length} — model: ${modelId}, payload: ${bodyPayload.length} chars, messages: ${messagesPayload.length}`);
+
+      const response = await fetch(GROQ_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${GROQ_API_KEY}`,
+        },
+        body: bodyPayload,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => '');
+        console.warn(`[Groq] Model ${modelId} failed [${response.status}]: ${errorText.slice(0, 200)}`);
+
+        // If there's a next model to try, continue; otherwise throw
+        let errorMessage = `Status ${response.status}`;
+        try {
+          const errorData = JSON.parse(errorText);
+          if (errorData?.error?.message) errorMessage = errorData.error.message;
+        } catch {}
+
+        lastError = new Error(errorMessage);
+        continue; // try next model
+      }
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content;
+
+      if (!content) {
+        lastError = new Error('Empty response from model');
+        continue;
+      }
+
+      if (i > 0) {
+        console.log(`[Groq] ✓ Fallback to ${modelId} succeeded`);
+      }
+
+      return content;
+    } catch (error: any) {
+      console.warn(`[Groq] Model ${modelId} threw:`, error.message);
+      lastError = error;
+      continue; // try next model
     }
-
-    const data = await response.json();
-    return data.choices[0]?.message?.content || 'No response generated.';
-  } catch (error: any) {
-    console.error("Fetch error in sendMessageToGroq:", error);
-    throw error;
   }
+
+  // All models failed
+  throw lastError || new Error('All models failed. Please try again later.');
 }
