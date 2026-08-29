@@ -607,17 +607,18 @@ export default function ExploreScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row'
+    alignItems: 'center',
+    flexDirection: 'column'
   },
   safeArea: {
     flex: 1,
+    width: '100%',
     maxWidth: MaxContentWidth,
-    width: '100%'
+    alignSelf: 'center'
   },
   header: {
     paddingHorizontal: Spacing.three,
-    paddingTop: 20,
+    paddingTop: Spacing.three,
     paddingBottom: Spacing.two
   },
   headerTitle: {

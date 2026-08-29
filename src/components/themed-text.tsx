@@ -43,18 +43,25 @@ export function ThemedText({ style, type = 'default', themeColor, ...rest }: The
 
   const containsHindi = hasDevanagari(rest.children);
 
-  // On native platforms, setting any fontWeight other than normal on a single-weight
-  // custom font will cause the rendering engine to fall back to the system font.
-  if (
+  if (containsHindi) {
+    const isBold = 
+      type === 'title' || 
+      type === 'subtitle' || 
+      type === 'smallBold' || 
+      flatStyle.fontWeight === 'bold' || 
+      flatStyle.fontWeight === '700' || 
+      flatStyle.fontWeight === '600';
+      
+    flatStyle.fontFamily = isBold ? 'Pravah-Bold' : 'Pravah-Regular';
+    // On native platforms, setting any fontWeight other than normal on a single-weight
+    // custom font will cause the rendering engine to fall back to the system font.
+    flatStyle.fontWeight = 'normal';
+  } else if (
     flatStyle.fontFamily === 'Pravah-Regular' ||
     flatStyle.fontFamily === 'Pravah-Bold'
   ) {
-    if (containsHindi) {
-      flatStyle.fontWeight = 'normal';
-    } else {
-      // Clear font family to fall back to clean system font for English/numbers
-      flatStyle.fontFamily = undefined;
-    }
+    // Clear font family to fall back to clean system font for English/numbers
+    flatStyle.fontFamily = undefined;
   }
 
   return (

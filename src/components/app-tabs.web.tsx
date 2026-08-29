@@ -204,8 +204,20 @@ const styles = StyleSheet.create({
     width: '100%',
     borderTopWidth: 1,
     paddingVertical: Spacing.one,
-    paddingBottom: Platform.OS === 'web' ? Spacing.two : Spacing.four,
     paddingHorizontal: Spacing.two,
+    ...Platform.select({
+      web: {
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 1000,
+        paddingBottom: Spacing.two,
+      } as any,
+      default: {
+        paddingBottom: Platform.OS === 'ios' ? Spacing.two : Spacing.four,
+      }
+    })
   },
   mobileInnerContainer: {
     flexDirection: 'row',

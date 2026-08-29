@@ -350,20 +350,27 @@ export default function HomeScreen() {
                 style={({ pressed }) => [
                   styles.selectorButton,
                   { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-                  pressed && { opacity: 0.8 }
+                  pressed && { backgroundColor: theme.backgroundSelected }
                 ]}
               >
-                <View style={{ flex: 1 }}>
-                  <ThemedText type="code" style={styles.selectorLabel}>
-                    {language === 'hi' ? 'राज्य' : 'STATE'}
-                  </ThemedText>
-                  <ThemedText type="smallBold" style={styles.selectorValue} numberOfLines={1}>
-                    {formatState(farmState)}
-                  </ThemedText>
+                <View style={styles.selectorLeft}>
+                  <SymbolView
+                    name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'location_on' } as any}
+                    size={18}
+                    tintColor={theme.primary}
+                  />
+                  <View style={styles.selectorLeftContent}>
+                    <ThemedText type="code" style={styles.selectorLabel}>
+                      {language === 'hi' ? 'राज्य' : 'STATE'}
+                    </ThemedText>
+                    <ThemedText type="smallBold" style={styles.selectorValue}>
+                      {formatState(farmState)}
+                    </ThemedText>
+                  </View>
                 </View>
                 <SymbolView
                   name={{ ios: 'chevron.down', android: 'arrow_drop_down', web: 'arrow_drop_down' } as any}
-                  size={14}
+                  size={16}
                   tintColor={theme.textSecondary}
                 />
               </Pressable>
@@ -374,20 +381,27 @@ export default function HomeScreen() {
                 style={({ pressed }) => [
                   styles.selectorButton,
                   { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-                  pressed && { opacity: 0.8 }
+                  pressed && { backgroundColor: theme.backgroundSelected }
                 ]}
               >
-                <View style={{ flex: 1 }}>
-                  <ThemedText type="code" style={styles.selectorLabel}>
-                    {language === 'hi' ? 'मिट्टी का प्रकार' : 'SOIL TYPE'}
-                  </ThemedText>
-                  <ThemedText type="smallBold" style={styles.selectorValue} numberOfLines={1}>
-                    {formatLabel(farmSoil)}
-                  </ThemedText>
+                <View style={styles.selectorLeft}>
+                  <SymbolView
+                    name={{ ios: 'circle.grid.3x3.fill', android: 'layers', web: 'layers' } as any}
+                    size={18}
+                    tintColor={theme.primary}
+                  />
+                  <View style={styles.selectorLeftContent}>
+                    <ThemedText type="code" style={styles.selectorLabel}>
+                      {language === 'hi' ? 'मिट्टी का प्रकार' : 'SOIL TYPE'}
+                    </ThemedText>
+                    <ThemedText type="smallBold" style={styles.selectorValue}>
+                      {formatLabel(farmSoil)}
+                    </ThemedText>
+                  </View>
                 </View>
                 <SymbolView
                   name={{ ios: 'chevron.down', android: 'arrow_drop_down', web: 'arrow_drop_down' } as any}
-                  size={14}
+                  size={16}
                   tintColor={theme.textSecondary}
                 />
               </Pressable>
@@ -398,20 +412,27 @@ export default function HomeScreen() {
                 style={({ pressed }) => [
                   styles.selectorButton,
                   { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-                  pressed && { opacity: 0.8 }
+                  pressed && { backgroundColor: theme.backgroundSelected }
                 ]}
               >
-                <View style={{ flex: 1 }}>
-                  <ThemedText type="code" style={styles.selectorLabel}>
-                    {language === 'hi' ? 'सक्रिय फसल' : 'ACTIVE CROP'}
-                  </ThemedText>
-                  <ThemedText type="smallBold" style={styles.selectorValue} numberOfLines={1}>
-                    {formatLabel(farmCrop)}
-                  </ThemedText>
+                <View style={styles.selectorLeft}>
+                  <SymbolView
+                    name={{ ios: 'leaf.fill', android: 'grass', web: 'grass' } as any}
+                    size={18}
+                    tintColor={theme.primary}
+                  />
+                  <View style={styles.selectorLeftContent}>
+                    <ThemedText type="code" style={styles.selectorLabel}>
+                      {language === 'hi' ? 'सक्रिय फसल' : 'ACTIVE CROP'}
+                    </ThemedText>
+                    <ThemedText type="smallBold" style={styles.selectorValue}>
+                      {formatLabel(farmCrop)}
+                    </ThemedText>
+                  </View>
                 </View>
                 <SymbolView
                   name={{ ios: 'chevron.down', android: 'arrow_drop_down', web: 'arrow_drop_down' } as any}
-                  size={14}
+                  size={16}
                   tintColor={theme.textSecondary}
                 />
               </Pressable>
@@ -620,16 +641,18 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
+    alignItems: 'center',
+    flexDirection: 'column',
   },
   safeArea: {
     flex: 1,
+    width: '100%',
     maxWidth: MaxContentWidth,
+    alignSelf: 'center',
   },
   scrollContent: {
     paddingHorizontal: Spacing.three,
-    paddingTop: 20,
+    paddingTop: Spacing.three,
     paddingBottom: BottomTabInset + Spacing.four,
     gap: Spacing.three,
   },
@@ -712,27 +735,36 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.two,
   },
   profileSelectors: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     gap: Spacing.two,
   },
   selectorButton: {
-    flex: 1,
+    width: '100%',
     paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.two,
+    paddingHorizontal: Spacing.three,
     borderRadius: Spacing.two,
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  selectorLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: Spacing.two,
+  },
+  selectorLeftContent: {
+    flex: 1,
+  },
   selectorLabel: {
-    fontSize: 9,
-    opacity: 0.6,
-    marginBottom: Spacing.half,
+    fontSize: 10,
+    opacity: 0.7,
+    marginBottom: 2,
   },
   selectorValue: {
     fontWeight: '700',
-    fontSize: 12,
+    fontSize: 14,
   },
   advisoryGrid: {
     flexDirection: 'row',

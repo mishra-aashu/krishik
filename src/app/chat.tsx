@@ -538,12 +538,14 @@ export default function ChatScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
+    alignItems: 'center',
+    flexDirection: 'column',
   },
   safeArea: {
     flex: 1,
+    width: '100%',
     maxWidth: MaxContentWidth,
+    alignSelf: 'center',
   },
   keyboardView: {
     flex: 1,
@@ -552,7 +554,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 20,
+    paddingTop: Spacing.three,
     paddingBottom: Spacing.two,
     paddingHorizontal: Spacing.three,
     borderBottomWidth: 1,
@@ -714,6 +716,11 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     gap: Spacing.two,
     paddingBottom: Platform.OS === 'ios' ? Spacing.two : Spacing.three,
+    ...Platform.select({
+      web: {
+        marginBottom: 65,
+      } as any
+    })
   },
   textInput: {
     flex: 1,
