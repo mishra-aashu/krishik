@@ -28,26 +28,25 @@ export function CustomMarkdown({ text }: CustomMarkdownProps) {
   const renderInlineStyles = (
     lineText: string,
     keyPrefix: string,
-    type: 'default' | 'small' | 'smallBold' | 'subtitle' = 'default',
+    type: 'default' | 'small' | 'smallBold' | 'subtitle' = 'small',
     textStyle?: any
   ) => {
     const cleanedText = cleanCellText(lineText);
     const boldParts = cleanedText.split('**');
 
     return (
-      <ThemedText key={keyPrefix} type={type} style={[styles.textLine, textStyle]}>
+      <ThemedText key={keyPrefix} type={type} style={textStyle}>
         {boldParts.map((boldPart, boldIndex) => {
           const isBold = boldIndex % 2 === 1;
           const italicParts = boldPart.split('*');
 
           return italicParts.map((italicPart, italicIndex) => {
             const isItalic = italicIndex % 2 === 1;
-            const currentType = isBold ? (type === 'default' ? 'smallBold' : type) : type;
 
             return (
               <ThemedText
                 key={`${keyPrefix}-b${boldIndex}-i${italicIndex}`}
-                type={currentType}
+                type="span"
                 style={[
                   isBold && styles.boldText,
                   isItalic && styles.italicText,
@@ -219,7 +218,7 @@ export function CustomMarkdown({ text }: CustomMarkdownProps) {
       const bulletText = trimmedLine.substring(2);
       renderedElements.push(
         <View key={`bullet-${i}`} style={styles.bulletRow}>
-          <ThemedText style={[styles.bulletDot, { color: theme.primary }]}>•</ThemedText>
+          <ThemedText type="small" style={[styles.bulletDot, { color: theme.primary }]}>•</ThemedText>
           <View style={styles.bulletTextContainer}>
             {renderInlineStyles(bulletText, `bullet-text-${i}`)}
           </View>
@@ -235,7 +234,7 @@ export function CustomMarkdown({ text }: CustomMarkdownProps) {
       const listText = numberedMatch[2];
       renderedElements.push(
         <View key={`num-${i}`} style={styles.bulletRow}>
-          <ThemedText style={[styles.bulletNumber, { color: theme.primary }]}>{num}.</ThemedText>
+          <ThemedText type="smallBold" style={[styles.bulletNumber, { color: theme.primary }]}>{num}.</ThemedText>
           <View style={styles.bulletTextContainer}>
             {renderInlineStyles(listText, `num-text-${i}`)}
           </View>
@@ -277,9 +276,6 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(128,128,128,0.15)',
     paddingBottom: Spacing.half,
   },
-  textLine: {
-    lineHeight: 22,
-  },
   boldText: {
     fontWeight: 'bold',
   },
@@ -294,14 +290,9 @@ const styles = StyleSheet.create({
   },
   bulletDot: {
     marginRight: Spacing.two,
-    fontSize: 16,
-    lineHeight: 22,
   },
   bulletNumber: {
     marginRight: Spacing.two,
-    fontWeight: '700',
-    fontSize: 14,
-    lineHeight: 22,
   },
   bulletTextContainer: {
     flex: 1,

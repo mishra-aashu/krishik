@@ -6,6 +6,7 @@ import {
   TextInput,
   View,
   Platform,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -184,7 +185,27 @@ export default function ExploreScreen() {
   const router = useRouter();
   const theme = useTheme();
   const safeAreaInsets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const [language, setLanguage] = useState<'hi' | 'en'>('hi');
+
+  const getTabLabel = (tab: 'calc' | 'pest' | 'scheme') => {
+    const isHindi = language === 'hi';
+    const isSmall = width < 390;
+    
+    if (tab === 'calc') {
+      if (isSmall) return isHindi ? 'गणना' : 'Calc';
+      return isHindi ? 'कैलकुलेटर' : 'Calculator';
+    }
+    if (tab === 'pest') {
+      if (isSmall) return isHindi ? 'कीट' : 'Pests';
+      return isHindi ? 'कीट निर्देशिका' : 'Pest Directory';
+    }
+    if (tab === 'scheme') {
+      if (isSmall) return isHindi ? 'योजनाएं' : 'Schemes';
+      return isHindi ? 'सरकारी योजनाएं' : 'Govt Schemes';
+    }
+    return '';
+  };
 
   useEffect(() => {
     const loadLanguage = async () => {
@@ -272,7 +293,7 @@ export default function ExploreScreen() {
                 type="smallBold"
                 style={[styles.segmentBtnText, activeTab === 'calc' ? { color: theme.primary } : { color: theme.textSecondary }]}
               >
-                {language === 'hi' ? 'कैलकुलेटर' : 'Calculator'}
+                {getTabLabel('calc')}
               </ThemedText>
             </View>
           </Pressable>
@@ -291,7 +312,7 @@ export default function ExploreScreen() {
                 type="smallBold"
                 style={[styles.segmentBtnText, activeTab === 'pest' ? { color: theme.primary } : { color: theme.textSecondary }]}
               >
-                {language === 'hi' ? 'कीट निर्देशिका' : 'Pest Directory'}
+                {getTabLabel('pest')}
               </ThemedText>
             </View>
           </Pressable>
@@ -310,7 +331,7 @@ export default function ExploreScreen() {
                 type="smallBold"
                 style={[styles.segmentBtnText, activeTab === 'scheme' ? { color: theme.primary } : { color: theme.textSecondary }]}
               >
-                {language === 'hi' ? 'सरकारी योजनाएं' : 'Govt Schemes'}
+                {getTabLabel('scheme')}
               </ThemedText>
             </View>
           </Pressable>
@@ -443,7 +464,7 @@ export default function ExploreScreen() {
                     <ThemedText type="smallBold" style={{ marginBottom: Spacing.two }}>
                       {language === 'hi' ? 'उर्वरक (NPK) की खुराक' : 'Fertilizers (NPK) Dosage'}
                     </ThemedText>
-                    <View style={styles.npkRow}>
+                    <View style={[styles.npkRow, width < 360 && { flexDirection: 'column' }]}>
                       <View style={[styles.npkItem, { backgroundColor: theme.backgroundElement }]}>
                         <ThemedText type="smallBold" style={{ color: '#D32F2F', fontSize: 18 }}>N</ThemedText>
                         <ThemedText type="code" style={{ fontSize: 10, opacity: 0.6 }}>
@@ -483,7 +504,7 @@ export default function ExploreScreen() {
               {PEST_DIRECTORY.map((item) => (
                 <ThemedView key={item.id} type="card" style={[styles.pestCard, { borderColor: theme.border }]}>
                   <View style={styles.pestHeaderRow}>
-                    <View>
+                    <View style={{ flex: 1, marginRight: Spacing.two }}>
                       <ThemedText type="smallBold" style={{ fontSize: 16 }}>
                         {language === 'hi' ? item.disease.hi : item.disease.en}
                       </ThemedText>
@@ -531,13 +552,13 @@ export default function ExploreScreen() {
                     onPress={() => askAiAboutDisease(item.crop.en, item.disease.en)}
                     style={({ pressed }) => [styles.askAiBtn, { backgroundColor: theme.primary }, pressed && { opacity: 0.8 }]}
                   >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.two }}>
                       <SymbolView
                         name={{ ios: 'cpu', android: 'smart_toy', web: 'smart_toy' } as any}
                         size={15}
                         tintColor="#ffffff"
                       />
-                      <ThemedText type="code" style={{ color: '#ffffff', fontWeight: '700' }}>
+                      <ThemedText type="code" style={{ color: '#ffffff', fontWeight: '700', flexShrink: 1 }}>
                         {language === 'hi' ? 'इस बीमारी के बारे में एआई मित्रा से सलाह लें' : 'Consult AI Mitra about this disease'}
                       </ThemedText>
                     </View>
@@ -556,7 +577,7 @@ export default function ExploreScreen() {
               {SCHEMES.map((scheme, index) => (
                 <ThemedView key={index} type="card" style={[styles.schemeCard, { borderColor: theme.border }]}>
                   <View style={styles.schemeHeader}>
-                    <ThemedText type="smallBold" style={{ fontSize: 16, color: theme.primary }}>
+                    <ThemedText type="smallBold" style={{ fontSize: 16, color: theme.primary, flex: 1, marginRight: Spacing.two }}>
                       {language === 'hi' ? scheme.title.hi : scheme.title.en}
                     </ThemedText>
                     <SymbolView
@@ -785,7 +806,8 @@ const styles = StyleSheet.create({
     lineHeight: 18
   },
   askAiBtn: {
-    height: 38,
+    minHeight: 38,
+    paddingVertical: Spacing.two,
     borderRadius: Spacing.two,
     justifyContent: 'center',
     alignItems: 'center',

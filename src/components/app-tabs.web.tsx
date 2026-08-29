@@ -9,6 +9,7 @@ import {
 } from 'expo-router/ui';
 import { SymbolView } from 'expo-symbols';
 import { Pressable, useColorScheme, View, StyleSheet, useWindowDimensions, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ExternalLink } from './external-link';
 import { ThemedText } from './themed-text';
@@ -141,12 +142,14 @@ interface CustomTabListProps extends TabListProps {
 
 export function CustomTabList({ children, isMobile, ...props }: CustomTabListProps) {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <View 
       {...props} 
       style={[
         isMobile ? styles.mobileTabListContainer : styles.desktopTabListContainer,
+        isMobile && { paddingBottom: Math.max(Spacing.two, insets.bottom) },
         { backgroundColor: theme.background, borderColor: theme.border }
       ]}
     >
@@ -185,8 +188,24 @@ export function CustomTabList({ children, isMobile, ...props }: CustomTabListPro
 const styles = StyleSheet.create({
   tabsContainer: {
     flex: 1,
-    height: '100%',
     width: '100%',
+    ...Platform.select({
+      web: {
+        position: 'fixed',
+        top: 0,
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: '100dvh',
+        width: '100vw',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+      } as any,
+      default: {
+        height: '100%',
+      }
+    })
   },
   mobileLayout: {
     flexDirection: 'column',
@@ -196,8 +215,18 @@ const styles = StyleSheet.create({
   },
   tabSlot: {
     flex: 1,
-    height: '100%',
     width: '100%',
+    ...Platform.select({
+      web: {
+        height: '100%',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+      } as any,
+      default: {
+        height: '100%',
+      }
+    })
   },
   // Mobile Tab List styling (static bottom bar)
   mobileTabListContainer: {
@@ -207,11 +236,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.two,
     ...Platform.select({
       web: {
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        zIndex: 1000,
         paddingBottom: Spacing.two,
       } as any,
       default: {
@@ -232,10 +256,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: Spacing.two,
     borderRadius: Spacing.three,
     gap: 4,
-    minWidth: 90,
+    flex: 1,
+    maxWidth: 120,
     borderWidth: 1,
     ...Platform.select({
       web: {

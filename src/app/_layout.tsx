@@ -24,8 +24,8 @@ function AppContent() {
   const { isAuthenticated, isLoading } = useAuth();
 
   const [fontsLoaded, fontError] = useFonts({
-    'Pravah-Regular': require('../../assets/fonts/Pravah-Regular.ttf'),
-    'Pravah-Bold': require('../../assets/fonts/Pravah-Bold.ttf'),
+    'Pravah-Regular': require('../../assets/fonts/Mukta-Regular.ttf'),
+    'Pravah-Bold': require('../../assets/fonts/Mukta-Bold.ttf'),
   });
 
   // If still loading authentication status or fonts, keep showing splash

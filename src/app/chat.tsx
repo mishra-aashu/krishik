@@ -42,7 +42,7 @@ export default function ChatScreen() {
 
   // Chat settings
   const [language, setLanguage] = useState<'hi' | 'en' | 'hinglish'>('hi');
-  const isCompactHeader = width < 375;
+  const isCompactHeader = width < 400;
   const [model, setModel] = useState<ModelMode>('fast');
 
   // Messages state
@@ -195,6 +195,7 @@ export default function ChatScreen() {
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={styles.keyboardView}
+          enabled={Platform.OS !== 'web'}
         >
           {/* Header Panel */}
           <View style={[styles.headerPanel, { borderBottomColor: theme.border }]}>
@@ -575,6 +576,7 @@ const styles = StyleSheet.create({
   headerControls: {
     flexDirection: 'row',
     gap: Spacing.one,
+    flexShrink: 0,
   },
   controlBadge: {
     paddingVertical: 4,
@@ -672,7 +674,7 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.three,
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
-    maxWidth: '85%',
+    maxWidth: '88%',
   },
   userBubble: {
     borderBottomRightRadius: 2,
@@ -716,11 +718,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     gap: Spacing.two,
     paddingBottom: Platform.OS === 'ios' ? Spacing.two : Spacing.three,
-    ...Platform.select({
-      web: {
-        marginBottom: 65,
-      } as any
-    })
   },
   textInput: {
     flex: 1,

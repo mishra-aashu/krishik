@@ -363,7 +363,7 @@ export default function HomeScreen() {
                     <ThemedText type="code" style={styles.selectorLabel}>
                       {language === 'hi' ? 'राज्य' : 'STATE'}
                     </ThemedText>
-                    <ThemedText type="smallBold" style={styles.selectorValue}>
+                    <ThemedText type="smallBold" style={styles.selectorValue} numberOfLines={1} ellipsizeMode="tail">
                       {formatState(farmState)}
                     </ThemedText>
                   </View>
@@ -394,7 +394,7 @@ export default function HomeScreen() {
                     <ThemedText type="code" style={styles.selectorLabel}>
                       {language === 'hi' ? 'मिट्टी का प्रकार' : 'SOIL TYPE'}
                     </ThemedText>
-                    <ThemedText type="smallBold" style={styles.selectorValue}>
+                    <ThemedText type="smallBold" style={styles.selectorValue} numberOfLines={1} ellipsizeMode="tail">
                       {formatLabel(farmSoil)}
                     </ThemedText>
                   </View>
@@ -425,7 +425,7 @@ export default function HomeScreen() {
                     <ThemedText type="code" style={styles.selectorLabel}>
                       {language === 'hi' ? 'सक्रिय फसल' : 'ACTIVE CROP'}
                     </ThemedText>
-                    <ThemedText type="smallBold" style={styles.selectorValue}>
+                    <ThemedText type="smallBold" style={styles.selectorValue} numberOfLines={1} ellipsizeMode="tail">
                       {formatLabel(farmCrop)}
                     </ThemedText>
                   </View>
@@ -770,10 +770,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.two,
+    justifyContent: 'space-between',
   },
   advisoryCard: {
-    width: '48%',
-    flexGrow: 1,
     borderRadius: Spacing.three,
     paddingVertical: Spacing.three,
     paddingHorizontal: Spacing.two,
@@ -783,8 +782,13 @@ const styles = StyleSheet.create({
     gap: Spacing.one,
     ...Platform.select({
       web: {
+        width: 'calc(50% - 4px)',
         transition: 'transform 0.2s ease',
         cursor: 'pointer',
+      } as any,
+      default: {
+        width: '47%',
+        flexGrow: 1,
       }
     })
   },
