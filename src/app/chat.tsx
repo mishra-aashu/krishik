@@ -68,7 +68,18 @@ export default function ChatScreen() {
       const savedHistory = await LocalStorage.getItem('chat_history');
       if (savedHistory) {
         try {
-          setMessages(JSON.parse(savedHistory));
+          const parsed = JSON.parse(savedHistory);
+          if (Array.isArray(parsed)) {
+            // Clean up any overly large messages in stored history to fix the 413 error from root
+            const cleanHistory = parsed.map(msg => ({
+              ...msg,
+              content: typeof msg.content === 'string' && msg.content.length > 4000
+                ? msg.content.slice(0, 4000) + '\n... [truncated/छोटा किया गया]'
+                : msg.content
+            }));
+            setMessages(cleanHistory);
+            await LocalStorage.setItem('chat_history', JSON.stringify(cleanHistory));
+          }
         } catch (e) {
           console.error('Error parsing chat history:', e);
         }
@@ -125,10 +136,12 @@ export default function ChatScreen() {
     setIsLoading(true);
 
     try {
-      // Limit context to the last 15 messages to prevent "413 Content Too Large" / payload size errors
+      // Limit context to the last 15 messages and truncate individual messages to prevent "413 Content Too Large" errors
       const historyPayload = newMessages.slice(-15).map(msg => ({
         role: msg.role,
-        content: msg.content
+        content: msg.content.length > 4000 
+          ? msg.content.slice(0, 4000) + '\n... [truncated for size/सीमा से अधिक होने पर छोटा किया गया]' 
+          : msg.content
       }));
 
       const botReply = await sendMessageToGroq(

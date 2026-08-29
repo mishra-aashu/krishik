@@ -555,7 +555,7 @@ export default function ExploreScreen() {
 
               {SCHEMES.map((scheme, index) => (
                 <ThemedView key={index} type="card" style={[styles.schemeCard, { borderColor: theme.border }]}>
-                  <View style={scheme.schemeHeader || styles.schemeHeader}>
+                  <View style={styles.schemeHeader}>
                     <ThemedText type="smallBold" style={{ fontSize: 16, color: theme.primary }}>
                       {language === 'hi' ? scheme.title.hi : scheme.title.en}
                     </ThemedText>

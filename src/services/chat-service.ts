@@ -45,7 +45,12 @@ Strict Rule: Do not hallucinate. If you are unsure about a pest disease, crop be
 
   const messagesPayload = [
     { role: 'system', content: systemMessage },
-    ...chatHistory.map(msg => ({ role: msg.role, content: msg.content }))
+    ...chatHistory.map(msg => ({
+      role: msg.role,
+      content: msg.content.length > 4000 
+        ? msg.content.slice(0, 4000) + '\n... [truncated for size/सीमा से अधिक होने पर छोटा किया गया]' 
+        : msg.content
+    }))
   ];
 
   try {
