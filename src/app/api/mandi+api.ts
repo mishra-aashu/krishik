@@ -36,7 +36,10 @@ export async function GET(request: Request) {
       }
       return Response.json(
         { error: `API responded with status ${response.status}` },
-        { status: response.status }
+        { 
+          status: response.status,
+          headers: { 'Access-Control-Allow-Origin': '*' }
+        }
       );
     }
 
@@ -47,7 +50,10 @@ export async function GET(request: Request) {
   } catch (error: any) {
     return Response.json(
       { error: error.message || 'Internal server error' },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: { 'Access-Control-Allow-Origin': '*' }
+      }
     );
   }
 }

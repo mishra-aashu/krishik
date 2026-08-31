@@ -7,9 +7,8 @@ export interface MandiItem {
   change: string;
 }
 
-// Read from environment — used server-side in the API route, not here.
-// The client calls our own /api/mandi route to avoid CORS.
-const MANDI_API_ROUTE = '/api/mandi';
+// The client calls the Vercel deployed API route to avoid CORS and local rate limits.
+const MANDI_API_ROUTE = 'https://krishik-psi.vercel.app/api/mandi';
 
 export const COMMODITY_MAP: Record<string, string> = {
   // Grains & Cereals

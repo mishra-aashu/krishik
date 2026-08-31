@@ -152,6 +152,27 @@ export default function HomeScreen() {
   const [isRefreshingPrices, setIsRefreshingPrices] = useState(false);
   const [isLoadingMandi, setIsLoadingMandi] = useState(true);
   const [mandiError, setMandiError] = useState<string | null>(null);
+  const [mandiLastUpdated, setMandiLastUpdated] = useState<Date | null>(null);
+
+  const formatLastUpdated = (date: Date | null) => {
+    if (!date) return '';
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const day = pad(date.getDate());
+    const month = pad(date.getMonth() + 1);
+    const year = date.getFullYear();
+    let hours = date.getHours();
+    const minutes = pad(date.getMinutes());
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12; // the hour '0' should be '12'
+    const strTime = `${pad(hours)}:${minutes} ${ampm}`;
+    const dateStr = `${day}/${month}/${year}`;
+    
+    if (language === 'hi') {
+      return `अंतिम अपडेट: ${dateStr}, ${strTime}`;
+    }
+    return `Last updated: ${dateStr}, ${strTime}`;
+  };
 
   // Fetch live Mandi prices when farmState changes
   useEffect(() => {
@@ -164,6 +185,7 @@ export default function HomeScreen() {
         const data = await fetchLiveMandiPrices(farmState);
         if (isMounted) {
           setMandiPrices(data.length > 0 ? data : INITIAL_MANDI_PRICES);
+          setMandiLastUpdated(new Date());
         }
       } catch (err) {
         console.error('Error fetching live mandi prices:', err);
@@ -171,6 +193,7 @@ export default function HomeScreen() {
           // Fall back to mock prices so the screen is never blank
           setMandiPrices(INITIAL_MANDI_PRICES);
           setMandiError('Failed to fetch live prices');
+          setMandiLastUpdated(new Date());
         }
       } finally {
         if (isMounted) {
@@ -211,9 +234,11 @@ export default function HomeScreen() {
     try {
       const data = await fetchLiveMandiPrices(farmState);
       setMandiPrices(data.length > 0 ? data : INITIAL_MANDI_PRICES);
+      setMandiLastUpdated(new Date());
     } catch (err) {
       console.error('Error refreshing Mandi prices:', err);
       // Keep existing prices or load initial ones
+      setMandiLastUpdated(new Date());
     } finally {
       setIsRefreshingPrices(false);
     }
@@ -593,9 +618,16 @@ export default function HomeScreen() {
 
           {/* Mandi Prices Tracker */}
           <View style={styles.mandiHeaderRow}>
-            <ThemedText type="smallBold" style={styles.sectionTitle}>
-              {language === 'hi' ? 'मंडी बाजार दरें' : 'Mandi Market Rates'}
-            </ThemedText>
+            <View style={{ flex: 1, marginRight: Spacing.two }}>
+              <ThemedText type="smallBold" style={styles.sectionTitle}>
+                {language === 'hi' ? 'मंडी बाजार दरें' : 'Mandi Market Rates'}
+              </ThemedText>
+              {mandiLastUpdated && (
+                <ThemedText type="code" style={{ fontSize: 10, color: theme.textSecondary, marginTop: 2 }}>
+                  {formatLastUpdated(mandiLastUpdated)}
+                </ThemedText>
+              )}
+            </View>
             <Pressable
               onPress={refreshMandiPrices}
               disabled={isRefreshingPrices}
