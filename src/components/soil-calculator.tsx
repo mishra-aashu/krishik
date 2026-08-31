@@ -145,7 +145,7 @@ export default function SoilCalculator({ language, theme, formatLabel }: SoilCal
           }
           if (data.estimatedN) {
             setSimpleN(data.estimatedN);
-            setSoilN(data.estimatedN === 'low' ? '180' : data.estimatedN === 'high' ? '600' : '380');
+            setSoilN(data.estimatedN === 'low' ? '180' : data.estimatedN === 'high' ? '540' : '360');
           }
           if (data.estimatedP) {
             setSimpleP(data.estimatedP);
@@ -190,7 +190,7 @@ export default function SoilCalculator({ language, theme, formatLabel }: SoilCal
 
   // Perform dosage math
   const effectivePh = inputMode === 'simple' ? (simplePh ? { acidic: '5.5', neutral: '7.0', alkaline: '8.5' }[simplePh] : '') : soilPh;
-  const effectiveN = inputMode === 'simple' ? (simpleN ? { low: '200', medium: '400', high: '600' }[simpleN] : '') : soilN;
+  const effectiveN = inputMode === 'simple' ? (simpleN ? { low: '180', medium: '360', high: '540' }[simpleN] : '') : soilN;
   const effectiveP = inputMode === 'simple' ? (simpleP ? { low: '8', medium: '16', high: '25' }[simpleP] : '') : soilP;
   const effectiveK = inputMode === 'simple' ? (simpleK ? { low: '90', medium: '200', high: '300' }[simpleK] : '') : soilK;
   const effectiveOc = inputMode === 'simple' ? (simpleOc ? { low: '0.3', medium: '0.6', high: '0.9' }[simpleOc] : '') : soilOc;
