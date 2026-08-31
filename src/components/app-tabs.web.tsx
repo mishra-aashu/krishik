@@ -45,6 +45,13 @@ export default function AppTabs() {
                 isMobile={false}
               />
             </TabTrigger>
+            <TabTrigger name="community" href="/community" asChild>
+              <TabButton
+                iconName={{ ios: 'person.2.fill', web: 'groups', android: 'groups' }}
+                label="Chowpal"
+                isMobile={false}
+              />
+            </TabTrigger>
             <TabTrigger name="explore" href="/explore" asChild>
               <TabButton
                 iconName={{ ios: 'square.grid.2x2.fill', web: 'widgets', android: 'widgets' }}
@@ -81,6 +88,13 @@ export default function AppTabs() {
               <TabButton
                 iconName={{ ios: 'message.fill', web: 'chat_bubble', android: 'chat_bubble' }}
                 label="Chat AI"
+                isMobile={true}
+              />
+            </TabTrigger>
+            <TabTrigger name="community" href="/community" asChild>
+              <TabButton
+                iconName={{ ios: 'person.2.fill', web: 'groups', android: 'groups' }}
+                label="Chowpal"
                 isMobile={true}
               />
             </TabTrigger>
