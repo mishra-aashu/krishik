@@ -1,17 +1,4 @@
-import type { IncomingMessage, ServerResponse } from 'http';
-
-interface VercelRequest extends IncomingMessage {
-  query: { [key: string]: string | string[] };
-  method?: string;
-}
-
-interface VercelResponse extends ServerResponse {
-  status: (statusCode: number) => VercelResponse;
-  json: (body: any) => VercelResponse;
-  end: () => void;
-}
-
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+module.exports = async function handler(req, res) {
   // CORS Headers
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -26,7 +13,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  const state = (req.query.state as string) || '';
+  const state = req.query.state || '';
   const API_KEY = process.env.EXPO_PUBLIC_DATA_GOV_IN_API_KEY || '579b464db66ec23bdd000001cdd3946e44ce4aad7209ff7b23ac571b';
   const BASE_URL = 'https://api.data.gov.in/resource/35985678-0d79-46b4-9ed6-6f13308a1d24';
 
@@ -54,7 +41,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const data = await apiResponse.json();
     return res.status(200).json(data);
-  } catch (error: any) {
+  } catch (error) {
     return res.status(500).json({ error: error.message || 'Internal server error' });
   }
-}
+};
