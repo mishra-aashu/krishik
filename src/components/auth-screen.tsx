@@ -308,16 +308,16 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
             </ThemedText>
           </View>
 
-          {/* Form Container (Glassmorphism Card) */}
+          {/* Form Container (Liquid Glassmorphism Card) */}
           <View style={[
             styles.authCard,
             {
-              backgroundColor: theme.dark ? 'rgba(15, 32, 20, 0.88)' : 'rgba(255, 255, 255, 0.90)',
-              borderColor: theme.dark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.6)'
+              backgroundColor: theme.dark ? 'rgba(10, 26, 15, 0.60)' : 'rgba(255, 255, 255, 0.42)',
+              borderColor: theme.dark ? 'rgba(255, 255, 255, 0.22)' : 'rgba(255, 255, 255, 0.70)'
             }
           ]}>
-            {/* Mode Selector Tabs */}
-            <View style={styles.modeTabs}>
+            {/* Mode Selector Tabs (Glass Segmented Pill Bar) */}
+            <View style={[styles.modeTabs, { backgroundColor: theme.dark ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.06)' }]}>
               <Pressable
                 onPress={() => {
                   setIsLoginMode(true);
@@ -326,12 +326,15 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                 }}
                 style={[
                   styles.modeTabBtn,
-                  isLoginMode && [styles.activeModeTab, { borderBottomColor: theme.primary }]
+                  isLoginMode && [
+                    styles.activeModeTab,
+                    { backgroundColor: theme.dark ? 'rgba(255, 255, 255, 0.20)' : 'rgba(255, 255, 255, 0.88)' }
+                  ]
                 ]}
               >
                 <ThemedText
                   type="smallBold"
-                  style={[styles.modeTabText, isLoginMode ? { color: theme.primary } : { color: theme.textSecondary }]}
+                  style={[styles.modeTabText, { color: isLoginMode ? theme.primary : theme.textSecondary }]}
                 >
                   {t.loginTab}
                 </ThemedText>
@@ -344,12 +347,15 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                 }}
                 style={[
                   styles.modeTabBtn,
-                  !isLoginMode && [styles.activeModeTab, { borderBottomColor: theme.primary }]
+                  !isLoginMode && [
+                    styles.activeModeTab,
+                    { backgroundColor: theme.dark ? 'rgba(255, 255, 255, 0.20)' : 'rgba(255, 255, 255, 0.88)' }
+                  ]
                 ]}
               >
                 <ThemedText
                   type="smallBold"
-                  style={[styles.modeTabText, !isLoginMode ? { color: theme.primary } : { color: theme.textSecondary }]}
+                  style={[styles.modeTabText, { color: !isLoginMode ? theme.primary : theme.textSecondary }]}
                 >
                   {t.signupTab}
                 </ThemedText>
@@ -376,11 +382,11 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
               // LOGIN FORM
               <View style={styles.formFields}>
                 <View style={styles.inputGroup}>
-                  <ThemedText type="smallBold" style={styles.inputLabel}>{t.phoneLabel}</ThemedText>
+                  <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#E8F5E9' : '#0B2914' }]}>{t.phoneLabel}</ThemedText>
                   <TextInput
-                    style={[styles.inputField, { color: theme.text, borderColor: theme.border, backgroundColor: theme.dark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.7)' }]}
+                    style={[styles.inputField, { color: theme.dark ? '#ffffff' : '#0a2312', borderColor: theme.dark ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.65)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.45)' }]}
                     placeholder={t.phonePlace}
-                    placeholderTextColor={theme.textSecondary}
+                    placeholderTextColor={theme.dark ? 'rgba(255,255,255,0.5)' : 'rgba(10,35,18,0.5)'}
                     value={phone}
                     onChangeText={(val) => setPhone(val.replace(/[^0-9]/g, ''))}
                     keyboardType="phone-pad"
@@ -389,11 +395,11 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <ThemedText type="smallBold" style={styles.inputLabel}>{t.pinLabel}</ThemedText>
+                  <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#E8F5E9' : '#0B2914' }]}>{t.pinLabel}</ThemedText>
                   <TextInput
-                    style={[styles.inputField, { color: theme.text, borderColor: theme.border, backgroundColor: theme.dark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.7)' }]}
+                    style={[styles.inputField, { color: theme.dark ? '#ffffff' : '#0a2312', borderColor: theme.dark ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.65)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.45)' }]}
                     placeholder={t.pinPlace}
-                    placeholderTextColor={theme.textSecondary}
+                    placeholderTextColor={theme.dark ? 'rgba(255,255,255,0.5)' : 'rgba(10,35,18,0.5)'}
                     value={pin}
                     onChangeText={(val) => setPin(val.replace(/[^0-9]/g, ''))}
                     keyboardType="numeric"
@@ -426,11 +432,11 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                   // Step 1: Account credentials
                   <View style={{ gap: Spacing.two }}>
                     <View style={styles.inputGroup}>
-                      <ThemedText type="smallBold" style={styles.inputLabel}>{t.nameLabel}</ThemedText>
+                      <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#E8F5E9' : '#0B2914' }]}>{t.nameLabel}</ThemedText>
                       <TextInput
-                        style={[styles.inputField, { color: theme.text, borderColor: theme.border, backgroundColor: theme.dark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.7)' }]}
+                        style={[styles.inputField, { color: theme.dark ? '#ffffff' : '#0a2312', borderColor: theme.dark ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.65)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.45)' }]}
                         placeholder={t.namePlace}
-                        placeholderTextColor={theme.textSecondary}
+                        placeholderTextColor={theme.dark ? 'rgba(255,255,255,0.5)' : 'rgba(10,35,18,0.5)'}
                         value={name}
                         onChangeText={setName}
                         autoCapitalize="words"
@@ -438,11 +444,11 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                     </View>
 
                     <View style={styles.inputGroup}>
-                      <ThemedText type="smallBold" style={styles.inputLabel}>{t.phoneLabel}</ThemedText>
+                      <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#E8F5E9' : '#0B2914' }]}>{t.phoneLabel}</ThemedText>
                       <TextInput
-                        style={[styles.inputField, { color: theme.text, borderColor: theme.border, backgroundColor: theme.dark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.7)' }]}
+                        style={[styles.inputField, { color: theme.dark ? '#ffffff' : '#0a2312', borderColor: theme.dark ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.65)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.45)' }]}
                         placeholder={t.phonePlace}
-                        placeholderTextColor={theme.textSecondary}
+                        placeholderTextColor={theme.dark ? 'rgba(255,255,255,0.5)' : 'rgba(10,35,18,0.5)'}
                         value={phone}
                         onChangeText={(val) => setPhone(val.replace(/[^0-9]/g, ''))}
                         keyboardType="phone-pad"
@@ -451,11 +457,11 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                     </View>
 
                     <View style={styles.inputGroup}>
-                      <ThemedText type="smallBold" style={styles.inputLabel}>{t.pinLabel}</ThemedText>
+                      <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#E8F5E9' : '#0B2914' }]}>{t.pinLabel}</ThemedText>
                       <TextInput
-                        style={[styles.inputField, { color: theme.text, borderColor: theme.border, backgroundColor: theme.dark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.7)' }]}
+                        style={[styles.inputField, { color: theme.dark ? '#ffffff' : '#0a2312', borderColor: theme.dark ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.65)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.45)' }]}
                         placeholder={t.pinPlace}
-                        placeholderTextColor={theme.textSecondary}
+                        placeholderTextColor={theme.dark ? 'rgba(255,255,255,0.5)' : 'rgba(10,35,18,0.5)'}
                         value={pin}
                         onChangeText={(val) => setPin(val.replace(/[^0-9]/g, ''))}
                         keyboardType="numeric"
@@ -720,42 +726,56 @@ const styles = StyleSheet.create({
   },
   authCard: {
     width: '100%',
-    borderRadius: Spacing.three,
+    borderRadius: 24,
     borderWidth: 1,
     padding: Spacing.three,
     ...Platform.select({
       web: {
-        backdropFilter: 'blur(24px)',
-        WebkitBackdropFilter: 'blur(24px)',
-        boxShadow: '0 20px 48px rgba(0, 0, 0, 0.28), 0 0 2px rgba(255, 255, 255, 0.8) inset',
+        backdropFilter: 'blur(30px) saturate(190%)',
+        WebkitBackdropFilter: 'blur(30px) saturate(190%)',
+        boxShadow: '0 30px 60px -12px rgba(0, 0, 0, 0.35), inset 0 1px 1px 0 rgba(255, 255, 255, 0.8), inset 0 -1px 1px 0 rgba(0, 0, 0, 0.1)',
       } as any,
       default: {
-        elevation: 10,
+        elevation: 12,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.3,
-        shadowRadius: 18,
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.35,
+        shadowRadius: 20,
       }
     })
   },
   modeTabs: {
     flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.08)',
+    borderRadius: 16,
+    padding: 4,
     marginBottom: Spacing.three,
+    ...Platform.select({
+      web: {
+        backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
+      } as any,
+      default: {}
+    })
   },
   modeTabBtn: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: Spacing.two,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
+    paddingVertical: 10,
+    borderRadius: 12,
   },
   activeModeTab: {
-    borderBottomWidth: 2,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 4px 14px rgba(0, 0, 0, 0.12), inset 0 1px 1px rgba(255, 255, 255, 0.9)',
+      } as any,
+      default: {
+        elevation: 3,
+      }
+    })
   },
   modeTabText: {
     fontSize: 16,
+    fontWeight: '700',
   },
   errorBox: {
     borderWidth: 1,
@@ -767,44 +787,61 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
   },
   inputGroup: {
-    gap: 8,
+    gap: 6,
   },
   inputLabel: {
     fontSize: 14,
-    opacity: 0.9,
+    fontWeight: '700',
   },
   inputField: {
     height: 56,
     borderWidth: 1,
-    borderRadius: Spacing.two,
+    borderRadius: 16,
     paddingHorizontal: Spacing.three,
     fontSize: 18,
+    ...Platform.select({
+      web: {
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        outlineStyle: 'none',
+        boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(255, 255, 255, 0.5)',
+      } as any,
+      default: {}
+    })
   },
   selectorInputBtn: {
     height: 56,
     borderWidth: 1,
-    borderRadius: Spacing.two,
+    borderRadius: 16,
     paddingHorizontal: Spacing.three,
     justifyContent: 'center',
+    ...Platform.select({
+      web: {
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+      } as any,
+      default: {}
+    })
   },
   submitBtn: {
     height: 56,
-    borderRadius: Spacing.two,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: Spacing.three,
     ...Platform.select({
       web: {
-        boxShadow: '0 6px 18px rgba(46, 125, 50, 0.4)',
+        boxShadow: '0 8px 24px rgba(46, 125, 50, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.4)',
       } as any,
       default: {
-        elevation: 4,
+        elevation: 6,
       }
     })
   },
   submitBtnText: {
     color: '#ffffff',
     fontSize: 18,
+    fontWeight: '700',
   },
   signupNavBtns: {
     flexDirection: 'row',
@@ -815,29 +852,29 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 56,
     borderWidth: 1,
-    borderRadius: Spacing.two,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   signupSubmitBtn: {
     flex: 2,
     height: 56,
-    borderRadius: Spacing.two,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   skipBtn: {
     marginTop: Spacing.three,
-    paddingVertical: 10,
-    paddingHorizontal: 24,
+    paddingVertical: 12,
+    paddingHorizontal: 28,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.4)',
+    borderColor: 'rgba(255,255,255,0.5)',
     ...Platform.select({
       web: {
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-        boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        boxShadow: '0 8px 20px rgba(0,0,0,0.25), inset 0 1px 1px rgba(255,255,255,0.6)',
       } as any,
       default: {
         elevation: 4,
