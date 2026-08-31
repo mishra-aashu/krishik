@@ -4,6 +4,7 @@
  * The client calls /api/mandi?state=Punjab and this route proxies to
  * api.data.gov.in keeping the API key on the server side.
  */
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const state = searchParams.get('state') || '';
@@ -37,7 +38,7 @@ export async function GET(request: Request) {
       return Response.json(
         { error: `API responded with status ${response.status}` },
         { 
-          status: response.status,
+          status: response.ok ? 200 : response.status,
           headers: { 'Access-Control-Allow-Origin': '*' }
         }
       );

@@ -188,7 +188,7 @@ export default function HomeScreen() {
           setMandiLastUpdated(new Date());
         }
       } catch (err) {
-        console.error('Error fetching live mandi prices:', err);
+        console.warn('Error fetching live mandi prices:', err);
         if (isMounted) {
           // Fall back to mock prices so the screen is never blank
           setMandiPrices(INITIAL_MANDI_PRICES);
@@ -236,7 +236,7 @@ export default function HomeScreen() {
       setMandiPrices(data.length > 0 ? data : INITIAL_MANDI_PRICES);
       setMandiLastUpdated(new Date());
     } catch (err) {
-      console.error('Error refreshing Mandi prices:', err);
+      console.warn('Error refreshing Mandi prices:', err);
       // Keep existing prices or load initial ones
       setMandiLastUpdated(new Date());
     } finally {

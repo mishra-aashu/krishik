@@ -162,7 +162,7 @@ export async function fetchLiveMandiPrices(stateName: string): Promise<MandiItem
       };
     });
   } catch (error) {
-    console.error('[Mandi API] Error fetching live prices:', error);
+    console.warn('[Mandi API] Error fetching live prices:', error);
     throw error;
   }
 }
