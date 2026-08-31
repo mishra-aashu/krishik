@@ -18,6 +18,7 @@ import { SymbolView } from 'expo-symbols';
 import { Spacing } from '@/constants/theme';
 import { LocalStorage } from '@/utils/storage';
 import { SelectionModal } from '@/components/selection-modal';
+import { PressableScale } from '@/components/pressable-scale';
 import cropsData from '@/constants/crops.json';
 
 const STATES = [
@@ -150,13 +151,15 @@ export default function ProfileScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
+    <ThemedView style={styles.container}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
       {/* Header */}
       <View style={[styles.header, { borderBottomColor: theme.border }]}>
         <ThemedText type="smallBold" style={styles.headerTitle}>{t.title}</ThemedText>
       </View>
 
       <ScrollView 
+        style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
@@ -234,7 +237,7 @@ export default function ProfileScreen() {
         
         <ThemedView type="backgroundElement" style={[styles.card, { borderColor: theme.border, paddingVertical: Spacing.two }]}>
           {/* State selector */}
-          <Pressable 
+          <PressableScale 
             onPress={() => setActiveModal('state')}
             style={({ pressed }) => [styles.selectorRow, pressed && { backgroundColor: theme.backgroundSelected }]}
           >
@@ -246,12 +249,12 @@ export default function ProfileScreen() {
               <ThemedText type="smallBold" style={styles.selectorValue}>{selectedState}</ThemedText>
             </View>
             <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any} size={14} tintColor={theme.textSecondary} />
-          </Pressable>
+          </PressableScale>
 
           <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
           {/* Soil selector */}
-          <Pressable 
+          <PressableScale 
             onPress={() => setActiveModal('soil')}
             style={({ pressed }) => [styles.selectorRow, pressed && { backgroundColor: theme.backgroundSelected }]}
           >
@@ -263,12 +266,12 @@ export default function ProfileScreen() {
               <ThemedText type="smallBold" style={styles.selectorValue}>{selectedSoil}</ThemedText>
             </View>
             <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any} size={14} tintColor={theme.textSecondary} />
-          </Pressable>
+          </PressableScale>
 
           <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
           {/* Crop selector */}
-          <Pressable 
+          <PressableScale 
             onPress={() => setActiveModal('crop')}
             style={({ pressed }) => [styles.selectorRow, pressed && { backgroundColor: theme.backgroundSelected }]}
           >
@@ -280,7 +283,7 @@ export default function ProfileScreen() {
               <ThemedText type="smallBold" style={styles.selectorValue}>{selectedCrop}</ThemedText>
             </View>
             <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any} size={14} tintColor={theme.textSecondary} />
-          </Pressable>
+          </PressableScale>
         </ThemedView>
 
         {/* Card 3: App Preferences */}
@@ -301,7 +304,7 @@ export default function ProfileScreen() {
               </View>
             </View>
             <View style={[styles.toggleContainer, { backgroundColor: theme.background, borderColor: theme.border }]}>
-              <Pressable
+              <PressableScale
                 onPress={() => handleLanguageChange('en')}
                 style={[
                   styles.toggleButton,
@@ -317,8 +320,8 @@ export default function ProfileScreen() {
                 >
                   English
                 </ThemedText>
-              </Pressable>
-              <Pressable
+              </PressableScale>
+              <PressableScale
                 onPress={() => handleLanguageChange('hi')}
                 style={[
                   styles.toggleButton,
@@ -334,7 +337,7 @@ export default function ProfileScreen() {
                 >
                   हिंदी
                 </ThemedText>
-              </Pressable>
+              </PressableScale>
             </View>
           </View>
 
@@ -352,7 +355,7 @@ export default function ProfileScreen() {
               </View>
             </View>
             <View style={[styles.toggleContainer, { backgroundColor: theme.background, borderColor: theme.border }]}>
-              <Pressable
+              <PressableScale
                 onPress={() => setThemeMode('light')}
                 style={[
                   styles.toggleButton,
@@ -368,8 +371,8 @@ export default function ProfileScreen() {
                 >
                   {t.themeLight}
                 </ThemedText>
-              </Pressable>
-              <Pressable
+              </PressableScale>
+              <PressableScale
                 onPress={() => setThemeMode('dark')}
                 style={[
                   styles.toggleButton,
@@ -385,8 +388,8 @@ export default function ProfileScreen() {
                 >
                   {t.themeDark}
                 </ThemedText>
-              </Pressable>
-              <Pressable
+              </PressableScale>
+              <PressableScale
                 onPress={() => setThemeMode('system')}
                 style={[
                   styles.toggleButton,
@@ -402,14 +405,14 @@ export default function ProfileScreen() {
                 >
                   {t.themeSystem}
                 </ThemedText>
-              </Pressable>
+              </PressableScale>
             </View>
           </View>
         </ThemedView>
 
         {/* Buttons */}
         <View style={styles.buttonContainer}>
-          <Pressable
+          <PressableScale
             onPress={handleSave}
             style={({ pressed }) => [
               styles.saveButton,
@@ -420,9 +423,9 @@ export default function ProfileScreen() {
             <ThemedText style={[styles.saveButtonText, { color: theme.onPrimary }]}>
               {t.btnSave}
             </ThemedText>
-          </Pressable>
+          </PressableScale>
 
-          <Pressable
+          <PressableScale
             onPress={handleLogout}
             style={({ pressed }) => [
               styles.logoutButton,
@@ -438,7 +441,7 @@ export default function ProfileScreen() {
             <ThemedText style={[styles.logoutButtonText, { color: theme.error }]}>
               {t.btnLogout}
             </ThemedText>
-          </Pressable>
+          </PressableScale>
         </View>
       </ScrollView>
 
@@ -482,11 +485,22 @@ export default function ProfileScreen() {
         onClose={() => setActiveModal(null)}
       />
     </SafeAreaView>
+  </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    width: '100%',
+  },
   safeArea: {
+    flex: 1,
+    width: '100%',
+    maxWidth: 600,
+    alignSelf: 'center',
+  },
+  scrollView: {
     flex: 1,
   },
   header: {
