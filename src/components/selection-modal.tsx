@@ -155,11 +155,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: Spacing.three,
     maxHeight: '80%',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 8,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 10px 20px rgba(0, 0, 0, 0.15)',
+      },
+      default: {
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.15,
+        shadowRadius: 20,
+        elevation: 8,
+      },
+    }),
   },
   modalHeader: {
     flexDirection: 'row',

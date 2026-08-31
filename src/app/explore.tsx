@@ -1641,11 +1641,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: Spacing.three,
     marginBottom: Spacing.three,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.05)',
+      },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 10,
+        elevation: 2,
+      },
+    }),
   },
   pestHeaderRow: {
     flexDirection: 'row',
@@ -1673,11 +1680,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: Spacing.three,
     marginBottom: Spacing.three,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.05)',
+      },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 10,
+        elevation: 2,
+      },
+    }),
   },
   schemeHeader: {
     flexDirection: 'row',
@@ -1749,11 +1763,18 @@ const styles = StyleSheet.create({
     height: 26,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
-    elevation: 3,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.3)',
+      },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.3,
+        shadowRadius: 2,
+        elevation: 3,
+      },
+    }),
     zIndex: 10
   },
   scanLine: {
@@ -1761,11 +1782,18 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 4,
-    shadowColor: '#4CAF50',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.8,
-    shadowRadius: 4,
-    elevation: 5,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px -2px 4px rgba(76, 175, 80, 0.8)',
+      },
+      default: {
+        shadowColor: '#4CAF50',
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.8,
+        shadowRadius: 4,
+        elevation: 5,
+      },
+    }),
     zIndex: 5
   },
   subPageHeader: {
@@ -1791,11 +1819,18 @@ const styles = StyleSheet.create({
     padding: Spacing.three,
     borderWidth: 1,
     gap: Spacing.three,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.05)',
+      },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 2,
+      },
+    }),
   },
   optionIconContainer: {
     width: 48,
