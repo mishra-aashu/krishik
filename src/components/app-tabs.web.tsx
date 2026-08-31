@@ -114,6 +114,10 @@ interface TabButtonProps extends TabTriggerSlotProps {
 export function TabButton({ iconName, label, isFocused, isMobile, ...props }: TabButtonProps) {
   const theme = useTheme();
 
+  const textColor = isFocused
+    ? (isMobile ? theme.primary : theme.onPrimary)
+    : theme.text;
+
   return (
     <Pressable
       {...props}
@@ -133,19 +137,21 @@ export function TabButton({ iconName, label, isFocused, isMobile, ...props }: Ta
             ? { backgroundColor: 'transparent', borderColor: 'transparent' }
             : (isFocused
                 ? { backgroundColor: theme.primary, borderColor: theme.primary }
-                : { backgroundColor: theme.backgroundElement, borderColor: theme.border })
+                : { backgroundColor: theme.background, borderColor: theme.border })
         ]}
       >
         <SymbolView
           name={iconName}
           size={isMobile ? 24 : 18}
-          tintColor={isFocused ? (isMobile ? theme.primary : '#ffffff') : theme.textSecondary}
+          tintColor={textColor}
+          style={!isFocused ? { opacity: 0.7 } : undefined}
         />
         <ThemedText 
           type={isMobile ? "code" : "small"} 
           style={[
             isMobile ? styles.mobileTabButtonText : styles.desktopTabButtonText,
-            { color: isFocused ? (isMobile ? theme.primary : '#ffffff') : theme.textSecondary }
+            { color: textColor },
+            !isFocused && { opacity: 0.7 }
           ]}
         >
           {label}
