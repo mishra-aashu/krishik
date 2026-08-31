@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   View,
@@ -9,7 +9,8 @@ import {
   Modal,
   FlatList,
   ActivityIndicator,
-  ImageBackground,
+  Image,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/auth-context';
@@ -32,6 +33,12 @@ const SOILS = [
 ];
 const CROPS = cropsData.map(c => c.name);
 
+const BG_IMAGES = [
+  require('@/assets/images/farm_bg.png'),
+  require('@/assets/images/farm_bg_2.png'),
+  require('@/assets/images/farm_bg_3.png'),
+];
+
 interface AuthScreenProps {
   onLoginSuccess: () => void;
 }
@@ -39,6 +46,25 @@ interface AuthScreenProps {
 export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
   const { login, register } = useAuth();
   const theme = useTheme();
+
+  // Background slideshow crossfade animation
+  const [bgIndex, setBgIndex] = useState(0);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 1500,
+        useNativeDriver: false,
+      }).start(() => {
+        setBgIndex((prev) => (prev + 1) % BG_IMAGES.length);
+        fadeAnim.setValue(1);
+      });
+    }, 6000);
+
+    return () => clearInterval(timer);
+  }, [fadeAnim]);
 
   // Mode state
   const [isLoginMode, setIsLoginMode] = useState(true);
@@ -221,17 +247,27 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
     onLoginSuccess();
   };
 
-
+  const nextBgIndex = (bgIndex + 1) % BG_IMAGES.length;
 
   return (
     <SafeAreaView style={styles.container}>
-      <ImageBackground
-        source={require('@/assets/images/farm_bg.png')}
-        style={styles.bgImage}
-        resizeMode="cover"
-      >
+      {/* Background Slideshow Layer */}
+      <View style={StyleSheet.absoluteFill}>
+        {/* Next Image (Static beneath) */}
+        <Image
+          source={BG_IMAGES[nextBgIndex]}
+          style={styles.bgImage}
+          resizeMode="cover"
+        />
+        {/* Current Image (Fading out smoothly) */}
+        <Animated.Image
+          source={BG_IMAGES[bgIndex]}
+          style={[styles.bgImage, { opacity: fadeAnim, position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }]}
+          resizeMode="cover"
+        />
         {/* Subtle Dark/Emerald Gradient Overlay */}
         <View style={styles.bgOverlay} />
+      </View>
 
         {/* Language Selector */}
         <View style={styles.langToggleContainer}>
@@ -528,7 +564,6 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
             </ThemedText>
           </Pressable>
         </ScrollView>
-      </ImageBackground>
 
       {/* Selector Modals */}
       <SelectionModal
