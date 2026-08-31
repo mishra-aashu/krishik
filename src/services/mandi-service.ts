@@ -95,6 +95,76 @@ export const COMMODITY_MAP: Record<string, string> = {
   'Honey': 'Honey (शहद)',
 };
 
+// Helper function to map commodity names case-insensitively and with keyword fallbacks
+function mapCommodityName(rawName: string): string {
+  if (!rawName) return '';
+  const trimmed = rawName.trim();
+  
+  // 1. Direct exact match
+  if (COMMODITY_MAP[trimmed]) {
+    return COMMODITY_MAP[trimmed];
+  }
+  
+  // 2. Case-insensitive exact match
+  const lower = trimmed.toLowerCase();
+  for (const key of Object.keys(COMMODITY_MAP)) {
+    if (key.toLowerCase() === lower) {
+      return COMMODITY_MAP[key];
+    }
+  }
+
+  // 3. Keyword-based matching fallback
+  const rules = [
+    { keywords: ['wheat', 'gehun', 'gehu'], result: 'Wheat (गेहूं)' },
+    { keywords: ['paddy', 'dhan', 'rice'], result: 'Paddy (धान)' },
+    { keywords: ['mustard', 'sarso', 'sarson'], result: 'Mustard (सरसों)' },
+    { keywords: ['potato', 'aaloo', 'aalu'], result: 'Potato (आलू)' },
+    { keywords: ['onion', 'pyaj', 'pyaaj'], result: 'Onion (प्याज)' },
+    { keywords: ['tomato', 'tamatar'], result: 'Tomato (टमाटर)' },
+    { keywords: ['garlic', 'lahsun'], result: 'Garlic (लहसुन)' },
+    { keywords: ['ginger', 'adrak'], result: 'Ginger (अदरक)' },
+    { keywords: ['chili', 'chilli', 'mirch'], result: 'Chili (मिर्च)' },
+    { keywords: ['gram', 'chana'], result: 'Gram (चना)' },
+    { keywords: ['arhar', 'tur'], result: 'Arhar/Tur (अरहर)' },
+    { keywords: ['moong', 'green gram'], result: 'Moong (मूंग)' },
+    { keywords: ['urad', 'black gram'], result: 'Urad (उड़द)' },
+    { keywords: ['masur', 'lentil', 'masoor'], result: 'Lentil (मसूर)' },
+    { keywords: ['cotton', 'kapas'], result: 'Cotton (कपास)' },
+    { keywords: ['soyabean', 'soybean'], result: 'Soyabean (सोयाबीन)' },
+    { keywords: ['maize', 'makka', 'corn'], result: 'Maize (मक्का)' },
+    { keywords: ['barley', 'jau'], result: 'Barley (जौ)' },
+    { keywords: ['bajra', 'millet'], result: 'Bajra (बाजरा)' },
+    { keywords: ['jowar'], result: 'Jowar (ज्वार)' },
+    { keywords: ['peas', 'matar'], result: 'Peas (मटर)' },
+    { keywords: ['groundnut', 'mungfali', 'peanut'], result: 'Groundnut (मूंगफली)' },
+    { keywords: ['cauliflower', 'gobi', 'gobhi'], result: 'Cauliflower (फूलगोभी)' },
+    { keywords: ['cabbage', 'patta gobi'], result: 'Cabbage (पत्तागोभी)' },
+    { keywords: ['brinjal', 'baingan'], result: 'Brinjal (बैंगन)' },
+    { keywords: ['coriander', 'dhaniya'], result: 'Coriander (धनिया)' },
+    { keywords: ['cumin', 'jeera'], result: 'Cumin (जीरा)' },
+    { keywords: ['turmeric', 'haldi'], result: 'Turmeric (हल्दी)' },
+    { keywords: ['sugarcane', 'ganna'], result: 'Sugarcane (गन्ना)' },
+    { keywords: ['lemon', 'nimbu'], result: 'Lemon (नींबू)' },
+    { keywords: ['apple', 'seb'], result: 'Apple (सेब)' },
+    { keywords: ['mango', 'aam'], result: 'Mango (आम)' },
+    { keywords: ['banana', 'kela'], result: 'Banana (केला)' },
+    { keywords: ['orange', 'santra'], result: 'Orange (संतरा)' },
+    { keywords: ['pomegranate', 'anar'], result: 'Pomegranate (अनार)' },
+    { keywords: ['papaya', 'papita'], result: 'Papaya (पपीता)' },
+    { keywords: ['watermelon', 'tarbooj'], result: 'Watermelon (तरबूज)' },
+    { keywords: ['coconut', 'nariyal'], result: 'Coconut (नारियल)' },
+  ];
+
+  for (const rule of rules) {
+    if (rule.keywords.some(kw => lower.includes(kw))) {
+      return rule.result;
+    }
+  }
+
+  // 4. Default fallback: capitalize first letter and show raw
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+}
+
 export async function fetchLiveMandiPrices(stateName: string): Promise<MandiItem[]> {
   try {
     // Call our own server-side API route — no CORS, API key stays on server
@@ -122,7 +192,7 @@ export async function fetchLiveMandiPrices(stateName: string): Promise<MandiItem
     // Map records to MandiItem format
     return records.map((record: any, index: number) => {
       const rawComm = record.Commodity || record.commodity || '';
-      const mappedCommodity = COMMODITY_MAP[rawComm] || `${rawComm}`;
+      const mappedCommodity = mapCommodityName(rawComm);
       const marketName = record.Market || record.market || record.District || record.district || record.State || record.state || 'Mandi';
       
       // Clean market name from redundant suffix keywords

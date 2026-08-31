@@ -232,13 +232,25 @@ export default function SoilCalculator({ language, theme, formatLabel }: SoilCal
               {language === 'hi' ? 'भूमि का क्षेत्रफल' : 'LAND AREA'}
             </ThemedText>
             <TextInput
-              style={[styles.textInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.backgroundElement }]}
+              style={[
+                styles.textInput,
+                {
+                  color: theme.text,
+                  borderColor: (landArea.trim() !== '' && (parseFloat(landArea) <= 0 || parseFloat(landArea) > 1000 || isNaN(parseFloat(landArea)))) ? theme.error : theme.border,
+                  backgroundColor: theme.backgroundElement
+                }
+              ]}
               keyboardType="numeric"
               value={landArea}
               onChangeText={setLandArea}
               placeholder={language === 'hi' ? 'क्षेत्रफल दर्ज करें' : 'Enter land area'}
               placeholderTextColor={theme.textSecondary}
             />
+            {landArea.trim() !== '' && (parseFloat(landArea) <= 0 || parseFloat(landArea) > 1000 || isNaN(parseFloat(landArea))) && (
+              <ThemedText style={{ color: theme.error, fontSize: 10, marginTop: 4, fontWeight: '600' }}>
+                {language === 'hi' ? 'मान्य क्षेत्रफल दर्ज करें (0.1 - 1000)' : 'Enter valid area (0.1 - 1000)'}
+              </ThemedText>
+            )}
           </View>
 
           <View style={{ flex: 1.2 }}>
@@ -844,16 +856,28 @@ export default function SoilCalculator({ language, theme, formatLabel }: SoilCal
               <View style={styles.formRow}>
                 <View style={{ flex: 1 }}>
                   <ThemedText type="code" style={styles.formLabel}>
-                    {language === 'hi' ? 'पीएच (PH)' : 'SOIL PH (4.0 - 10.0)'}
+                    {language === 'hi' ? 'पीएच (PH: 3.5 - 10.5)' : 'SOIL PH (3.5 - 10.5)'}
                   </ThemedText>
                   <TextInput
-                    style={[styles.textInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.backgroundElement }]}
+                    style={[
+                      styles.textInput,
+                      {
+                        color: theme.text,
+                        borderColor: (soilPh.trim() !== '' && (parseFloat(soilPh) < 3.5 || parseFloat(soilPh) > 10.5 || isNaN(parseFloat(soilPh)))) ? theme.error : theme.border,
+                        backgroundColor: theme.backgroundElement
+                      }
+                    ]}
                     keyboardType="numeric"
                     value={soilPh}
                     onChangeText={setSoilPh}
                     placeholder="6.5"
                     placeholderTextColor={theme.textSecondary}
                   />
+                  {soilPh.trim() !== '' && (parseFloat(soilPh) < 3.5 || parseFloat(soilPh) > 10.5 || isNaN(parseFloat(soilPh))) && (
+                    <ThemedText style={{ color: theme.error, fontSize: 9, marginTop: 2 }}>
+                      {language === 'hi' ? 'मान (3.5 - 10.5)' : 'Range: 3.5 - 10.5'}
+                    </ThemedText>
+                  )}
                 </View>
 
                 <View style={{ flex: 1 }}>
@@ -861,57 +885,105 @@ export default function SoilCalculator({ language, theme, formatLabel }: SoilCal
                     {language === 'hi' ? 'जैविक कार्बन (%)' : 'ORGANIC CARBON (%)'}
                   </ThemedText>
                   <TextInput
-                    style={[styles.textInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.backgroundElement }]}
+                    style={[
+                      styles.textInput,
+                      {
+                        color: theme.text,
+                        borderColor: (soilOc.trim() !== '' && (parseFloat(soilOc) < 0 || parseFloat(soilOc) > 5.0 || isNaN(parseFloat(soilOc)))) ? theme.error : theme.border,
+                        backgroundColor: theme.backgroundElement
+                      }
+                    ]}
                     keyboardType="numeric"
                     value={soilOc}
                     onChangeText={setSoilOc}
                     placeholder="0.5"
                     placeholderTextColor={theme.textSecondary}
                   />
+                  {soilOc.trim() !== '' && (parseFloat(soilOc) < 0 || parseFloat(soilOc) > 5.0 || isNaN(parseFloat(soilOc))) && (
+                    <ThemedText style={{ color: theme.error, fontSize: 9, marginTop: 2 }}>
+                      {language === 'hi' ? 'मान (0% - 5%)' : 'Range: 0 - 5%'}
+                    </ThemedText>
+                  )}
                 </View>
               </View>
 
               <View style={styles.formRow}>
                 <View style={{ flex: 1 }}>
                   <ThemedText type="code" style={styles.formLabel}>
-                    {language === 'hi' ? 'नाइट्रोजन (N - KG/HA)' : 'NITROGEN (N - KG/HA)'}
+                    {language === 'hi' ? 'नाइट्रोजन (N)' : 'NITROGEN (N)'}
                   </ThemedText>
                   <TextInput
-                    style={[styles.textInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.backgroundElement }]}
+                    style={[
+                      styles.textInput,
+                      {
+                        color: theme.text,
+                        borderColor: (soilN.trim() !== '' && (parseFloat(soilN) < 0 || parseFloat(soilN) > 1000 || isNaN(parseFloat(soilN)))) ? theme.error : theme.border,
+                        backgroundColor: theme.backgroundElement
+                      }
+                    ]}
                     keyboardType="numeric"
                     value={soilN}
                     onChangeText={setSoilN}
                     placeholder="250"
                     placeholderTextColor={theme.textSecondary}
                   />
+                  {soilN.trim() !== '' && (parseFloat(soilN) < 0 || parseFloat(soilN) > 1000 || isNaN(parseFloat(soilN))) && (
+                    <ThemedText style={{ color: theme.error, fontSize: 9, marginTop: 2 }}>
+                      {language === 'hi' ? 'मान (0 - 1000)' : 'Range: 0 - 1000'}
+                    </ThemedText>
+                  )}
                 </View>
 
                 <View style={{ flex: 1 }}>
                   <ThemedText type="code" style={styles.formLabel}>
-                    {language === 'hi' ? 'फास्फोरस (P - KG/HA)' : 'PHOSPHORUS (P - KG/HA)'}
+                    {language === 'hi' ? 'फास्फोरस (P)' : 'PHOSPHORUS (P)'}
                   </ThemedText>
                   <TextInput
-                    style={[styles.textInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.backgroundElement }]}
+                    style={[
+                      styles.textInput,
+                      {
+                        color: theme.text,
+                        borderColor: (soilP.trim() !== '' && (parseFloat(soilP) < 0 || parseFloat(soilP) > 500 || isNaN(parseFloat(soilP)))) ? theme.error : theme.border,
+                        backgroundColor: theme.backgroundElement
+                      }
+                    ]}
                     keyboardType="numeric"
                     value={soilP}
                     onChangeText={setSoilP}
                     placeholder="15"
                     placeholderTextColor={theme.textSecondary}
                   />
+                  {soilP.trim() !== '' && (parseFloat(soilP) < 0 || parseFloat(soilP) > 500 || isNaN(parseFloat(soilP))) && (
+                    <ThemedText style={{ color: theme.error, fontSize: 9, marginTop: 2 }}>
+                      {language === 'hi' ? 'मान (0 - 500)' : 'Range: 0 - 500'}
+                    </ThemedText>
+                  )}
                 </View>
 
                 <View style={{ flex: 1 }}>
                   <ThemedText type="code" style={styles.formLabel}>
-                    {language === 'hi' ? 'पोटैशियम (K - KG/HA)' : 'POTASSIUM (K - KG/HA)'}
+                    {language === 'hi' ? 'पोटैशियम (K)' : 'POTASSIUM (K)'}
                   </ThemedText>
                   <TextInput
-                    style={[styles.textInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.backgroundElement }]}
+                    style={[
+                      styles.textInput,
+                      {
+                        color: theme.text,
+                        borderColor: (soilK.trim() !== '' && (parseFloat(soilK) < 0 || parseFloat(soilK) > 1000 || isNaN(parseFloat(soilK)))) ? theme.error : theme.border,
+                        backgroundColor: theme.backgroundElement
+                      }
+                    ]}
                     keyboardType="numeric"
                     value={soilK}
                     onChangeText={setSoilK}
                     placeholder="180"
                     placeholderTextColor={theme.textSecondary}
                   />
+                  {soilK.trim() !== '' && (parseFloat(soilK) < 0 || parseFloat(soilK) > 1000 || isNaN(parseFloat(soilK))) && (
+                    <ThemedText style={{ color: theme.error, fontSize: 9, marginTop: 2 }}>
+                      {language === 'hi' ? 'मान (0 - 1000)' : 'Range: 0 - 1000'}
+                    </ThemedText>
+                  )}
                 </View>
               </View>
             </View>

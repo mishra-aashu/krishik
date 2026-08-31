@@ -16,6 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system/legacy';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -25,6 +26,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/context/auth-context';
 import { LocalStorage } from '@/utils/storage';
 import { sendMessageToGroq, type ModelMode } from '@/services/chat-service';
+import { compressAndResizeImage, saveImageToLocalFileSystem, resolveLocalImageUri } from '@/utils/image-compress';
 import { CustomMarkdown } from '@/components/custom-markdown';
 import { useNetInfo } from '@react-native-community/netinfo';
 import OfflineNotice from '@/components/offline-notice';
@@ -128,7 +130,7 @@ const MessageItem = React.memo(
           >
             {msg.image && (
               <Image
-                source={{ uri: msg.image }}
+                source={{ uri: resolveLocalImageUri(msg.image) || undefined }}
                 style={{
                   width: 220,
                   height: 160,
@@ -417,7 +419,9 @@ export default function ChatScreen() {
         });
         if (!result.canceled && result.assets && result.assets.length > 0) {
           const asset = result.assets[0];
-          setSelectedImage(asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri);
+          const compressed = await compressAndResizeImage(asset.uri);
+          const permanentUri = await saveImageToLocalFileSystem(compressed);
+          setSelectedImage(permanentUri);
         }
         return;
       }
@@ -475,7 +479,9 @@ export default function ChatScreen() {
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
-        setSelectedImage(asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri);
+        const compressed = await compressAndResizeImage(asset.uri);
+        const permanentUri = await saveImageToLocalFileSystem(compressed);
+        setSelectedImage(permanentUri);
       }
     } catch (err) {
       console.error('Error selecting image:', err);
@@ -747,6 +753,54 @@ export default function ChatScreen() {
     }
   }, [params.prefill]);
 
+  // Helper to prune raw base64 images from saved sessions to prevent storage overflow.
+  // We keep only the most recent image in the active session and strip all others.
+  const pruneSessionsForStorage = (sessionsList: ChatSession[], activeId: string | null): ChatSession[] => {
+    return sessionsList.map(s => {
+      const isActive = s.id === activeId;
+      if (!isActive) {
+        return {
+          ...s,
+          messages: s.messages.map(m => {
+            if (m.image && m.image.startsWith('data:image')) {
+              return {
+                ...m,
+                image: undefined,
+                content: m.content.includes('(Photo cleared') 
+                  ? m.content 
+                  : m.content + '\n\n*(Photo cleared to save storage)*'
+              };
+            }
+            return m;
+          })
+        };
+      }
+
+      // Active session: keep only the most recent image
+      let imageCount = 0;
+      const reversedMessages = [...s.messages].reverse().map(m => {
+        if (m.image && m.image.startsWith('data:image')) {
+          imageCount++;
+          if (imageCount > 1) {
+            return {
+              ...m,
+              image: undefined,
+              content: m.content.includes('(Photo cleared') 
+                ? m.content 
+                : m.content + '\n\n*(Photo cleared to save storage)*'
+            };
+          }
+        }
+        return m;
+      });
+
+      return {
+        ...s,
+        messages: reversedMessages.reverse()
+      };
+    });
+  };
+
   // Save active session messages & auto-title
   const updateActiveSessionMessages = async (newMessages: ChatMessage[]) => {
     setMessages(newMessages);
@@ -773,7 +827,8 @@ export default function ChatScreen() {
     });
 
     setSessions(updatedSessions);
-    await LocalStorage.setItem('chat_sessions', JSON.stringify(updatedSessions));
+    const prunedSessions = pruneSessionsForStorage(updatedSessions, activeSessionId);
+    await LocalStorage.setItem('chat_sessions', JSON.stringify(prunedSessions));
   };
 
   const handleNewChat = async () => {
@@ -936,11 +991,30 @@ export default function ChatScreen() {
           : msg.content
       }));
 
+      let imageBase64ToSend = undefined;
+      if (imageToSend) {
+        if (imageToSend.startsWith('data:image')) {
+          imageBase64ToSend = imageToSend;
+        } else {
+          try {
+            const absoluteUri = resolveLocalImageUri(imageToSend);
+            if (absoluteUri) {
+              const base64Data = await FileSystem.readAsStringAsync(absoluteUri, {
+                encoding: FileSystem.EncodingType.Base64,
+              });
+              imageBase64ToSend = `data:image/jpeg;base64,${base64Data}`;
+            }
+          } catch (err) {
+            console.warn('[Storage] Error reading image file as base64 on-the-fly:', err);
+          }
+        }
+      }
+
       const botReply = await sendMessageToGroq(
         historyPayload,
         { state: farmState, soilType: farmSoil, crop: farmCrop },
         model,
-        imageToSend || undefined
+        imageBase64ToSend
       );
 
       const botMsg: ChatMessage = {
@@ -1219,7 +1293,7 @@ export default function ChatScreen() {
           {/* Image Preview Container */}
           {selectedImage && (
             <View style={[styles.imagePreviewContainer, { borderColor: theme.border, backgroundColor: theme.backgroundElement }]}>
-              <Image source={{ uri: selectedImage }} style={styles.imagePreview} />
+              <Image source={{ uri: resolveLocalImageUri(selectedImage) || undefined }} style={styles.imagePreview} />
               <Pressable
                 onPress={() => setSelectedImage(null)}
                 style={[styles.removeImageBtn, { backgroundColor: theme.error }]}
@@ -1285,11 +1359,11 @@ export default function ChatScreen() {
             ) : (
               <AnimatedPressable
                 onPress={handleVoiceInput}
-                disabled={isLoading || isTranscribing || isOffline}
+                disabled={isLoading || isTranscribing}
                 style={[
                   styles.micButton,
                   { backgroundColor: isOffline ? theme.border : isRecording ? theme.error : theme.primary },
-                  (isLoading || isTranscribing || isOffline) && { opacity: 0.5 },
+                  (isLoading || isTranscribing || isOffline) && { opacity: 0.6 },
                   animatedMicStyle
                 ]}
               >
@@ -1297,9 +1371,13 @@ export default function ChatScreen() {
                   <ActivityIndicator size="small" color={theme.onPrimary} />
                 ) : (
                   <SymbolView
-                    name={{ ios: isRecording ? 'stop.fill' : 'mic.fill', android: isRecording ? 'stop' : 'mic', web: isRecording ? 'stop' : 'mic' } as any}
+                    name={{
+                      ios: isOffline ? 'mic.slash.fill' : isRecording ? 'stop.fill' : 'mic.fill',
+                      android: isOffline ? 'mic_off' : isRecording ? 'stop' : 'mic',
+                      web: isOffline ? 'mic_off' : isRecording ? 'stop' : 'mic'
+                    } as any}
                     size={18}
-                    tintColor={theme.onPrimary}
+                    tintColor={isOffline ? theme.textSecondary : theme.onPrimary}
                   />
                 )}
               </AnimatedPressable>

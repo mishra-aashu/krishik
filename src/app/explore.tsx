@@ -30,10 +30,13 @@ import { useAuth } from '@/context/auth-context';
 import { PressableScale } from '@/components/pressable-scale';
 import { fetchDynamicSchemes, diagnoseCropDisease, extractSoilHealthCardData, type Scheme, type DiagnosisResult, type SoilAnalysisResult } from '@/services/ai-service';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system/legacy';
+import { compressAndResizeImage, saveImageToLocalFileSystem, resolveLocalImageUri } from '@/utils/image-compress';
 import cropsData from '@/constants/crops.json';
 import CropCalculator from '@/components/crop-calculator';
 import SoilCalculator from '@/components/soil-calculator';
 import OfflineNotice from '@/components/offline-notice';
+import { useNetInfo } from '@react-native-community/netinfo';
 
 // Pests and diseases database
 const PEST_DIRECTORY = [
@@ -190,13 +193,13 @@ const SCHEMES = [
 ];
 
 export default function ExploreScreen() {
-  const router = useRouter();
-  const theme = useTheme();
-  const safeAreaInsets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
+  const theme = useTheme();
+  const router = useRouter();
+  const safeAreaInsets = useSafeAreaInsets();
+  const netInfo = useNetInfo();
+  const isOffline = netInfo.isConnected === false;
   const [language, setLanguage] = useState<'hi' | 'en'>('hi');
-
-
 
   const getTabLabel = (tab: 'calc' | 'pest' | 'scheme') => {
     const isHindi = language === 'hi';
@@ -365,10 +368,9 @@ export default function ExploreScreen() {
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
-        const base64Str = asset.base64
-          ? `data:image/jpeg;base64,${asset.base64}`
-          : asset.uri;
-        setUploadedImage(base64Str);
+        const compressed = await compressAndResizeImage(asset.uri);
+        const permanentUri = await saveImageToLocalFileSystem(compressed);
+        setUploadedImage(permanentUri);
       }
     } catch (err) {
       console.error('Error selecting image:', err);
@@ -453,13 +455,73 @@ export default function ExploreScreen() {
 
   const handleDiagnose = async () => {
     if (!diagnosisCrop || (!diagnosisSymptoms && !uploadedImage)) return;
+
+    if (isOffline) {
+      // Offline mode: Search preloaded PEST_DIRECTORY for crop diagnosis fallback
+      const cropQuery = diagnosisCrop.toLowerCase();
+      const matchedPest = PEST_DIRECTORY.find((item) =>
+        item.crop.en.toLowerCase().includes(cropQuery) ||
+        item.crop.hi.includes(cropQuery) ||
+        cropQuery.includes(item.crop.en.toLowerCase())
+      );
+
+      if (matchedPest) {
+        setDiagnosisResult({
+          disease: language === 'hi' ? `${matchedPest.disease.hi} (ऑफ़लाइन निर्देशिका से)` : `${matchedPest.disease.en} (From Offline Index)`,
+          symptoms: language === 'hi' ? matchedPest.symptoms.hi : matchedPest.symptoms.en,
+          organic: language === 'hi' ? matchedPest.organic.hi : matchedPest.organic.en,
+          chemical: language === 'hi' ? matchedPest.chemical.hi : matchedPest.chemical.en,
+        });
+      } else {
+        setDiagnosisResult({
+          disease: language === 'hi' ? `${diagnosisCrop} - ऑफ़लाइन कीट समाधान` : `${diagnosisCrop} - Offline Pest Recommendations`,
+          symptoms: language === 'hi'
+            ? `ऑफ़लाइन मोड के कारण लाइव फोटो विश्लेषण उपलब्ध नहीं है।`
+            : `Live photo analysis unavailable in offline mode.`,
+          organic: language === 'hi'
+            ? `प्राकृतिक उपचार: नीम का तेल (5ml/L) का छिड़काव करें और संक्रमित पत्तियों को हटा दें।`
+            : `Natural Treatment: Spray Neem oil (5ml/L) and remove infected foliage.`,
+          chemical: language === 'hi'
+            ? `व्यापक उपचार के लिए नीचे दी गई ऑफ़लाइन कीट निर्देशिका देखें।`
+            : `Check the preloaded Pest Directory below for comprehensive remedies.`
+        });
+      }
+
+      Alert.alert(
+        language === 'hi' ? 'ऑफ़लाइन मोड' : 'Offline Mode',
+        language === 'hi'
+          ? `इंटरनेट कनेक्शन उपलब्ध नहीं है। ${diagnosisCrop} के लिए ऑफ़लाइन कीट निर्देशिका से परिणाम लोड किया गया है।`
+          : `No internet connection. Loaded matching recommendations for ${diagnosisCrop} from the offline Pest Directory.`
+      );
+      return;
+    }
+
     setIsDiagnosing(true);
     setDiagnosisResult(null);
     try {
+      let imageBase64ToSend = undefined;
+      if (uploadedImage) {
+        if (uploadedImage.startsWith('data:image')) {
+          imageBase64ToSend = uploadedImage;
+        } else {
+          try {
+            const absoluteUri = resolveLocalImageUri(uploadedImage);
+            if (absoluteUri) {
+              const base64Data = await FileSystem.readAsStringAsync(absoluteUri, {
+                encoding: FileSystem.EncodingType.Base64,
+              });
+              imageBase64ToSend = `data:image/jpeg;base64,${base64Data}`;
+            }
+          } catch (err) {
+            console.warn('[Storage] Error reading image file as base64 on-the-fly:', err);
+          }
+        }
+      }
+
       const result = await diagnoseCropDisease(
         diagnosisCrop,
         diagnosisSymptoms,
-        uploadedImage || undefined,
+        imageBase64ToSend,
         language
       );
       setDiagnosisResult(result);
@@ -478,15 +540,26 @@ export default function ExploreScreen() {
       await LocalStorage.setItem('pest_diagnosis_history', JSON.stringify(updatedHistory));
     } catch (err) {
       console.error('Error diagnosing crop:', err);
+      const cropQuery = diagnosisCrop.toLowerCase();
+      const matchedPest = PEST_DIRECTORY.find((item) =>
+        item.crop.en.toLowerCase().includes(cropQuery) ||
+        item.crop.hi.includes(cropQuery) ||
+        cropQuery.includes(item.crop.en.toLowerCase())
+      );
+
       setDiagnosisResult({
-        disease: language === 'hi' ? 'पहचान में त्रुटि' : 'Detection Error',
-        symptoms: diagnosisSymptoms || 'N/A',
-        organic: language === 'hi'
-          ? 'कृपया दोबारा प्रयास करें। सुनिश्चित करें कि आपका इंटरनेट चालू है और पत्ती की फोटो स्पष्ट है।'
-          : 'Please try again. Ensure internet is connected and leaf photo is clear.',
-        chemical: language === 'hi'
-          ? 'आप हमारे चैट सेक्शन में भी सीधे कृषिक मित्र से सलाह ले सकते हैं।'
-          : 'You can also consult AI Mitra in the chat section directly.'
+        disease: matchedPest
+          ? (language === 'hi' ? `${matchedPest.disease.hi} (ऑफ़लाइन बैकअप)` : `${matchedPest.disease.en} (Offline Backup)`)
+          : (language === 'hi' ? 'ने트워크 त्रुटि - ऑफ़लाइन सुझाव' : 'Network Error - Offline Advice'),
+        symptoms: matchedPest
+          ? (language === 'hi' ? matchedPest.symptoms.hi : matchedPest.symptoms.en)
+          : (diagnosisSymptoms || (language === 'hi' ? 'इंटरनेट कनेक्ट नहीं है।' : 'No internet connection.')),
+        organic: matchedPest
+          ? (language === 'hi' ? matchedPest.organic.hi : matchedPest.organic.en)
+          : (language === 'hi' ? 'नीम तेल (5ml/L) या जैविक खाद का छिड़काव करें।' : 'Spray Neem Oil (5ml/L) or organic compost.'),
+        chemical: matchedPest
+          ? (language === 'hi' ? matchedPest.chemical.hi : matchedPest.chemical.en)
+          : (language === 'hi' ? 'नीचे दी गई ऑफ़लाइन कीट निर्देशिका में अपनी फसल खोजें।' : 'Search your crop in the offline Pest Directory below.')
       });
     } finally {
       setIsDiagnosing(false);
@@ -704,6 +777,22 @@ export default function ExploreScreen() {
               <View style={styles.sectionContainer}>
               {/* AI Diagnostic Center Card */}
               <ThemedView type="card" style={[styles.card, { borderColor: theme.border }]}>
+                {isOffline && (
+                  <View style={{ backgroundColor: 'rgba(245, 124, 0, 0.12)', borderColor: '#F57C00', borderWidth: 1, borderRadius: 8, padding: 12, marginBottom: Spacing.two }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.one }}>
+                      <SymbolView name={{ ios: 'wifi.slash', android: 'wifi_off', web: 'wifi_off' } as any} size={18} tintColor="#E65100" />
+                      <ThemedText type="smallBold" style={{ color: '#E65100', fontSize: 13 }}>
+                        {language === 'hi' ? 'आप ऑफ़लाइन हैं' : 'You are Offline'}
+                      </ThemedText>
+                    </View>
+                    <ThemedText style={{ color: theme.text, fontSize: 11, marginTop: 4, lineHeight: 16 }}>
+                      {language === 'hi'
+                        ? 'लाइव एआई विश्लेषण के लिए इंटरनेट चाहिए। बीमारी जांचने पर आपको प्रीलोड की गई ऑफ़लाइन कीट निर्देशिका से सलाह मिलेगी।'
+                        : 'Live AI analysis requires internet connection. Diagnosing will return advice from the offline Pest Directory.'}
+                    </ThemedText>
+                  </View>
+                )}
+
                 <ThemedText type="smallBold" style={styles.cardTitle}>
                   {language === 'hi' ? 'एआई फसल रोग निदान' : 'AI Crop Disease Diagnosis'}
                 </ThemedText>
@@ -851,7 +940,7 @@ export default function ExploreScreen() {
                     {uploadedImage && (
                       <View style={[styles.imagePreviewContainer, { borderColor: theme.border }]}>
                         <Image
-                          source={{ uri: uploadedImage }}
+                          source={{ uri: resolveLocalImageUri(uploadedImage) || undefined }}
                           style={styles.imagePreview}
                           contentFit="cover"
                         />
@@ -937,7 +1026,7 @@ export default function ExploreScreen() {
 
                   {uploadedImage && (
                     <Image
-                      source={{ uri: uploadedImage }}
+                      source={{ uri: resolveLocalImageUri(uploadedImage) || undefined }}
                       style={{ width: '100%', height: 120, borderRadius: 8, marginTop: Spacing.one }}
                       contentFit="cover"
                     />
@@ -1047,7 +1136,7 @@ export default function ExploreScreen() {
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
                             {item.image ? (
                               <Image
-                                source={{ uri: item.image }}
+                                source={{ uri: resolveLocalImageUri(item.image) || undefined }}
                                 style={{ width: 50, height: 50, borderRadius: 8 }}
                                 contentFit="cover"
                               />

@@ -26,16 +26,19 @@ import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/context/auth-context';
 import { LocalStorage } from '@/utils/storage';
 import { CommunityService, type Community, type Post, type Comment } from '@/services/community-service';
+import { compressAndResizeImage, saveImageToLocalFileSystem, resolveLocalImageUri } from '@/utils/image-compress';
 import { useNetInfo } from '@react-native-community/netinfo';
 import OfflineNotice from '@/components/offline-notice';
 
 // Custom helper to resolve static assets for seeded posts or fallback to URI
 const getPostImage = (imagePath: string | null) => {
   if (!imagePath) return null;
-  if (imagePath.startsWith('data:image')) return { uri: imagePath };
-  if (imagePath === 'seed_tractor.png') return require('../../assets/images/seed_tractor.png');
-  if (imagePath === 'seed_wheat.png') return require('../../assets/images/seed_wheat.png');
-  return { uri: imagePath };
+  const resolved = resolveLocalImageUri(imagePath);
+  if (!resolved) return null;
+  if (resolved.startsWith('data:image')) return { uri: resolved };
+  if (resolved === 'seed_tractor.png') return require('../../assets/images/seed_tractor.png');
+  if (resolved === 'seed_wheat.png') return require('../../assets/images/seed_wheat.png');
+  return { uri: resolved };
 };
 
 const getCategoryIcon = (category: string) => {
@@ -336,10 +339,9 @@ export default function CommunityScreen() {
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
-        const base64Str = asset.base64
-          ? `data:image/jpeg;base64,${asset.base64}`
-          : asset.uri;
-        setPostImage(base64Str);
+        const compressed = await compressAndResizeImage(asset.uri);
+        const permanentUri = await saveImageToLocalFileSystem(compressed);
+        setPostImage(permanentUri);
       }
     } catch (err) {
       console.error('Error picking post image:', err);

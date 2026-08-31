@@ -418,14 +418,27 @@ Return ONLY a raw JSON object with this exact structure:
                   physicalSoil: {
                     type: 'OBJECT',
                     properties: {
-                      soilType: { type: 'STRING' },
-                      soilColor: { type: 'STRING' },
-                      moisture: { type: 'STRING' },
-                      organicMatter: { type: 'STRING' },
-                      suggestedCrops: { type: 'STRING' },
-                      observations: { type: 'STRING' }
+                      soilTypeEn: { type: 'STRING' },
+                      soilTypeHi: { type: 'STRING' },
+                      soilColorEn: { type: 'STRING' },
+                      soilColorHi: { type: 'STRING' },
+                      moistureEn: { type: 'STRING' },
+                      moistureHi: { type: 'STRING' },
+                      organicMatterEn: { type: 'STRING' },
+                      organicMatterHi: { type: 'STRING' },
+                      suggestedCropsEn: { type: 'STRING' },
+                      suggestedCropsHi: { type: 'STRING' },
+                      observationsEn: { type: 'STRING' },
+                      observationsHi: { type: 'STRING' }
                     },
-                    required: ['soilType', 'soilColor', 'moisture', 'organicMatter', 'suggestedCrops', 'observations']
+                    required: [
+                      'soilTypeEn', 'soilTypeHi',
+                      'soilColorEn', 'soilColorHi',
+                      'moistureEn', 'moistureHi',
+                      'organicMatterEn', 'organicMatterHi',
+                      'suggestedCropsEn', 'suggestedCropsHi',
+                      'observationsEn', 'observationsHi'
+                    ]
                   },
                   estimatedPh: { type: 'STRING' },
                   estimatedN: { type: 'STRING' },

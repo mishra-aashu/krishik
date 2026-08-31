@@ -69,13 +69,25 @@ export default function CropCalculator({ language, theme, formatLabel }: CropCal
               {language === 'hi' ? 'भूमि का क्षेत्रफल' : 'LAND AREA'}
             </ThemedText>
             <TextInput
-              style={[styles.textInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.backgroundElement }]}
+              style={[
+                styles.textInput,
+                {
+                  color: theme.text,
+                  borderColor: (landArea.trim() !== '' && (parseFloat(landArea) <= 0 || parseFloat(landArea) > 1000 || isNaN(parseFloat(landArea)))) ? theme.error : theme.border,
+                  backgroundColor: theme.backgroundElement
+                }
+              ]}
               keyboardType="numeric"
               value={landArea}
               onChangeText={setLandArea}
               placeholder={language === 'hi' ? 'क्षेत्रफल दर्ज करें' : 'Enter land area'}
               placeholderTextColor={theme.textSecondary}
             />
+            {landArea.trim() !== '' && (parseFloat(landArea) <= 0 || parseFloat(landArea) > 1000 || isNaN(parseFloat(landArea))) && (
+              <ThemedText style={{ color: theme.error, fontSize: 10, marginTop: 4, fontWeight: '600' }}>
+                {language === 'hi' ? 'मान्य क्षेत्रफल दर्ज करें (0.1 - 1000)' : 'Enter valid area (0.1 - 1000)'}
+              </ThemedText>
+            )}
           </View>
 
           <View style={{ flex: 1.2 }}>

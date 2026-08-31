@@ -83,14 +83,36 @@ export interface SoilAnalysis {
   mopBags: number;
 }
 
+/**
+ * Clean and parse floating-point numbers safely from user text input.
+ * Handles commas, trailing spaces, and enforces optional min/max bounds.
+ */
+export function parseSanitizedFloat(
+  valStr: string | null | undefined,
+  min?: number,
+  max?: number
+): number | null {
+  if (valStr === null || valStr === undefined) return null;
+  const cleaned = valStr.toString().trim().replace(/,/g, '.');
+  if (cleaned === '') return null;
+  const parsed = parseFloat(cleaned);
+  if (isNaN(parsed)) return null;
+  if (min !== undefined && parsed < min) return null;
+  if (max !== undefined && parsed > max) return null;
+  return parsed;
+}
+
 export function calculateStandardDosage(
   landArea: string,
   landUnit: 'acre' | 'bigha',
   crop: string
 ): StandardDosage | null {
-  const area = parseFloat(landArea) || 0;
+  const area = parseSanitizedFloat(landArea, 0.1, 1000);
+  if (area === null) return null;
+
   const cropPreset = AGRONOMY_PRESETS[crop as keyof typeof AGRONOMY_PRESETS];
   if (!cropPreset) return null;
+
   const areaMultiplier = landUnit === 'acre' ? area : area / 1.6;
   return {
     seed: Math.round(cropPreset.seed * areaMultiplier * 10) / 10,
@@ -114,7 +136,9 @@ export function calculateSoilDosage(
   soilOc: string,
   fertilizerSource: 'dap' | 'ssp'
 ): SoilAnalysis | null {
-  const area = parseFloat(landArea) || 0;
+  const area = parseSanitizedFloat(landArea, 0.1, 1000);
+  if (area === null) return null;
+
   const cropPreset = AGRONOMY_PRESETS[crop as keyof typeof AGRONOMY_PRESETS];
   if (!cropPreset) return null;
 
@@ -123,13 +147,13 @@ export function calculateSoilDosage(
   const baseP = Math.round(cropPreset.p * areaMultiplier * 10) / 10;
   const baseK = Math.round(cropPreset.k * areaMultiplier * 10) / 10;
 
-  // 1. pH Interpretation
-  const pHVal = parseFloat(soilPh);
+  // 1. pH Interpretation (Valid range: 3.5 - 10.5)
+  const pHVal = parseSanitizedFloat(soilPh, 3.5, 10.5);
   let pHRating: 'acidic' | 'alkaline' | 'neutral' | null = null;
   let pHAmendingTipEn = 'Healthy soil pH. No chemical amendments needed.';
   let pHAmendingTipHi = 'स्वस्थ मिट्टी पीएच। किसी रासायनिक सुधारक की आवश्यकता नहीं है।';
 
-  if (!isNaN(pHVal)) {
+  if (pHVal !== null) {
     if (pHVal < 6.0) {
       pHRating = 'acidic';
       pHAmendingTipEn = 'Acidic soil. Apply Lime (CaCO3) to neutralize.';
@@ -143,13 +167,13 @@ export function calculateSoilDosage(
     }
   }
 
-  // 2. Organic Carbon Interpretation
-  const ocVal = parseFloat(soilOc);
+  // 2. Organic Carbon Interpretation (Valid range: 0.0 - 5.0 %)
+  const ocVal = parseSanitizedFloat(soilOc, 0.0, 5.0);
   let ocRating: 'low' | 'medium' | 'high' | null = null;
   let ocTipEn = 'Medium Organic Carbon. Good soil health.';
   let ocTipHi = 'मध्यम जैविक कार्बन। मिट्टी का स्वास्थ्य अच्छा है।';
 
-  if (!isNaN(ocVal)) {
+  if (ocVal !== null) {
     if (ocVal < 0.5) {
       ocRating = 'low';
       ocTipEn = 'Low Organic Carbon. Apply farmyard manure or organic compost.';
@@ -164,10 +188,10 @@ export function calculateSoilDosage(
   }
 
   // 3. NPK Correction Factors
-  const nVal = parseFloat(soilN);
+  const nVal = parseSanitizedFloat(soilN, 0, 1000);
   let nRating: 'low' | 'medium' | 'high' | null = null;
   let nFactor = 1.0;
-  if (!isNaN(nVal)) {
+  if (nVal !== null) {
     if (nVal < 240) {
       nRating = 'low';
       nFactor = 1.3;
@@ -180,10 +204,10 @@ export function calculateSoilDosage(
     }
   }
 
-  const pVal = parseFloat(soilP);
+  const pVal = parseSanitizedFloat(soilP, 0, 500);
   let pRating: 'low' | 'medium' | 'high' | null = null;
   let pFactor = 1.0;
-  if (!isNaN(pVal)) {
+  if (pVal !== null) {
     if (pVal < 11) {
       pRating = 'low';
       pFactor = 1.3;
@@ -196,10 +220,10 @@ export function calculateSoilDosage(
     }
   }
 
-  const kVal = parseFloat(soilK);
+  const kVal = parseSanitizedFloat(soilK, 0, 1000);
   let kRating: 'low' | 'medium' | 'high' | null = null;
   let kFactor = 1.0;
-  if (!isNaN(kVal)) {
+  if (kVal !== null) {
     if (kVal < 110) {
       kRating = 'low';
       kFactor = 1.3;
@@ -213,7 +237,7 @@ export function calculateSoilDosage(
   }
 
   // If Nitrogen is missing but OC is low, adjust Nitrogen baseline by +30%
-  if (isNaN(nVal) && ocRating === 'low') {
+  if (nVal === null && ocRating === 'low') {
     nFactor = 1.3;
   }
 
@@ -249,11 +273,11 @@ export function calculateSoilDosage(
   const mopBags = Math.round((mopWeight / 50) * 10) / 10;
 
   return {
-    pHVal: isNaN(pHVal) ? null : pHVal,
+    pHVal,
     pHRating,
     pHAmendingTipEn,
     pHAmendingTipHi,
-    ocVal: isNaN(ocVal) ? null : ocVal,
+    ocVal,
     ocRating,
     ocTipEn,
     ocTipHi,
