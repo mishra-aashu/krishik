@@ -7,6 +7,7 @@ import AppTabs from '@/components/app-tabs';
 import { AuthProvider, useAuth } from '@/context/auth-context';
 import { HomeScreen } from '@/components/home-screen';
 import { ThemeProvider } from '@/context/theme-context';
+import { LanguageProvider } from '@/context/language-context';
 
 import { useFonts } from 'expo-font';
 
@@ -15,9 +16,11 @@ SplashScreen.preventAutoHideAsync();
 export default function TabLayout() {
   return (
     <ThemeProvider>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
+      <LanguageProvider>
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </LanguageProvider>
     </ThemeProvider>
   );
 }

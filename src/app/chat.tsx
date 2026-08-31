@@ -21,9 +21,10 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { SymbolView } from 'expo-symbols';
-import { Colors, Spacing, BottomTabInset, MaxContentWidth } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { Spacing, MaxContentWidth } from '@/constants/theme';
 import { useAuth } from '@/context/auth-context';
+import { useLanguage } from '@/context/language-context';
 import { LocalStorage } from '@/utils/storage';
 import { sendMessageToGroq, type ModelMode } from '@/services/chat-service';
 import { compressAndResizeImage, saveImageToLocalFileSystem, resolveLocalImageUri } from '@/utils/image-compress';
@@ -353,9 +354,23 @@ export default function ChatScreen() {
 
   // Profile context from global auth context
   const { farmState, farmSoil, farmCrop } = useAuth();
+  const { language: globalLang, setLanguage: setGlobalLanguage } = useLanguage();
 
   // Chat settings
-  const [language, setLanguage] = useState<'hi' | 'en' | 'hinglish'>('hi');
+  const [language, setLanguageState] = useState<'hi' | 'en' | 'hinglish'>(globalLang || 'hi');
+
+  useEffect(() => {
+    if (globalLang && (globalLang === 'hi' || globalLang === 'en')) {
+      setLanguageState(globalLang);
+    }
+  }, [globalLang]);
+
+  const setLanguage = (newLang: 'hi' | 'en' | 'hinglish') => {
+    setLanguageState(newLang);
+    if (newLang === 'hi' || newLang === 'en') {
+      setGlobalLanguage(newLang);
+    }
+  };
 
   const STATE_TRANSLATIONS: Record<string, string> = {
     'Uttar Pradesh': 'उत्तर प्रदेश',

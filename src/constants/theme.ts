@@ -9,6 +9,7 @@ import { Platform } from 'react-native';
 
 export const Colors = {
   light: {
+    dark: false,
     // Surfaces — pure, minimal, modern
     text: '#0A1A0E',
     background: '#FFFFFF',
@@ -17,7 +18,7 @@ export const Colors = {
     textSecondary: '#4D6B54',         // Natural forest secondary
     // Brand — deep, confident, trustworthy
     primary: '#166534',               // Rich Deep Emerald
-    accent: '#D97706',                // Warm Amber (not gold)
+    accent: '#D97706',                // Warm Amber
     // Chrome
     border: '#A2C2A9',                // Soft sage border
     // Chat
@@ -30,23 +31,24 @@ export const Colors = {
     onPrimary: '#FFFFFF',
   },
   dark: {
+    dark: true,
     // Surfaces — warm dark, NOT grey/blue/neon
     text: '#E8F0EA',
     background: '#0C1410',            // Very deep warm dark-green black
     backgroundElement: '#131F17',     // Elevated card surface
     backgroundSelected: '#1C3224',    // Pressed/selected state
     textSecondary: '#7A9E83',         // Warm sage secondary
-    // Brand — rich, balanced, natural (NOT neon)
-    primary: '#4ADE80',               // Green-400, vivid but not neon
+    // Brand — rich, balanced, natural
+    primary: '#166534',               // Rich Deep Emerald
     accent: '#FBB024',                // Rich warm gold
     // Chrome
     border: '#2D4F39',                // Dark sage border
     // Chat
     chatUser: '#14392A',              // Dark forest-green user bubble
     chatBot: '#151D17',               // Near-surface bot bubble
-    onPrimary: '#0C1410',
+    onPrimary: '#FFFFFF',
     // States
-    success: '#4ADE80',               // Same as primary
+    success: '#22C55E',               // Green
     error: '#F87171',                 // Soft coral red
     card: '#101810',
   },

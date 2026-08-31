@@ -17,8 +17,9 @@ import { useAuth } from '@/context/auth-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { SymbolView } from 'expo-symbols';
-import { Colors, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { Spacing } from '@/constants/theme';
+import { useLanguage } from '@/context/language-context';
 
 import cropsData from '@/constants/crops.json';
 import { SelectionModal } from '@/components/selection-modal';
@@ -71,7 +72,8 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
   // Mode state
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [step, setStep] = useState(1); // 1: Personal Info, 2: Farm Profile (For signup)
-  const [lang, setLang] = useState<'hi' | 'en'>('hi');
+  const { language: lang, setLanguage } = useLanguage();
+  const setLang = (l: 'hi' | 'en') => setLanguage(l);
 
   // Tab sliding spring animation value: 0 for Login, 1 for Signup
   const tabAnim = useRef(new Animated.Value(0)).current;
@@ -320,11 +322,11 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
         <View style={styles.langToggleContainer}>
           <Pressable
             onPress={() => setLang(lang === 'hi' ? 'en' : 'hi')}
-            style={[styles.langToggleBtn, { backgroundColor: theme.dark ? 'rgba(20,40,25,0.85)' : 'rgba(255,255,255,0.92)', borderColor: theme.primary }]}
+            style={[styles.langToggleBtn, { backgroundColor: theme.dark ? 'rgba(20,40,25,0.85)' : 'rgba(255,255,255,0.92)', borderColor: theme.dark ? 'rgba(255,255,255,0.35)' : '#166534' }]}
           >
             <ThemedText
               type="smallBold"
-              style={{ color: theme.primary }}
+              style={{ color: theme.dark ? '#ffffff' : '#166534' }}
             >
               🇮 {lang === 'hi' ? 'Switch to English' : 'हिंदी में बदलें'}
             </ThemedText>
@@ -359,7 +361,7 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                   styles.slidingPill,
                   {
                     left: pillLeft,
-                    backgroundColor: theme.dark ? 'rgba(255, 255, 255, 0.22)' : theme.primary,
+                    backgroundColor: '#166534',
                   }
                 ]}
               />
@@ -372,7 +374,7 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                   type="smallBold"
                   style={[
                     styles.modeTabText,
-                    { color: isLoginMode ? '#ffffff' : (theme.dark ? 'rgba(255, 255, 255, 0.75)' : '#1B4D2E') }
+                    { color: isLoginMode ? '#ffffff' : (theme.dark ? 'rgba(255, 255, 255, 0.70)' : '#1B4D2E') }
                   ]}
                 >
                   {t.loginTab}
@@ -386,7 +388,7 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                   type="smallBold"
                   style={[
                     styles.modeTabText,
-                    { color: !isLoginMode ? '#ffffff' : (theme.dark ? 'rgba(255, 255, 255, 0.75)' : '#1B4D2E') }
+                    { color: !isLoginMode ? '#ffffff' : (theme.dark ? 'rgba(255, 255, 255, 0.70)' : '#1B4D2E') }
                   ]}
                 >
                   {t.signupTab}
@@ -447,7 +449,7 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                       onPress={() => setAgreedToTerms(!agreedToTerms)}
                       style={[
                         styles.checkboxSquare,
-                        agreedToTerms && { backgroundColor: theme.primary, borderColor: theme.primary }
+                        agreedToTerms && { backgroundColor: '#166534', borderColor: '#166534' }
                       ]}
                     >
                       {agreedToTerms && (
@@ -463,7 +465,7 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                         {lang === 'hi' ? 'मैं ' : 'I agree to '}
                       </ThemedText>
                       <Pressable onPress={() => setTermsModalVisible(true)}>
-                        <ThemedText type="smallBold" style={{ fontSize: 12, color: theme.dark ? '#A5D6A7' : '#1B5E20', textDecorationLine: 'underline', fontWeight: '700' }}>
+                        <ThemedText type="smallBold" style={{ fontSize: 12, color: theme.dark ? '#86efac' : '#166534', textDecorationLine: 'underline', fontWeight: '700' }}>
                           {lang === 'hi' ? 'सेवा की शर्तों एवं गोपनीयता नीति' : 'Terms & Privacy Policy'}
                         </ThemedText>
                       </Pressable>
@@ -478,15 +480,15 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                     disabled={isLoading}
                     style={({ pressed }) => [
                       styles.submitBtn,
-                      { backgroundColor: theme.primary },
+                      { backgroundColor: '#166534' },
                       pressed && { opacity: 0.9 },
                       isLoading && { opacity: 0.7 }
                     ]}
                   >
                     {isLoading ? (
-                      <ActivityIndicator size="small" color={theme.onPrimary} />
+                      <ActivityIndicator size="small" color="#ffffff" />
                     ) : (
-                      <ThemedText type="smallBold" style={[styles.submitBtnText, { color: theme.onPrimary }]}>{t.btnSubmitLogin}</ThemedText>
+                      <ThemedText type="smallBold" style={[styles.submitBtnText, { color: '#ffffff' }]}>{t.btnSubmitLogin}</ThemedText>
                     )}
                   </Pressable>
                 </View>
@@ -539,11 +541,11 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                         onPress={handleNextStep}
                         style={({ pressed }) => [
                           styles.submitBtn,
-                          { backgroundColor: theme.primary },
+                          { backgroundColor: '#166534' },
                           pressed && { opacity: 0.9 }
                         ]}
                       >
-                        <ThemedText type="smallBold" style={[styles.submitBtnText, { color: theme.onPrimary }]}>{t.btnNext}</ThemedText>
+                        <ThemedText type="smallBold" style={[styles.submitBtnText, { color: '#ffffff' }]}>{t.btnNext}</ThemedText>
                       </Pressable>
                     </View>
                   ) : (
@@ -591,7 +593,7 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                           onPress={() => setAgreedToTerms(!agreedToTerms)}
                           style={[
                             styles.checkboxSquare,
-                            agreedToTerms && { backgroundColor: theme.primary, borderColor: theme.primary }
+                            agreedToTerms && { backgroundColor: '#166534', borderColor: '#166534' }
                           ]}
                         >
                           {agreedToTerms && (
@@ -603,15 +605,15 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                           )}
                         </Pressable>
                         <View style={styles.termsTextWrap}>
-                          <ThemedText type="small" style={{ fontSize: 12, color: theme.dark ? '#E8F5E9' : '#0B2914' }}>
+                          <ThemedText type="small" style={{ fontSize: 12, color: theme.dark ? '#ffffff' : '#051C0C' }}>
                             {lang === 'hi' ? 'मैं ' : 'I agree to '}
                           </ThemedText>
                           <Pressable onPress={() => setTermsModalVisible(true)}>
-                            <ThemedText type="smallBold" style={{ fontSize: 12, color: theme.dark ? '#A5D6A7' : '#1B5E20', textDecorationLine: 'underline' }}>
+                            <ThemedText type="smallBold" style={{ fontSize: 12, color: theme.dark ? '#86efac' : '#166534', textDecorationLine: 'underline' }}>
                               {lang === 'hi' ? 'सेवा की शर्तों एवं गोपनीयता नीति' : 'Terms & Privacy Policy'}
                             </ThemedText>
                           </Pressable>
-                          <ThemedText type="small" style={{ fontSize: 12, color: theme.dark ? '#E8F5E9' : '#0B2914' }}>
+                          <ThemedText type="small" style={{ fontSize: 12, color: theme.dark ? '#ffffff' : '#051C0C' }}>
                             {lang === 'hi' ? ' से सहमत हूँ।' : '.'}
                           </ThemedText>
                         </View>
@@ -622,11 +624,11 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                           onPress={() => setStep(1)}
                           style={({ pressed }) => [
                             styles.backBtn,
-                            { borderColor: theme.border },
-                            pressed && { backgroundColor: theme.backgroundSelected }
+                            { borderColor: theme.dark ? 'rgba(255,255,255,0.35)' : 'rgba(11,41,20,0.25)', backgroundColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' },
+                            pressed && { opacity: 0.8 }
                           ]}
                         >
-                          <ThemedText type="smallBold" style={{ color: theme.textSecondary }}>{t.btnBack}</ThemedText>
+                          <ThemedText type="smallBold" style={{ color: theme.dark ? '#ffffff' : '#051C0C' }}>{t.btnBack}</ThemedText>
                         </Pressable>
 
                         <Pressable
@@ -634,15 +636,15 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                           disabled={isLoading}
                           style={({ pressed }) => [
                             styles.signupSubmitBtn,
-                            { backgroundColor: theme.primary },
+                            { backgroundColor: '#166534' },
                             pressed && { opacity: 0.9 },
                             isLoading && { opacity: 0.7 }
                           ]}
                         >
                           {isLoading ? (
-                            <ActivityIndicator size="small" color={theme.onPrimary} />
+                            <ActivityIndicator size="small" color="#ffffff" />
                           ) : (
-                            <ThemedText type="smallBold" style={[styles.submitBtnText, { color: theme.onPrimary }]}>{t.btnSubmitSignup}</ThemedText>
+                            <ThemedText type="smallBold" style={[styles.submitBtnText, { color: '#ffffff' }]}>{t.btnSubmitSignup}</ThemedText>
                           )}
                         </Pressable>
                       </View>
@@ -659,11 +661,11 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
             disabled={isLoading}
             style={({ pressed }) => [
               styles.skipBtn,
-              { backgroundColor: theme.dark ? 'rgba(15, 32, 20, 0.85)' : 'rgba(255, 255, 255, 0.90)' },
+              { backgroundColor: theme.dark ? 'rgba(15, 32, 20, 0.85)' : 'rgba(255, 255, 255, 0.90)', borderColor: theme.dark ? 'rgba(255, 255, 255, 0.35)' : 'rgba(22, 101, 52, 0.35)' },
               pressed && { opacity: 0.8 }
             ]}
           >
-            <ThemedText type="smallBold" style={[styles.skipBtnText, { color: theme.primary }]}>
+            <ThemedText type="smallBold" style={[styles.skipBtnText, { color: theme.dark ? '#ffffff' : '#166534' }]}>
               {t.btnSkip}
             </ThemedText>
           </Pressable>

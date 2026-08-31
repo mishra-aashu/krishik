@@ -12,6 +12,7 @@ import {
 import { ThemedText } from './themed-text';
 import { Colors, Spacing } from '@/constants/theme';
 import { useThemeContext } from '@/context/theme-context';
+import { useLanguage } from '@/context/language-context';
 import { AppLogo } from '@/components/app-logo';
 import { SymbolView } from 'expo-symbols';
 import { AuthScreen } from '@/components/auth-screen';
@@ -23,11 +24,10 @@ export interface HomeScreenProps {
 
 export function HomeScreen({ onExploreDemo, onLoginSuccess }: HomeScreenProps) {
   const { colorScheme, setThemeMode, theme } = useThemeContext();
-  const [lang, setLang] = useState<'hi' | 'en'>('hi');
+  const { language, toggleLanguage, isHi } = useLanguage();
   const [authModalVisible, setAuthModalVisible] = useState(false);
 
   const isDark = colorScheme === 'dark';
-  const isHi = lang === 'hi';
 
   const toggleTheme = () => {
     setThemeMode(isDark ? 'light' : 'dark');
@@ -111,7 +111,7 @@ export function HomeScreen({ onExploreDemo, onLoginSuccess }: HomeScreenProps) {
 
             {/* Language Switcher */}
             <Pressable
-              onPress={() => setLang(isHi ? 'en' : 'hi')}
+              onPress={toggleLanguage}
               style={[
                 styles.pillBtn,
                 {
@@ -174,7 +174,7 @@ export function HomeScreen({ onExploreDemo, onLoginSuccess }: HomeScreenProps) {
 
             <AppLogo
               size="hero"
-              language={lang}
+              language={language}
               showSubtitle={false}
               textColor={textColor}
             />
