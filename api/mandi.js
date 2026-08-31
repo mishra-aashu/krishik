@@ -30,10 +30,10 @@ module.exports = async function handler(req, res) {
     if (!apiResponse.ok) {
       // If Government API rate limits (429) or returns error, return empty records cleanly with HTTP 200
       // so client app smoothly falls back to local cache without throwing console network errors.
-      return res.status(200).json({ 
+      return res.status(200).json({
         records: [],
         warning: `Govt API status ${apiResponse.status}`,
-        rateLimited: apiResponse.status === 429 
+        rateLimited: apiResponse.status === 429
       });
     }
 

@@ -99,12 +99,12 @@ export const COMMODITY_MAP: Record<string, string> = {
 function mapCommodityName(rawName: string): string {
   if (!rawName) return '';
   const trimmed = rawName.trim();
-  
+
   // 1. Direct exact match
   if (COMMODITY_MAP[trimmed]) {
     return COMMODITY_MAP[trimmed];
   }
-  
+
   // 2. Case-insensitive exact match
   const lower = trimmed.toLowerCase();
   for (const key of Object.keys(COMMODITY_MAP)) {
@@ -195,7 +195,7 @@ export async function fetchLiveMandiPrices(stateName: string): Promise<MandiItem
       const rawComm = record.Commodity || record.commodity || '';
       const mappedCommodity = mapCommodityName(rawComm);
       const marketName = record.Market || record.market || record.District || record.district || record.State || record.state || 'Mandi';
-      
+
       // Clean market name from redundant suffix keywords
       const cleanMarketName = marketName.replace(/\s*(APMC|Mandi|Market)\s*/gi, '').trim();
 
@@ -203,7 +203,7 @@ export async function fetchLiveMandiPrices(stateName: string): Promise<MandiItem
       const minPrice = Number(record.Min_Price || record.min_price) || 0;
       const maxPrice = Number(record.Max_Price || record.max_price) || 0;
       const arrivalDate = record.Arrival_Date || record.arrival_date || '';
-      
+
       // Generate a realistic small percentage difference indicator based on range
       let changeStr = '0';
       if (maxPrice > minPrice) {
