@@ -244,11 +244,32 @@ export default function HomeScreen() {
     }
   };
 
-  // Filter prices
-  const filteredMandiPrices = mandiPrices.filter(item =>
-    item.commodity.toLowerCase().includes(mandiSearch.toLowerCase()) ||
-    item.state.toLowerCase().includes(mandiSearch.toLowerCase())
-  );
+  // Filter and sort prices
+  const filteredMandiPrices = React.useMemo(() => {
+    // 1. Filter by search query
+    let list = mandiPrices.filter(item =>
+      item.commodity.toLowerCase().includes(mandiSearch.toLowerCase()) ||
+      item.state.toLowerCase().includes(mandiSearch.toLowerCase())
+    );
+
+    // 2. Sort by user's active crop priority
+    if (farmCrop) {
+      const activeCropClean = farmCrop.split('(')[0].trim().toLowerCase();
+      list = [...list].sort((a, b) => {
+        const aMatches = a.commodity.toLowerCase().includes(activeCropClean);
+        const bMatches = b.commodity.toLowerCase().includes(activeCropClean);
+        if (aMatches && !bMatches) return -1;
+        if (!aMatches && bMatches) return 1;
+        return 0;
+      });
+    }
+
+    // 3. Limit default view to 25 items so page isn't too long, but show all if searching
+    if (!mandiSearch) {
+      return list.slice(0, 25);
+    }
+    return list;
+  }, [mandiPrices, mandiSearch, farmCrop]);
 
   // Quick advice trigger
   const handleQuickAdvice = (topic: string, question: string) => {

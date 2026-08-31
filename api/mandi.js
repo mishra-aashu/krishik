@@ -18,7 +18,7 @@ module.exports = async function handler(req, res) {
   const BASE_URL = 'https://api.data.gov.in/resource/35985678-0d79-46b4-9ed6-6f13308a1d24';
 
   try {
-    let url = `${BASE_URL}?api-key=${API_KEY}&format=json&limit=15`;
+    let url = `${BASE_URL}?api-key=${API_KEY}&format=json&limit=150`;
     if (state) {
       url += `&filters[State]=${encodeURIComponent(state)}`;
     }
@@ -27,7 +27,7 @@ module.exports = async function handler(req, res) {
     if (!apiResponse.ok) {
       // Try without state filter as a fallback
       if (state) {
-        const generalUrl = `${BASE_URL}?api-key=${API_KEY}&format=json&limit=15`;
+        const generalUrl = `${BASE_URL}?api-key=${API_KEY}&format=json&limit=150`;
         const generalResponse = await fetch(generalUrl);
         if (generalResponse.ok) {
           const data = await generalResponse.json();
