@@ -33,6 +33,7 @@ import * as ImagePicker from 'expo-image-picker';
 import cropsData from '@/constants/crops.json';
 import CropCalculator from '@/components/crop-calculator';
 import SoilCalculator from '@/components/soil-calculator';
+import OfflineNotice from '@/components/offline-notice';
 
 // Pests and diseases database
 const PEST_DIRECTORY = [
@@ -505,6 +506,7 @@ export default function ExploreScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <OfflineNotice language={language} />
         {activeView === 'main' ? (
           <View style={styles.header}>
             <ThemedText type="smallBold" style={styles.headerTitle}>

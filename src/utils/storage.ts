@@ -1,6 +1,5 @@
 import { Platform } from 'react-native';
-
-const nativeMemoryCache: Record<string, string> = {};
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const LocalStorage = {
   async getItem(key: string): Promise<string | null> {
@@ -8,7 +7,7 @@ export const LocalStorage = {
       if (Platform.OS === 'web') {
         return window.localStorage.getItem(key);
       }
-      return nativeMemoryCache[key] || null;
+      return await AsyncStorage.getItem(key);
     } catch (e) {
       console.error('Storage getItem error:', e);
       return null;
@@ -21,7 +20,7 @@ export const LocalStorage = {
         window.localStorage.setItem(key, value);
         return;
       }
-      nativeMemoryCache[key] = value;
+      await AsyncStorage.setItem(key, value);
     } catch (e) {
       console.error('Storage setItem error:', e);
     }
@@ -33,7 +32,7 @@ export const LocalStorage = {
         window.localStorage.removeItem(key);
         return;
       }
-      delete nativeMemoryCache[key];
+      await AsyncStorage.removeItem(key);
     } catch (e) {
       console.error('Storage removeItem error:', e);
     }

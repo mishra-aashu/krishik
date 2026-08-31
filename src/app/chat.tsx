@@ -26,6 +26,8 @@ import { useAuth } from '@/context/auth-context';
 import { LocalStorage } from '@/utils/storage';
 import { sendMessageToGroq, type ModelMode } from '@/services/chat-service';
 import { CustomMarkdown } from '@/components/custom-markdown';
+import { useNetInfo } from '@react-native-community/netinfo';
+import OfflineNotice from '@/components/offline-notice';
 import Animated, {
   FadeInRight,
   FadeInLeft,
@@ -344,6 +346,8 @@ export default function ChatScreen() {
   const { width } = useWindowDimensions();
   const params = useLocalSearchParams<{ prefill?: string }>();
   const scrollViewRef = useRef<ScrollView>(null);
+  const netInfo = useNetInfo();
+  const isOffline = netInfo.isConnected === false;
 
   // Profile context from global auth context
   const { farmState, farmSoil, farmCrop } = useAuth();
@@ -562,6 +566,15 @@ export default function ChatScreen() {
   }, []);
 
   const handleVoiceInput = async () => {
+    if (isOffline) {
+      Alert.alert(
+        language === 'hi' ? 'कोई इंटरनेट कनेक्शन नहीं' : 'No Internet Connection',
+        language === 'hi' 
+          ? 'वॉयस इनपुट के लिए इंटरनेट की आवश्यकता होती है।' 
+          : 'Voice input requires an active internet connection.'
+      );
+      return;
+    }
     if (isRecording) {
       try {
         const uri = await stopRecording();
@@ -881,6 +894,15 @@ export default function ChatScreen() {
   };
 
   const handleSendQuery = async (queryText: string) => {
+    if (isOffline) {
+      Alert.alert(
+        language === 'hi' ? 'कोई इंटरनेट कनेक्शन नहीं' : 'No Internet Connection',
+        language === 'hi' 
+          ? 'कृषि मित्र एआई उत्तर देने के लिए सक्रिय इंटरनेट कनेक्शन की आवश्यकता है।' 
+          : 'Krishi Mitra AI requires an active internet connection to respond.'
+      );
+      return;
+    }
     const trimmed = queryText.trim();
     if (!trimmed && !selectedImage) return;
     if (isLoading) return;
@@ -957,6 +979,7 @@ export default function ChatScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <OfflineNotice language={language} />
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={styles.keyboardView}
@@ -1210,10 +1233,11 @@ export default function ChatScreen() {
           <View style={styles.inputBar}>
             <Pressable
               onPress={handleImageSelect}
-              disabled={isLoading || isRecording || isTranscribing}
+              disabled={isLoading || isRecording || isTranscribing || isOffline}
               style={({ pressed }) => [
                 styles.attachButton,
                 { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+                (isLoading || isRecording || isTranscribing || isOffline) && { opacity: 0.4 },
                 pressed && { opacity: 0.8 }
               ]}
             >
@@ -1230,27 +1254,29 @@ export default function ChatScreen() {
                 { color: theme.text, borderColor: theme.border, backgroundColor: theme.backgroundElement }
               ]}
               placeholder={
-                isRecording 
-                  ? (language === 'hi' ? "बोलिए, हम सुन रहे हैं..." : "Speak now, we are listening...") 
-                  : isTranscribing 
-                    ? (language === 'hi' ? "आवाज को अनुवाद किया जा रहा है..." : "Transcribing voice...") 
-                    : (language === 'hi' ? "फसल या खाद के बारे में पूछें..." : "Ask about crops...")
+                isOffline
+                  ? (language === 'hi' ? "ऑफ़लाइन: चैट उपलब्ध नहीं है" : "Offline: Chat unavailable")
+                  : isRecording 
+                    ? (language === 'hi' ? "बोलिए, हम सुन रहे हैं..." : "Speak now, we are listening...") 
+                    : isTranscribing 
+                      ? (language === 'hi' ? "आवाज को अनुवाद किया जा रहा है..." : "Transcribing voice...") 
+                      : (language === 'hi' ? "फसल या खाद के बारे में पूछें..." : "Ask about crops...")
               }
               placeholderTextColor={theme.textSecondary}
               value={inputValue}
               onChangeText={setInputValue}
               onSubmitEditing={() => handleSendQuery(inputValue)}
-              editable={!isLoading && !isRecording && !isTranscribing}
+              editable={!isLoading && !isRecording && !isTranscribing && !isOffline}
             />
 
             {inputValue.trim() || selectedImage ? (
               <Pressable
                 onPress={() => handleSendQuery(inputValue)}
-                disabled={isLoading || isRecording || isTranscribing}
+                disabled={isLoading || isRecording || isTranscribing || isOffline}
                 style={({ pressed }) => [
                   styles.sendButton,
                   { backgroundColor: theme.primary },
-                  (isLoading || isRecording || isTranscribing) && { opacity: 0.5 },
+                  (isLoading || isRecording || isTranscribing || isOffline) && { opacity: 0.5 },
                   pressed && { opacity: 0.8 }
                 ]}
               >
@@ -1259,11 +1285,11 @@ export default function ChatScreen() {
             ) : (
               <AnimatedPressable
                 onPress={handleVoiceInput}
-                disabled={isLoading || isTranscribing}
+                disabled={isLoading || isTranscribing || isOffline}
                 style={[
                   styles.micButton,
-                  { backgroundColor: isRecording ? theme.error : theme.primary },
-                  (isLoading || isTranscribing) && { opacity: 0.5 },
+                  { backgroundColor: isOffline ? theme.border : isRecording ? theme.error : theme.primary },
+                  (isLoading || isTranscribing || isOffline) && { opacity: 0.5 },
                   animatedMicStyle
                 ]}
               >

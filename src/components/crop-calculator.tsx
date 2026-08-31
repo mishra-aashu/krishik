@@ -34,9 +34,29 @@ export default function CropCalculator({ language, theme, formatLabel }: CropCal
   return (
     <View style={styles.sectionContainer}>
       <ThemedView type="card" style={[styles.card, { borderColor: theme.border, backgroundColor: theme.card }]}>
-        <ThemedText type="smallBold" style={styles.cardTitle}>
-          {language === 'hi' ? 'खुराक कैलकुलेटर' : 'Crop Input Calculator'}
-        </ThemedText>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.half, flexWrap: 'wrap', gap: Spacing.one }}>
+          <ThemedText type="smallBold" style={[styles.cardTitle, { marginBottom: 0 }]}>
+            {language === 'hi' ? 'खुराक कैलकुलेटर' : 'Crop Input Calculator'}
+          </ThemedText>
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: 'rgba(76, 175, 80, 0.12)',
+            paddingVertical: 2,
+            paddingHorizontal: 8,
+            borderRadius: 12,
+            gap: 4
+          }}>
+            <SymbolView
+              name={{ ios: 'checkmark.shield.fill', android: 'verified', web: 'verified' } as any}
+              size={12}
+              tintColor="#388E3C"
+            />
+            <ThemedText type="code" style={{ color: '#388E3C', fontSize: 10, fontWeight: '700' }}>
+              {language === 'hi' ? 'ऑफ़लाइन सक्षम' : 'Offline Ready'}
+            </ThemedText>
+          </View>
+        </View>
         <ThemedText type="small" style={{ color: theme.textSecondary, marginBottom: Spacing.two }}>
           {language === 'hi'
             ? 'अपनी भूमि के क्षेत्रफल के अनुसार बीज दर, सिंचाई चक्र और उर्वरक आवश्यकताओं (NPK) की गणना करें।'

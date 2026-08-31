@@ -26,6 +26,8 @@ import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/context/auth-context';
 import { LocalStorage } from '@/utils/storage';
 import { CommunityService, type Community, type Post, type Comment } from '@/services/community-service';
+import { useNetInfo } from '@react-native-community/netinfo';
+import OfflineNotice from '@/components/offline-notice';
 
 // Custom helper to resolve static assets for seeded posts or fallback to URI
 const getPostImage = (imagePath: string | null) => {
@@ -86,6 +88,8 @@ export default function CommunityScreen() {
   const safeAreaInsets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const { userName, userPhone } = useAuth();
+  const netInfo = useNetInfo();
+  const isOffline = netInfo.isConnected === false;
 
   // Language state
   const [language, setLanguage] = useState<'hi' | 'en'>('hi');
@@ -188,6 +192,7 @@ export default function CommunityScreen() {
   }, [selectedPost]);
 
   const handleJoinLeave = async (communityId: string) => {
+    if (isOffline) return;
     try {
       const isJoined = await CommunityService.joinCommunity(communityId, userPhone || 'demo');
       // Update local state
@@ -259,6 +264,7 @@ export default function CommunityScreen() {
 
   // Submit Community
   const handleSubmitCommunity = async () => {
+    if (isOffline) return;
     if (!commName.trim() || !commDesc.trim()) {
       Alert.alert(
         language === 'hi' ? 'त्रुटि' : 'Error',
@@ -342,6 +348,7 @@ export default function CommunityScreen() {
 
   // Submit Post
   const handleSubmitPost = async () => {
+    if (isOffline) return;
     if (!selectedCommunity) return;
     if (!postTitle || !postContent) {
       Alert.alert(
@@ -390,6 +397,7 @@ export default function CommunityScreen() {
 
   // Submit Comment
   const handleSubmitComment = async () => {
+    if (isOffline) return;
     if (!selectedPost || !newCommentText.trim()) return;
     try {
       const newComment = await CommunityService.createComment(
@@ -531,6 +539,7 @@ export default function CommunityScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <OfflineNotice language={language} />
         
         {/* VIEW 1: MAIN BOARD SECTION */}
         {activeView === 'main' && (
@@ -566,19 +575,31 @@ export default function CommunityScreen() {
                 </Pressable>
 
                 <Pressable
-                  onPress={() => setCreateCommunityVisible(true)}
+                  onPress={() => {
+                    if (isOffline) {
+                      Alert.alert(
+                        language === 'hi' ? 'ऑफ़लाइन' : 'Offline',
+                        language === 'hi' ? 'ऑफ़लाइन होने पर आप नई चौपाल नहीं बना सकते।' : 'You cannot create a new Chowpal board while offline.'
+                      );
+                      return;
+                    }
+                    setCreateCommunityVisible(true);
+                  }}
                   style={({ pressed }) => [
                     styles.headerActionBtn,
-                    { backgroundColor: theme.primary, borderColor: theme.border },
+                    { 
+                      backgroundColor: isOffline ? theme.border : theme.primary, 
+                      borderColor: theme.border 
+                    },
                     pressed && { opacity: 0.9 }
                   ]}
                 >
                   <SymbolView
                     name={{ ios: 'plus.circle.fill', android: 'add_circle', web: 'add_circle' } as any}
                     size={14}
-                    tintColor={theme.onPrimary}
+                    tintColor={isOffline ? theme.textSecondary : theme.onPrimary}
                   />
-                  <ThemedText style={{ color: theme.onPrimary, fontSize: 11, fontWeight: '700' }}>
+                  <ThemedText style={{ color: isOffline ? theme.textSecondary : theme.onPrimary, fontSize: 11, fontWeight: '700' }}>
                     {language === 'hi' ? 'नई चौपाल' : 'New Board'}
                   </ThemedText>
                 </Pressable>
@@ -766,11 +787,20 @@ export default function CommunityScreen() {
                       </View>
 
                       <Pressable
-                        onPress={() => handleJoinLeave(item.id)}
+                        onPress={() => {
+                          if (isOffline) {
+                            Alert.alert(
+                              language === 'hi' ? 'ऑफ़लाइन' : 'Offline',
+                              language === 'hi' ? 'ऑफ़लाइन होने पर आप चौपाल में शामिल या बाहर नहीं हो सकते।' : 'You cannot join or leave communities while offline.'
+                            );
+                            return;
+                          }
+                          handleJoinLeave(item.id);
+                        }}
                         style={({ pressed }) => [
                           styles.joinBtn,
                           {
-                            backgroundColor: isJoined ? theme.backgroundElement : theme.primary,
+                            backgroundColor: isOffline ? theme.border : isJoined ? theme.backgroundElement : theme.primary,
                             borderColor: isJoined ? theme.border : theme.primary
                           },
                           pressed && { opacity: 0.8 }
@@ -779,7 +809,7 @@ export default function CommunityScreen() {
                         <ThemedText
                           type="code"
                           style={{
-                            color: isJoined ? theme.text : theme.onPrimary,
+                            color: isOffline ? theme.textSecondary : isJoined ? theme.text : theme.onPrimary,
                             fontWeight: '700',
                             fontSize: 11
                           }}
@@ -1014,13 +1044,24 @@ export default function CommunityScreen() {
               </View>
 
               <Pressable
-                onPress={() => handleJoinLeave(selectedCommunity.id)}
+                onPress={() => {
+                  if (isOffline) {
+                    Alert.alert(
+                      language === 'hi' ? 'ऑफ़लाइन' : 'Offline',
+                      language === 'hi' ? 'ऑफ़लाइन होने पर आप चौपाल में शामिल या बाहर नहीं हो सकते।' : 'You cannot join or leave communities while offline.'
+                    );
+                    return;
+                  }
+                  handleJoinLeave(selectedCommunity.id);
+                }}
                 style={({ pressed }) => [
                   styles.joinHeaderBtn,
                   {
-                    backgroundColor: selectedCommunity.members.includes(userPhone || 'demo')
-                      ? theme.backgroundElement
-                      : theme.primary,
+                    backgroundColor: isOffline
+                      ? theme.border
+                      : selectedCommunity.members.includes(userPhone || 'demo')
+                        ? theme.backgroundElement
+                        : theme.primary,
                     borderColor: selectedCommunity.members.includes(userPhone || 'demo') ? theme.border : theme.primary
                   },
                   pressed && { opacity: 0.8 }
@@ -1029,7 +1070,11 @@ export default function CommunityScreen() {
                 <ThemedText
                   type="code"
                   style={{
-                    color: selectedCommunity.members.includes(userPhone || 'demo') ? theme.text : theme.onPrimary,
+                    color: isOffline
+                      ? theme.textSecondary
+                      : selectedCommunity.members.includes(userPhone || 'demo')
+                        ? theme.text
+                        : theme.onPrimary,
                     fontWeight: '700',
                     fontSize: 11
                   }}
@@ -1059,27 +1104,40 @@ export default function CommunityScreen() {
               {selectedCommunity.members.includes(userPhone || 'demo') ? (
                 <Pressable
                   onPress={() => {
+                    if (isOffline) {
+                      Alert.alert(
+                        language === 'hi' ? 'ऑफ़लाइन' : 'Offline',
+                        language === 'hi' ? 'ऑफ़लाइन होने पर आप नई पोस्ट नहीं बना सकते।' : 'You cannot create a new post while offline.'
+                      );
+                      return;
+                    }
                     setPostTag(selectedCommunity.category === 'machinery' ? '#Rent' : '#Question');
                     setCreatePostVisible(true);
                   }}
                   style={({ pressed }) => [
                     styles.createPostBar,
-                    { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+                    { 
+                      backgroundColor: theme.backgroundElement, 
+                      borderColor: theme.border,
+                      opacity: isOffline ? 0.6 : 1 
+                    },
                     pressed && { opacity: 0.9 }
                   ]}
                 >
-                  <View style={[styles.avatarPlaceholder, { backgroundColor: theme.primary }]}>
-                    <ThemedText type="code" style={{ color: theme.onPrimary, fontWeight: '700' }}>
+                  <View style={[styles.avatarPlaceholder, { backgroundColor: isOffline ? theme.border : theme.primary }]}>
+                    <ThemedText type="code" style={{ color: isOffline ? theme.textSecondary : theme.onPrimary, fontWeight: '700' }}>
                       {userName ? userName.charAt(0).toUpperCase() : 'K'}
                     </ThemedText>
                   </View>
                   <ThemedText type="small" style={{ color: theme.textSecondary, flex: 1 }}>
-                    {language === 'hi' ? 'चर्चा शुरू करें या उपकरण साझा करें...' : 'Start a discussion or share machinery...'}
+                    {isOffline
+                      ? (language === 'hi' ? 'ऑफ़लाइन होने पर पोस्टिंग अक्षम है' : 'Posting is disabled offline')
+                      : (language === 'hi' ? 'चर्चा शुरू करें या उपकरण साझा करें...' : 'Start a discussion or share machinery...')}
                   </ThemedText>
                   <SymbolView
                     name={{ ios: 'camera.fill', android: 'photo_camera', web: 'photo_camera' } as any}
                     size={18}
-                    tintColor={theme.primary}
+                    tintColor={isOffline ? theme.textSecondary : theme.primary}
                   />
                 </Pressable>
               ) : (
@@ -1462,27 +1520,30 @@ export default function CommunityScreen() {
               <TextInput
                 style={[
                   styles.commentInput,
-                  { color: theme.text, borderColor: theme.border, backgroundColor: theme.backgroundElement }
+                  { color: isOffline ? theme.textSecondary : theme.text, borderColor: theme.border, backgroundColor: theme.backgroundElement }
                 ]}
-                placeholder={language === 'hi' ? 'अपनी टिप्पणी लिखें...' : 'Add a comment...'}
+                placeholder={isOffline 
+                  ? (language === 'hi' ? 'ऑफ़लाइन होने पर टिप्पणी अक्षम है...' : 'Commenting is disabled offline...')
+                  : (language === 'hi' ? 'अपनी टिप्पणी लिखें...' : 'Add a comment...')}
                 placeholderTextColor={theme.textSecondary}
                 value={newCommentText}
                 onChangeText={setNewCommentText}
                 multiline
+                editable={!isOffline}
               />
               <Pressable
                 onPress={handleSubmitComment}
-                disabled={!newCommentText.trim()}
+                disabled={isOffline || !newCommentText.trim()}
                 style={({ pressed }) => [
                   styles.commentSendBtn,
-                  { backgroundColor: newCommentText.trim() ? theme.primary : theme.backgroundElement },
+                  { backgroundColor: !isOffline && newCommentText.trim() ? theme.primary : theme.backgroundElement },
                   pressed && { opacity: 0.8 }
                 ]}
               >
                 <SymbolView
                   name={{ ios: 'paperplane.fill', android: 'send', web: 'send' } as any}
                   size={16}
-                  tintColor={newCommentText.trim() ? theme.onPrimary : theme.textSecondary}
+                  tintColor={!isOffline && newCommentText.trim() ? theme.onPrimary : theme.textSecondary}
                 />
               </Pressable>
             </View>

@@ -24,6 +24,7 @@ import { useAuth } from '@/context/auth-context';
 import { LocalStorage } from '@/utils/storage';
 import { fetchWeatherData, getWeatherCondition, generateWeatherAdvisory, type RawWeatherData } from '@/services/weather-service';
 import { fetchLiveMandiPrices, type MandiItem } from '@/services/mandi-service';
+import OfflineNotice from '@/components/offline-notice';
 
 import cropsData from '@/constants/crops.json';
 import { SelectionModal } from '@/components/selection-modal';
@@ -63,6 +64,7 @@ export default function HomeScreen() {
   const [weatherData, setWeatherData] = useState<RawWeatherData | null>(null);
   const [isLoadingWeather, setIsLoadingWeather] = useState(true);
   const [weatherError, setWeatherError] = useState<string | null>(null);
+  const [weatherCachedAt, setWeatherCachedAt] = useState<Date | null>(null);
 
   // Fetch weather when farmState changes
   useEffect(() => {
@@ -71,15 +73,31 @@ export default function HomeScreen() {
       if (!farmState) return;
       setIsLoadingWeather(true);
       setWeatherError(null);
+      setWeatherCachedAt(null);
       try {
         const data = await fetchWeatherData(farmState);
         if (isMounted) {
           setWeatherData(data);
+          // Cache the fetched weather
+          await LocalStorage.setItem(`weather_cache_${farmState}`, JSON.stringify({ data, timestamp: Date.now() }));
         }
       } catch (err) {
         console.error('Error fetching weather:', err);
         if (isMounted) {
-          setWeatherError('Failed to load weather');
+          // Attempt to load from cache
+          try {
+            const cachedStr = await LocalStorage.getItem(`weather_cache_${farmState}`);
+            if (cachedStr) {
+              const cached = JSON.parse(cachedStr);
+              setWeatherData(cached.data);
+              setWeatherCachedAt(new Date(cached.timestamp));
+            } else {
+              setWeatherError('Failed to load weather');
+            }
+          } catch (cacheErr) {
+            console.error('Error loading weather cache:', cacheErr);
+            setWeatherError('Failed to load weather');
+          }
         }
       } finally {
         if (isMounted) {
@@ -155,6 +173,26 @@ export default function HomeScreen() {
   const [isLoadingMandi, setIsLoadingMandi] = useState(true);
   const [mandiError, setMandiError] = useState<string | null>(null);
   const [mandiLastUpdated, setMandiLastUpdated] = useState<Date | null>(null);
+  const [mandiIsCached, setMandiIsCached] = useState(false);
+
+  const formatCacheTime = (date: Date | null) => {
+    if (!date) return '';
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const day = pad(date.getDate());
+    const month = pad(date.getMonth() + 1);
+    const year = date.getFullYear();
+    let hours = date.getHours();
+    const minutes = pad(date.getMinutes());
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    const strTime = `${pad(hours)}:${minutes} ${ampm}`;
+    const dateStr = `${day}/${month}/${year}`;
+    if (language === 'hi') {
+      return `ऑफ़लाइन • सहेजा गया: ${dateStr}, ${strTime}`;
+    }
+    return `Offline • Cached: ${dateStr}, ${strTime}`;
+  };
 
   const formatLastUpdated = (date: Date | null) => {
     if (!date) return '';
@@ -170,6 +208,13 @@ export default function HomeScreen() {
     const strTime = `${pad(hours)}:${minutes} ${ampm}`;
     const dateStr = `${day}/${month}/${year}`;
     
+    if (mandiIsCached) {
+      if (language === 'hi') {
+        return `ऑफ़लाइन भाव (सहेजा गया: ${dateStr}, ${strTime})`;
+      }
+      return `Offline Rates (Cached: ${dateStr}, ${strTime})`;
+    }
+
     if (language === 'hi') {
       return `अंतिम अपडेट: ${dateStr}, ${strTime}`;
     }
@@ -183,19 +228,38 @@ export default function HomeScreen() {
       if (!farmState) return;
       setIsLoadingMandi(true);
       setMandiError(null);
+      setMandiIsCached(false);
       try {
         const data = await fetchLiveMandiPrices(farmState);
         if (isMounted) {
           setMandiPrices(data.length > 0 ? data : INITIAL_MANDI_PRICES);
           setMandiLastUpdated(new Date());
+          // Save cache
+          await LocalStorage.setItem(`mandi_cache_${farmState}`, JSON.stringify({ data, timestamp: Date.now() }));
         }
       } catch (err) {
         console.warn('Error fetching live mandi prices:', err);
         if (isMounted) {
-          // Fall back to mock prices so the screen is never blank
-          setMandiPrices(INITIAL_MANDI_PRICES);
-          setMandiError('Failed to fetch live prices');
-          setMandiLastUpdated(new Date());
+          try {
+            const cachedStr = await LocalStorage.getItem(`mandi_cache_${farmState}`);
+            if (cachedStr) {
+              const cached = JSON.parse(cachedStr);
+              setMandiPrices(cached.data);
+              setMandiLastUpdated(new Date(cached.timestamp));
+              setMandiIsCached(true);
+            } else {
+              setMandiPrices(INITIAL_MANDI_PRICES);
+              setMandiError('Failed to fetch live prices');
+              setMandiLastUpdated(new Date());
+              setMandiIsCached(true);
+            }
+          } catch (cacheErr) {
+            console.error('Error loading mandi cache:', cacheErr);
+            setMandiPrices(INITIAL_MANDI_PRICES);
+            setMandiError('Failed to fetch live prices');
+            setMandiLastUpdated(new Date());
+            setMandiIsCached(true);
+          }
         }
       } finally {
         if (isMounted) {
@@ -237,10 +301,26 @@ export default function HomeScreen() {
       const data = await fetchLiveMandiPrices(farmState);
       setMandiPrices(data.length > 0 ? data : INITIAL_MANDI_PRICES);
       setMandiLastUpdated(new Date());
+      setMandiIsCached(false);
+      await LocalStorage.setItem(`mandi_cache_${farmState}`, JSON.stringify({ data, timestamp: Date.now() }));
     } catch (err) {
       console.warn('Error refreshing Mandi prices:', err);
-      // Keep existing prices or load initial ones
-      setMandiLastUpdated(new Date());
+      try {
+        const cachedStr = await LocalStorage.getItem(`mandi_cache_${farmState}`);
+        if (cachedStr) {
+          const cached = JSON.parse(cachedStr);
+          setMandiPrices(cached.data);
+          setMandiLastUpdated(new Date(cached.timestamp));
+          setMandiIsCached(true);
+        } else {
+          setMandiLastUpdated(new Date());
+          setMandiIsCached(true);
+        }
+      } catch (cacheErr) {
+        console.error('Error refreshing/loading cache:', cacheErr);
+        setMandiLastUpdated(new Date());
+        setMandiIsCached(true);
+      }
     } finally {
       setIsRefreshingPrices(false);
     }
@@ -286,6 +366,7 @@ export default function HomeScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <OfflineNotice language={language} />
         <ScrollView 
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -390,6 +471,11 @@ export default function HomeScreen() {
                     <ThemedText type="small" style={{ color: theme.textSecondary }}>
                       {language === 'hi' ? getWeatherCondition(weatherData.weatherCode).hi : getWeatherCondition(weatherData.weatherCode).en} (RH: {weatherData.humidity}%)
                     </ThemedText>
+                    {weatherCachedAt && (
+                      <ThemedText type="code" style={{ fontSize: 9, color: theme.textSecondary, marginTop: 2 }}>
+                        {formatCacheTime(weatherCachedAt)}
+                      </ThemedText>
+                    )}
                   </View>
                   <SymbolView
                     name={getWeatherCondition(weatherData.weatherCode).icon as any}

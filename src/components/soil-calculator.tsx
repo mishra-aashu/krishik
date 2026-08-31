@@ -20,6 +20,7 @@ import { extractSoilHealthCardData, PhysicalSoilAnalysis } from '@/services/ai-s
 import { calculateSoilDosage, AGRONOMY_PRESETS } from '@/utils/agronomy-math';
 import * as ImagePicker from 'expo-image-picker';
 import cropsData from '@/constants/crops.json';
+import { useNetInfo } from '@react-native-community/netinfo';
 
 interface SoilCalculatorProps {
   language: 'hi' | 'en';
@@ -29,6 +30,8 @@ interface SoilCalculatorProps {
 
 export default function SoilCalculator({ language, theme, formatLabel }: SoilCalculatorProps) {
   const { width } = useWindowDimensions();
+  const netInfo = useNetInfo();
+  const isOffline = netInfo.isConnected === false;
 
   // Inputs
   const [landArea, setLandArea] = useState('1');
@@ -57,6 +60,13 @@ export default function SoilCalculator({ language, theme, formatLabel }: SoilCal
   const [fertilizerSource, setFertilizerSource] = useState<'dap' | 'ssp'>('dap');
   const [soilCardImage, setSoilCardImage] = useState<string | null>(null);
   const [isExtracting, setIsExtracting] = useState(false);
+
+  // Auto-expand parameters if offline and no image uploaded
+  React.useEffect(() => {
+    if (isOffline && !soilCardImage) {
+      setShowParameters(true);
+    }
+  }, [isOffline, soilCardImage]);
 
   // Pick or take photo for soil health card
   const pickSoilCardImage = async (useCamera: boolean) => {
@@ -334,7 +344,34 @@ export default function SoilCalculator({ language, theme, formatLabel }: SoilCal
             : 'Upload a picture of your soil health card. AI will read values automatically.'}
         </ThemedText>
 
-        {!soilCardImage ? (
+        {isOffline ? (
+          <View style={{
+            backgroundColor: theme.dark ? '#2D1E1E' : '#FFF3F3',
+            borderColor: theme.dark ? '#4E2C2C' : '#FFCDD2',
+            borderWidth: 1,
+            borderRadius: 8,
+            padding: Spacing.two,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: Spacing.two
+          }}>
+            <SymbolView
+              name={{ ios: 'wifi.slash', android: 'wifi_off', web: 'wifi_off' } as any}
+              size={20}
+              tintColor={theme.dark ? '#E57373' : '#D32F2F'}
+            />
+            <View style={{ flex: 1 }}>
+              <ThemedText type="smallBold" style={{ color: theme.dark ? '#FFCDD2' : '#C62828', fontSize: 12 }}>
+                {language === 'hi' ? 'स्कैनिंग के लिए इंटरनेट आवश्यक है' : 'Scanning Requires Internet'}
+              </ThemedText>
+              <ThemedText type="small" style={{ color: theme.dark ? '#E0B0B0' : '#B71C1C', fontSize: 11, marginTop: 1 }}>
+                {language === 'hi'
+                  ? 'रिपोर्ट स्कैनिंग अभी उपलब्ध नहीं है। आप नीचे उन्नत विकल्पों में मैन्युअल रूप से मान दर्ज कर सकते हैं।'
+                  : 'Report scanning is unavailable offline. You can manually enter values in Adjust Parameters below.'}
+              </ThemedText>
+            </View>
+          </View>
+        ) : !soilCardImage ? (
           <View style={{ flexDirection: 'row', gap: Spacing.two }}>
             <Pressable
               onPress={() => pickSoilCardImage(true)}
@@ -495,7 +532,7 @@ export default function SoilCalculator({ language, theme, formatLabel }: SoilCal
       )}
 
       {/* 2c. Collapsible Parameter Button */}
-      {soilCardImage !== null && (
+      {(soilCardImage !== null || isOffline) && (
         <Pressable
           onPress={() => setShowParameters(!showParameters)}
           style={({ pressed }) => [
@@ -524,7 +561,10 @@ export default function SoilCalculator({ language, theme, formatLabel }: SoilCal
           <ThemedText type="smallBold" style={{ color: theme.primary }}>
             {showParameters 
               ? (language === 'hi' ? 'मापदंडों को छुपाएं' : 'Hide Parameters')
-              : (language === 'hi' ? 'मापदंडों को बदलें / उन्नत विकल्प' : 'Manual Adjust / Edit Parameters')}
+              : (language === 'hi' 
+                  ? (soilCardImage ? 'मापदंडों को बदलें / उन्नत विकल्प' : 'मैन्युअल रूप से मान दर्ज करें')
+                  : (soilCardImage ? 'Manual Adjust / Edit Parameters' : 'Enter Soil Parameters Manually')
+                )}
           </ThemedText>
         </Pressable>
       )}
