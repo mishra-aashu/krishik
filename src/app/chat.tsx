@@ -22,9 +22,20 @@ import { useAuth } from '@/context/auth-context';
 import { LocalStorage } from '@/utils/storage';
 import { sendMessageToGroq, type ModelMode } from '@/services/chat-service';
 import { CustomMarkdown } from '@/components/custom-markdown';
-import Animated, { FadeInRight, FadeInLeft, FadeInDown } from 'react-native-reanimated';
+import Animated, {
+  FadeInRight,
+  FadeInLeft,
+  FadeInDown,
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import * as Speech from 'expo-speech';
 import { startRecording, stopRecording, transcribeAudio } from '@/services/transcription-service';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 interface ChatMessage {
   id: string;
@@ -72,6 +83,41 @@ export default function ChatScreen() {
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
+
+  // Animated mic scaling for flashing/pulsing effect when recording
+  const micScale = useSharedValue(1);
+  const micOpacity = useSharedValue(1);
+
+  useEffect(() => {
+    if (isRecording) {
+      micScale.value = withRepeat(
+        withSequence(
+          withTiming(1.15, { duration: 500 }),
+          withTiming(1.0, { duration: 500 })
+        ),
+        -1,
+        false
+      );
+      micOpacity.value = withRepeat(
+        withSequence(
+          withTiming(0.6, { duration: 500 }),
+          withTiming(1.0, { duration: 500 })
+        ),
+        -1,
+        false
+      );
+    } else {
+      micScale.value = withTiming(1.0, { duration: 200 });
+      micOpacity.value = withTiming(1.0, { duration: 200 });
+    }
+  }, [isRecording]);
+
+  const animatedMicStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: micScale.value }],
+      opacity: micOpacity.value,
+    };
+  });
 
   // Stop reading aloud when leaving the chat
   useEffect(() => {
@@ -126,7 +172,7 @@ export default function ChatScreen() {
         .trim();
         
       Speech.speak(cleanText, {
-        language: language === 'hi' ? 'hi-IN' : 'en-IN',
+        language: language === 'hi' ? 'hi-IN' : 'en-US',
         rate: 0.85,
         onDone: () => setSpeakingMessageId(null),
         onError: () => setSpeakingMessageId(null),
@@ -715,14 +761,14 @@ export default function ChatScreen() {
 
           {/* Input Bar */}
           <View style={[styles.inputBar, { borderTopColor: theme.border }]}>
-            <Pressable
+            <AnimatedPressable
               onPress={handleVoiceInput}
               disabled={isLoading || isTranscribing}
-              style={({ pressed }) => [
+              style={[
                 styles.micButton,
                 { backgroundColor: isRecording ? theme.error : theme.primary + '18' },
-                pressed && { opacity: 0.8 },
-                (isLoading || isTranscribing) && { opacity: 0.5 }
+                (isLoading || isTranscribing) && { opacity: 0.5 },
+                animatedMicStyle
               ]}
             >
               {isTranscribing ? (
@@ -734,7 +780,7 @@ export default function ChatScreen() {
                   tintColor={isRecording ? theme.onPrimary : theme.primary}
                 />
               )}
-            </Pressable>
+            </AnimatedPressable>
 
             <TextInput
               style={[

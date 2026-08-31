@@ -224,21 +224,22 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        {/* Language Selector */}
-        <View style={styles.langToggleContainer}>
-          <Pressable
-            onPress={() => setLang(lang === 'hi' ? 'en' : 'hi')}
-            style={[styles.langToggleBtn, { borderColor: theme.primary }]}
+      {/* Language Selector */}
+      <View style={styles.langToggleContainer}>
+        <Pressable
+          onPress={() => setLang(lang === 'hi' ? 'en' : 'hi')}
+          style={[styles.langToggleBtn, { borderColor: theme.primary }]}
+        >
+          <ThemedText
+            type="smallBold"
+            style={{ color: theme.primary }}
           >
-            <ThemedText
-              type="smallBold"
-              style={{ color: theme.primary }}
-            >
-              🇮🇳 {lang === 'hi' ? 'Switch to English' : 'हिंदी में बदलें'}
-            </ThemedText>
-          </Pressable>
-        </View>
+            🇮 {lang === 'hi' ? 'Switch to English' : 'हिंदी में बदलें'}
+          </ThemedText>
+        </Pressable>
+      </View>
+
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
 
         {/* Brand Header */}
         <View style={styles.brandContainer}>
@@ -565,9 +566,10 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   langToggleContainer: {
-    width: '100%',
-    alignItems: 'flex-end',
-    marginBottom: Spacing.two,
+    position: 'absolute',
+    top: Spacing.two,
+    right: Spacing.four,
+    zIndex: 10,
   },
   langToggleBtn: {
     borderWidth: 1,
