@@ -1723,7 +1723,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 2,
   },
   botBubble: {
-    width: '100%',
+    maxWidth: '85%',
     borderWidth: 1,
     borderBottomLeftRadius: 2,
   },

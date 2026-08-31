@@ -314,9 +314,9 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.five,
     borderRadius: Spacing.five,
-    flexGrow: 1,
-    gap: Spacing.three,
+    width: '100%',
     maxWidth: MaxContentWidth,
+    gap: Spacing.three,
     borderWidth: 1,
   },
   brandText: {
