@@ -70,6 +70,16 @@ const getLocalizedTag = (tag: string, lang: 'hi' | 'en') => {
   }
 };
 
+const getLocalizedText = (text: string | null | undefined, lang: 'hi' | 'en') => {
+  if (!text) return '';
+  const match = text.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
+  if (match) {
+    const [_, enText, hiText] = match;
+    return lang === 'hi' ? hiText.trim() : enText.trim();
+  }
+  return text;
+};
+
 export default function CommunityScreen() {
   const router = useRouter();
   const theme = useTheme();
@@ -817,7 +827,9 @@ export default function CommunityScreen() {
                       <View style={styles.postCardHeader}>
                         <View style={{ flex: 1 }}>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                            <ThemedText type="smallBold" style={{ fontSize: 13 }}>{item.authorName}</ThemedText>
+                            <ThemedText type="smallBold" style={{ fontSize: 13 }}>
+                              {getLocalizedText(item.authorName, language)}
+                            </ThemedText>
                             {comm && (
                               <ThemedText type="code" style={{ fontSize: 10, color: theme.primary, backgroundColor: theme.backgroundSelected, paddingHorizontal: 6, paddingVertical: 1, borderRadius: 4 }}>
                                 {language === 'hi' ? comm.name.hi : comm.name.en}
@@ -836,7 +848,9 @@ export default function CommunityScreen() {
                       </View>
 
                       {/* Post Title & Content */}
-                      <ThemedText type="smallBold" style={styles.postTitle}>{item.title}</ThemedText>
+                      <ThemedText type="smallBold" style={styles.postTitle}>
+                        {getLocalizedText(item.title, language)}
+                      </ThemedText>
                       <ThemedText type="small" style={{ color: theme.text, marginTop: 4 }} numberOfLines={3}>
                         {item.content}
                       </ThemedText>
@@ -1108,7 +1122,9 @@ export default function CommunityScreen() {
                       {/* Post Header */}
                       <View style={styles.postCardHeader}>
                         <View style={{ flex: 1 }}>
-                          <ThemedText type="smallBold" style={{ fontSize: 13 }}>{item.authorName}</ThemedText>
+                          <ThemedText type="smallBold" style={{ fontSize: 12 }}>
+                            {getLocalizedText(item.authorName, language)}
+                          </ThemedText>
                           <ThemedText type="code" style={{ fontSize: 10, color: theme.textSecondary, marginTop: 1 }}>
                             {new Date(item.createdAt).toLocaleDateString(language === 'hi' ? 'hi-IN' : 'en-US')}
                           </ThemedText>
@@ -1121,7 +1137,9 @@ export default function CommunityScreen() {
                       </View>
 
                       {/* Post Title & Content */}
-                      <ThemedText type="smallBold" style={styles.postTitle}>{item.title}</ThemedText>
+                      <ThemedText type="smallBold" style={styles.postTitle}>
+                        {getLocalizedText(item.title, language)}
+                      </ThemedText>
                       <ThemedText type="small" style={{ color: theme.text, marginTop: 4 }} numberOfLines={3}>
                         {item.content}
                       </ThemedText>
@@ -1284,7 +1302,9 @@ export default function CommunityScreen() {
                   {/* Header */}
                   <View style={styles.postCardHeader}>
                     <View>
-                      <ThemedText type="smallBold" style={{ fontSize: 14 }}>{selectedPost.authorName}</ThemedText>
+                      <ThemedText type="smallBold" style={{ fontSize: 14 }}>
+                        {getLocalizedText(selectedPost.authorName, language)}
+                      </ThemedText>
                       <ThemedText type="code" style={{ fontSize: 10, color: theme.textSecondary, marginTop: 2 }}>
                         {new Date(selectedPost.createdAt).toLocaleString(language === 'hi' ? 'hi-IN' : 'en-US')}
                       </ThemedText>
@@ -1297,7 +1317,9 @@ export default function CommunityScreen() {
                   </View>
 
                   {/* Title & Body */}
-                  <ThemedText type="smallBold" style={{ fontSize: 18, marginTop: Spacing.two }}>{selectedPost.title}</ThemedText>
+                  <ThemedText type="smallBold" style={{ fontSize: 18, marginTop: Spacing.two }}>
+                    {getLocalizedText(selectedPost.title, language)}
+                  </ThemedText>
                   <ThemedText type="small" style={{ color: theme.text, marginTop: Spacing.two, lineHeight: 20 }}>
                     {selectedPost.content}
                   </ThemedText>
