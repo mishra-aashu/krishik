@@ -21,19 +21,11 @@ import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { LocalStorage } from '@/utils/storage';
 import { useAuth } from '@/context/auth-context';
-import { fetchDynamicSchemes, diagnoseCropDisease, type Scheme, type DiagnosisResult } from '@/services/ai-service';
+import { fetchDynamicSchemes, diagnoseCropDisease, extractSoilHealthCardData, type Scheme, type DiagnosisResult, type SoilAnalysisResult } from '@/services/ai-service';
 import * as ImagePicker from 'expo-image-picker';
 import cropsData from '@/constants/crops.json';
-
-// Agronomic data constants per Acre
-const AGRONOMY_PRESETS = {
-  'Wheat (गेहूं)': { seed: 40, seedUnit: 'kg', n: 50, p: 20, k: 15, waterRounds: 5, waterVolume: 150000 },
-  'Paddy (धान)': { seed: 8, seedUnit: 'kg (Nursery)', n: 60, p: 24, k: 20, waterRounds: 10, waterVolume: 350000 },
-  'Sugarcane (गन्ना)': { seed: 2500, seedUnit: 'kg (Setts)', n: 100, p: 50, k: 40, waterRounds: 12, waterVolume: 450000 },
-  'Potato (आलू)': { seed: 1000, seedUnit: 'kg (Tubers)', n: 60, p: 40, k: 60, waterRounds: 7, waterVolume: 200000 },
-  'Cotton (कपास)': { seed: 2, seedUnit: 'kg', n: 60, p: 30, k: 30, waterRounds: 5, waterVolume: 180000 },
-  'Mustard (सरसों)': { seed: 2, seedUnit: 'kg', n: 32, p: 16, k: 12, waterRounds: 2, waterVolume: 70000 }
-};
+import CropCalculator from '@/components/crop-calculator';
+import SoilCalculator from '@/components/soil-calculator';
 
 // Pests and diseases database
 const PEST_DIRECTORY = [
@@ -244,10 +236,7 @@ export default function ExploreScreen() {
     web: { paddingBottom: Spacing.four }
   });
 
-  const [landArea, setLandArea] = useState('1');
-  const [landUnit, setLandUnit] = useState<'acre' | 'bigha'>('acre');
-  const [calcCrop, setCalcCrop] = useState('Wheat (गेहूं)');
-  const [activeView, setActiveView] = useState<'main' | 'calc' | 'pest' | 'scheme'>('main');
+  const [activeView, setActiveView] = useState<'main' | 'calc' | 'soil' | 'pest' | 'scheme'>('main');
 
   const { farmState, farmCrop } = useAuth();
 
@@ -496,22 +485,6 @@ export default function ExploreScreen() {
     }
   };
 
-  const calculateDosage = () => {
-    const area = parseFloat(landArea) || 0;
-    const cropPreset = AGRONOMY_PRESETS[calcCrop as keyof typeof AGRONOMY_PRESETS];
-    if (!cropPreset) return null;
-    const areaMultiplier = landUnit === 'acre' ? area : area / 1.6;
-    return {
-      seed: Math.round(cropPreset.seed * areaMultiplier * 10) / 10,
-      seedUnit: cropPreset.seedUnit,
-      n: Math.round(cropPreset.n * areaMultiplier * 10) / 10,
-      p: Math.round(cropPreset.p * areaMultiplier * 10) / 10,
-      k: Math.round(cropPreset.k * areaMultiplier * 10) / 10,
-      waterRounds: cropPreset.waterRounds,
-      waterVolume: Math.round(cropPreset.waterVolume * areaMultiplier)
-    };
-  };
-
   const askAiAboutDisease = (crop: string, disease: string) => {
     const query = language === 'hi'
       ? `मेरी ${crop} की फसल में ${disease} के लक्षण दिखे हैं। मुझे विस्तृत निदान, जैविक समाधान और बचाव के उपाय बताएं।`
@@ -521,8 +494,6 @@ export default function ExploreScreen() {
       params: { prefill: query }
     });
   };
-
-  const dosage = calculateDosage();
 
   return (
     <ThemedView style={styles.container}>
@@ -555,6 +526,7 @@ export default function ExploreScreen() {
             <View style={{ flex: 1 }}>
               <ThemedText type="smallBold" style={{ fontSize: 20 }}>
                 {activeView === 'calc' && (language === 'hi' ? 'खुराक कैलकुलेटर' : 'Crop Input Calculator')}
+                {activeView === 'soil' && (language === 'hi' ? 'मिट्टी स्वास्थ्य कैलकुलेटर' : 'Soil Health Calculator')}
                 {activeView === 'pest' && (language === 'hi' ? 'एआई फसल रोग निदान' : 'AI Crop Disease Diagnosis')}
                 {activeView === 'scheme' && (language === 'hi' ? 'सरकारी योजनाएं' : 'Government Schemes')}
               </ThemedText>
@@ -590,6 +562,38 @@ export default function ExploreScreen() {
                   {language === 'hi'
                     ? 'अपनी भूमि के क्षेत्रफल के अनुसार बीज दर, सिंचाई चक्र और उर्वरक आवश्यकताओं की गणना करें।'
                     : 'Calculate seed rates, irrigation counts, and fertilizer requirements (NPK) according to your acreage.'}
+                </ThemedText>
+              </View>
+              <SymbolView
+                name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any}
+                size={18}
+                tintColor={theme.textSecondary}
+              />
+            </Pressable>
+
+            <Pressable
+              onPress={() => setActiveView('soil')}
+              style={({ pressed }) => [
+                styles.optionCard,
+                { borderColor: theme.border, backgroundColor: theme.card },
+                pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] }
+              ]}
+            >
+              <View style={[styles.optionIconContainer, { backgroundColor: 'rgba(255, 152, 0, 0.12)' }]}>
+                <SymbolView
+                  name={{ ios: 'doc.text.image.fill', android: 'document_scanner', web: 'document_scanner' } as any}
+                  size={24}
+                  tintColor="#FF9800"
+                />
+              </View>
+              <View style={styles.optionContent}>
+                <ThemedText type="smallBold" style={[styles.optionTitle, { color: theme.text }]}>
+                  {language === 'hi' ? 'मृदा स्वास्थ्य कैलकुलेटर' : 'Soil Health Calculator'}
+                </ThemedText>
+                <ThemedText type="small" style={[styles.optionDescription, { color: theme.textSecondary }]}>
+                  {language === 'hi'
+                    ? 'मिट्टी रिपोर्ट/कार्ड अपलोड करें या मान दर्ज करें और वैज्ञानिक उर्वरक सिफारिशें पाएं।'
+                    : 'Upload your soil test report/card or enter parameters to get tailored fertilizer prescriptions.'}
                 </ThemedText>
               </View>
               <SymbolView
@@ -673,161 +677,12 @@ export default function ExploreScreen() {
             showsVerticalScrollIndicator={false}
           >
             {activeView === 'calc' && (
-            <View style={styles.sectionContainer}>
-              <ThemedView type="card" style={[styles.card, { borderColor: theme.border }]}>
-                <ThemedText type="smallBold" style={styles.cardTitle}>
-                  {language === 'hi' ? 'खुराक कैलकुलेटर' : 'Crop Input Calculator'}
-                </ThemedText>
-                <ThemedText type="small" style={{ color: theme.textSecondary, marginBottom: Spacing.two }}>
-                  {language === 'hi'
-                    ? 'अपनी भूमि के क्षेत्रफल के अनुसार बीज दर, सिंचाई चक्र और उर्वरक आवश्यकताओं (NPK) की गणना करें।'
-                    : 'Calculate seed rates, irrigation counts, and fertilizer requirements (NPK) according to your acreage.'}
-                </ThemedText>
+              <CropCalculator language={language} theme={theme} formatLabel={formatLabel} />
+            )}
 
-                <View style={styles.formRow}>
-                  <View style={{ flex: 2 }}>
-                    <ThemedText type="code" style={styles.formLabel}>
-                      {language === 'hi' ? 'भूमि का क्षेत्रफल' : 'LAND AREA'}
-                    </ThemedText>
-                    <TextInput
-                      style={[styles.textInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.backgroundElement }]}
-                      keyboardType="numeric"
-                      value={landArea}
-                      onChangeText={setLandArea}
-                      placeholder={language === 'hi' ? 'क्षेत्रफल दर्ज करें' : 'Enter land area'}
-                      placeholderTextColor={theme.textSecondary}
-                    />
-                  </View>
-
-                  <View style={{ flex: 1.2 }}>
-                    <ThemedText type="code" style={styles.formLabel}>
-                      {language === 'hi' ? 'इकाई' : 'UNIT'}
-                    </ThemedText>
-                    <View style={[styles.unitContainer, { borderColor: theme.border, backgroundColor: theme.backgroundElement }]}>
-                      <Pressable
-                        onPress={() => setLandUnit('acre')}
-                        style={[styles.unitBtn, landUnit === 'acre' && [styles.unitBtnActive, { backgroundColor: theme.primary }]]}
-                      >
-                        <ThemedText type="code" style={[styles.unitBtnText, landUnit === 'acre' ? { color: theme.onPrimary, fontWeight: '700' } : { color: theme.textSecondary }]}>
-                          {language === 'hi' ? 'एकड़' : 'Acre'}
-                        </ThemedText>
-                      </Pressable>
-                      <Pressable
-                        onPress={() => setLandUnit('bigha')}
-                        style={[styles.unitBtn, landUnit === 'bigha' && [styles.unitBtnActive, { backgroundColor: theme.primary }]]}
-                      >
-                        <ThemedText type="code" style={[styles.unitBtnText, landUnit === 'bigha' ? { color: theme.onPrimary, fontWeight: '700' } : { color: theme.textSecondary }]}>
-                          {language === 'hi' ? 'बीघा' : 'Bigha'}
-                        </ThemedText>
-                      </Pressable>
-                    </View>
-                  </View>
-                </View>
-
-                <View style={[styles.formRow, { marginTop: Spacing.two }]}>
-                  <View style={{ flex: 1 }}>
-                    <ThemedText type="code" style={styles.formLabel}>
-                      {language === 'hi' ? 'फसल का चयन करें' : 'SELECT CROP'}
-                    </ThemedText>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.cropSelectorScroll}>
-                      {Object.keys(AGRONOMY_PRESETS).map((crop) => (
-                        <Pressable
-                          key={crop}
-                          onPress={() => setCalcCrop(crop)}
-                          style={[
-                            styles.cropPill,
-                            { borderColor: theme.border, backgroundColor: theme.backgroundElement },
-                            calcCrop === crop && { backgroundColor: theme.primary }
-                          ]}
-                        >
-                          <ThemedText type="code" style={[styles.cropPillText, calcCrop === crop ? { color: theme.onPrimary, fontWeight: '700' } : { color: theme.text }]}>
-                            {formatLabel(crop)}
-                          </ThemedText>
-                        </Pressable>
-                      ))}
-                    </ScrollView>
-                  </View>
-                </View>
-              </ThemedView>
-
-              {dosage && (
-                <View style={styles.resultContainer}>
-                  <ThemedText type="smallBold" style={styles.sectionHeading}>
-                    {language === 'hi' ? 'अनुशंसित आवश्यकताएं' : 'Recommended Requirements'}
-                  </ThemedText>
-
-                  <ThemedView type="card" style={[styles.resultCard, { borderColor: theme.border }]}>
-                    <SymbolView
-                      name={{ ios: 'laurel.leading', android: 'spa', web: 'spa' } as any}
-                      size={28}
-                      tintColor={theme.primary}
-                    />
-                    <View style={{ flex: 1 }}>
-                      <ThemedText type="smallBold">
-                        {language === 'hi' ? 'बीज की मात्रा' : 'Seed Quantity'}
-                      </ThemedText>
-                      <ThemedText type="small" style={{ color: theme.textSecondary, fontSize: 13 }}>
-                        {language === 'hi' ? `प्रकार: ${formatLabel(dosage.seedUnit)}` : `Type: ${dosage.seedUnit}`}
-                      </ThemedText>
-                    </View>
-                    <ThemedText type="smallBold" style={{ fontSize: 20, color: theme.primary }}>
-                      {dosage.seed} kg
-                    </ThemedText>
-                  </ThemedView>
-
-                  <ThemedView type="card" style={[styles.resultCard, { borderColor: theme.border }]}>
-                    <SymbolView
-                      name={{ ios: 'drop.fill', android: 'water_drop', web: 'water_drop' } as any}
-                      size={28}
-                      tintColor={theme.primary}
-                    />
-                    <View style={{ flex: 1 }}>
-                      <ThemedText type="smallBold">
-                        {language === 'hi' ? 'सिंचाई की आवश्यकता' : 'Water & Irrigation'}
-                      </ThemedText>
-                      <ThemedText type="small" style={{ color: theme.textSecondary, fontSize: 13 }}>
-                        {language === 'hi' ? `चक्र: ~${dosage.waterRounds} बार` : `Rounds: ~${dosage.waterRounds} cycles`}
-                      </ThemedText>
-                    </View>
-                    <ThemedText type="smallBold" style={{ fontSize: 18, color: theme.primary }}>
-                      {dosage.waterVolume.toLocaleString()} {language === 'hi' ? 'लीटर' : 'Liters'}
-                    </ThemedText>
-                  </ThemedView>
-
-                  <ThemedView type="card" style={[styles.fertilizerCard, { borderColor: theme.border }]}>
-                    <ThemedText type="smallBold" style={{ marginBottom: Spacing.two }}>
-                      {language === 'hi' ? 'उर्वरक (NPK) की खुराक' : 'Fertilizers (NPK) Dosage'}
-                    </ThemedText>
-                    <View style={[styles.npkRow, width < 360 && { flexDirection: 'column' }]}>
-                      <View style={[styles.npkItem, { backgroundColor: theme.backgroundElement }]}>
-                        <ThemedText type="smallBold" style={{ color: '#D32F2F', fontSize: 18 }}>N</ThemedText>
-                        <ThemedText type="code" style={{ fontSize: 10, opacity: 0.6 }}>
-                          {language === 'hi' ? 'नाइट्रोजन' : 'NITROGEN'}
-                        </ThemedText>
-                        <ThemedText type="smallBold" style={{ fontSize: 16 }}>{dosage.n} kg</ThemedText>
-                      </View>
-
-                      <View style={[styles.npkItem, { backgroundColor: theme.backgroundElement }]}>
-                        <ThemedText type="smallBold" style={{ color: '#1976D2', fontSize: 18 }}>P</ThemedText>
-                        <ThemedText type="code" style={{ fontSize: 10, opacity: 0.6 }}>
-                          {language === 'hi' ? 'फास्फोरस' : 'PHOSPHORUS'}
-                        </ThemedText>
-                        <ThemedText type="smallBold" style={{ fontSize: 16 }}>{dosage.p} kg</ThemedText>
-                      </View>
-
-                      <View style={[styles.npkItem, { backgroundColor: theme.backgroundElement }]}>
-                        <ThemedText type="smallBold" style={{ color: '#388E3C', fontSize: 18 }}>K</ThemedText>
-                        <ThemedText type="code" style={{ fontSize: 10, opacity: 0.6 }}>
-                          {language === 'hi' ? 'पोटैशियम' : 'POTASSIUM'}
-                        </ThemedText>
-                        <ThemedText type="smallBold" style={{ fontSize: 16 }}>{dosage.k} kg</ThemedText>
-                      </View>
-                    </View>
-                  </ThemedView>
-                </View>
-              )}
-            </View>
-          )}
+            {activeView === 'soil' && (
+              <SoilCalculator language={language} theme={theme} formatLabel={formatLabel} />
+            )}
 
           {activeView === 'pest' && (
             <View style={styles.sectionContainer}>
