@@ -185,7 +185,7 @@ export function CustomTabList({ children, isMobile, ...props }: CustomTabListPro
       >
         {!isMobile && (
           <ThemedText type="smallBold" style={styles.brandText}>
-            Krishi Mitra (कृषि मित्र)
+            Krishik Mitra (कृषिक मित्र)
           </ThemedText>
         )}
 

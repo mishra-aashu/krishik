@@ -34,7 +34,7 @@ export async function sendMessageToGroq(
   farmProfile: FarmProfile,
   mode: ModelMode = 'fast'
 ): Promise<string> {
-  const systemMessage = `You are "Krishi Mitra" (कृषि मित्र), an expert agricultural AI assistant designed to help Indian farmers.
+  const systemMessage = `You are "Krishik Mitra" (कृषिक मित्र), an expert agricultural AI assistant designed to help Indian farmers.
 Your goal is to provide scientific, practical, and highly localized farming solutions.
 
 Farmer's Context:

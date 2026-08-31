@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+
 export interface MandiItem {
   id: string;
   commodity: string;
@@ -7,8 +9,15 @@ export interface MandiItem {
   change: string;
 }
 
-const API_KEY = '579b464db66ec23bdd000001cdd3946e44ce4aad7209ff7b23ac571b'; // Public sample key
+const API_KEY = process.env.EXPO_PUBLIC_DATA_GOV_IN_API_KEY || ''; // Read from environment variables
 const BASE_URL = 'https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070';
+
+const getProxyUrl = (url: string) => {
+  if (Platform.OS === 'web') {
+    return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+  }
+  return url;
+};
 
 export const COMMODITY_MAP: Record<string, string> = {
   // Grains & Cereals
@@ -96,9 +105,12 @@ export const COMMODITY_MAP: Record<string, string> = {
 
 export async function fetchLiveMandiPrices(stateName: string): Promise<MandiItem[]> {
   try {
+    if (!API_KEY) {
+      throw new Error('EXPO_PUBLIC_DATA_GOV_IN_API_KEY is not defined in environment variables');
+    }
     // 1. Attempt to fetch filtered by the user's state
     const url = `${BASE_URL}?api-key=${API_KEY}&format=json&filters[state]=${encodeURIComponent(stateName)}&limit=15`;
-    const response = await fetch(url);
+    const response = await fetch(getProxyUrl(url));
     if (!response.ok) {
       throw new Error(`State fetch failed with status: ${response.status}`);
     }
@@ -108,7 +120,7 @@ export async function fetchLiveMandiPrices(stateName: string): Promise<MandiItem
     // 2. If no records for this state, fetch general latest records
     if (records.length === 0) {
       const generalUrl = `${BASE_URL}?api-key=${API_KEY}&format=json&limit=15`;
-      const generalResponse = await fetch(generalUrl);
+      const generalResponse = await fetch(getProxyUrl(generalUrl));
       if (generalResponse.ok) {
         const generalData = await generalResponse.json();
         records = generalData.records || [];

@@ -479,7 +479,7 @@ export default function ChatScreen() {
                 />
               </View>
               <View style={{ flexShrink: 1 }}>
-                <ThemedText type="smallBold" numberOfLines={1}>Krishi Mitra AI</ThemedText>
+                <ThemedText type="smallBold" numberOfLines={1}>Krishik Mitra AI</ThemedText>
                 <ThemedText type="small" numberOfLines={1} style={{ fontSize: 10, color: theme.textSecondary, fontWeight: '600' }}>
                   Context: {farmState} • {farmCrop.split(' ')[0]}
                 </ThemedText>
@@ -539,7 +539,7 @@ export default function ChatScreen() {
                   />
                 </View>
                 <ThemedText type="smallBold" style={styles.welcomeTitle}>
-                  Namaste! I am your Krishi Mitra (कृषि मित्र).
+                  Namaste! I am your Krishik Mitra (कृषिक मित्र).
                 </ThemedText>
                 <ThemedText type="small" style={[styles.welcomeSub, { color: theme.textSecondary }]}>
                   I'm configured with your farm profile in **{farmState}** growing **{farmCrop.split(' ')[0]}** on **{farmSoil.split(' ')[0]}** soil. Ask me anything!
@@ -628,7 +628,7 @@ export default function ChatScreen() {
                           />
                         </View>
                         <ThemedText type="smallBold" style={[styles.botSenderName, { color: theme.textSecondary }]}>
-                          Krishi Mitra AI
+                          Krishik Mitra AI
                         </ThemedText>
                       </View>
                     )}
@@ -712,7 +712,7 @@ export default function ChatScreen() {
                     />
                   </View>
                   <ThemedText type="smallBold" style={[styles.botSenderName, { color: theme.textSecondary }]}>
-                    Krishi Mitra AI
+                    Krishik Mitra AI
                   </ThemedText>
                 </View>
                 <View style={[styles.messageRow, styles.botRow]}>

@@ -70,7 +70,7 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
   // Translations
   const t = {
     hi: {
-      appName: 'कृषि मित्र AI',
+      appName: 'कृषिक मित्र',
       welcome: 'नमस्ते किसान भाई!',
       subtitle: 'स्मार्ट खेती की ओर आपका पहला कदम।',
       loginTab: 'लॉगिन',
@@ -99,7 +99,7 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
       statePlaceholder: 'राज्य चुनें',
     },
     en: {
-      appName: 'Krishi Mitra AI',
+      appName: 'Krishik Mitra',
       welcome: 'Welcome, Farmer!',
       subtitle: 'Your partner in smarter, modern agriculture.',
       loginTab: 'Login',

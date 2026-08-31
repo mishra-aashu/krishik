@@ -488,7 +488,7 @@ export default function ExploreScreen() {
           ? 'कृपया दोबारा प्रयास करें। सुनिश्चित करें कि आपका इंटरनेट चालू है और पत्ती की फोटो स्पष्ट है।'
           : 'Please try again. Ensure internet is connected and leaf photo is clear.',
         chemical: language === 'hi'
-          ? 'आप हमारे चैट सेक्शन में भी सीधे कृषि मित्रा से सलाह ले सकते हैं।'
+          ? 'आप हमारे चैट सेक्शन में भी सीधे कृषिक मित्र से सलाह ले सकते हैं।'
           : 'You can also consult AI Mitra in the chat section directly.'
       });
     } finally {
