@@ -270,6 +270,70 @@ const MessageItem = React.memo(
   }
 );
 
+const TypingDots = ({ theme }: { theme: any }) => {
+  const dot1Y = useSharedValue(0);
+  const dot2Y = useSharedValue(0);
+  const dot3Y = useSharedValue(0);
+
+  useEffect(() => {
+    dot1Y.value = withRepeat(
+      withSequence(
+        withTiming(-5, { duration: 300 }),
+        withTiming(0, { duration: 300 })
+      ),
+      -1,
+      true
+    );
+    
+    const t2 = setTimeout(() => {
+      dot2Y.value = withRepeat(
+        withSequence(
+          withTiming(-5, { duration: 300 }),
+          withTiming(0, { duration: 300 })
+        ),
+        -1,
+        true
+      );
+    }, 150);
+
+    const t3 = setTimeout(() => {
+      dot3Y.value = withRepeat(
+        withSequence(
+          withTiming(-5, { duration: 300 }),
+          withTiming(0, { duration: 300 })
+        ),
+        -1,
+        true
+      );
+    }, 300);
+
+    return () => {
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
+  }, []);
+
+  const style1 = useAnimatedStyle(() => ({
+    transform: [{ translateY: dot1Y.value }]
+  }));
+  
+  const style2 = useAnimatedStyle(() => ({
+    transform: [{ translateY: dot2Y.value }]
+  }));
+
+  const style3 = useAnimatedStyle(() => ({
+    transform: [{ translateY: dot3Y.value }]
+  }));
+
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 2 }}>
+      <Animated.View style={[{ width: 6, height: 6, borderRadius: 3, backgroundColor: theme.primary }, style1]} />
+      <Animated.View style={[{ width: 6, height: 6, borderRadius: 3, backgroundColor: theme.primary }, style2]} />
+      <Animated.View style={[{ width: 6, height: 6, borderRadius: 3, backgroundColor: theme.primary }, style3]} />
+    </View>
+  );
+};
+
 export default function ChatScreen() {
   const router = useRouter();
   const theme = useTheme();
@@ -772,6 +836,46 @@ export default function ChatScreen() {
     }, 100);
   };
 
+  const getLoadingMessage = () => {
+    const lastUserMsg = messages[messages.length - 1];
+    const isHindi = language === 'hi';
+    const isHinglish = language === 'hinglish';
+    
+    if (lastUserMsg?.image) {
+      if (isHindi) return 'कृषि मित्र तस्वीर का विश्लेषण कर रहे हैं...';
+      if (isHinglish) return 'Mitra photo scan kar rahe hain...';
+      return 'Mitra is analyzing the crop photo...';
+    }
+
+    const content = (lastUserMsg?.content || '').toLowerCase();
+    
+    // Weather
+    if (content.includes('मौसम') || content.includes('बारिश') || content.includes('weather') || content.includes('rain') || content.includes('temperature') || content.includes('तापमान') || content.includes('barsat')) {
+      if (isHindi) return 'कृषि मित्र मौसम की स्थिति की जांच कर रहे हैं...';
+      if (isHinglish) return 'Mitra mausam ki jaankari check kar rahe hain...';
+      return 'Mitra is checking weather conditions...';
+    }
+
+    // Fertilizer / Soil
+    if (content.includes('खाद') || content.includes('मिट्टी') || content.includes('urea') || content.includes('fertilizer') || content.includes('soil') || content.includes('यूरिया') || content.includes('dap') || content.includes('gobhar') || content.includes('khad')) {
+      if (isHindi) return 'कृषि मित्र खाद और मिट्टी की गणना कर रहे हैं...';
+      if (isHinglish) return 'Mitra khaad aur mitti ki details nikal rahe hain...';
+      return 'Mitra is calculating fertilizer dosage...';
+    }
+
+    // Pest / Disease
+    if (content.includes('कीट') || content.includes('रोग') || content.includes('कीड़ा') || content.includes('pest') || content.includes('disease') || content.includes('symptom') || content.includes('बीमारी') || content.includes('kida') || content.includes('bimari')) {
+      if (isHindi) return 'कृषि मित्र कीट और रोग संक्रमण की पहचान कर रहे हैं...';
+      if (isHinglish) return 'Mitra kide aur bimari ka pata laga rahe hain...';
+      return 'Mitra is diagnosing pests and diseases...';
+    }
+
+    // Default
+    if (isHindi) return 'कृषि मित्र सलाह लिख रहे हैं...';
+    if (isHinglish) return 'Mitra jawaab likh rahe hain...';
+    return 'Mitra is drafting agricultural advice...';
+  };
+
   const handleSendQuery = async (queryText: string) => {
     const trimmed = queryText.trim();
     if (!trimmed && !selectedImage) return;
@@ -1044,9 +1148,9 @@ export default function ChatScreen() {
                 <View style={[styles.messageRow, styles.botRow]}>
                   <View style={[styles.messageBubble, styles.botBubble, { backgroundColor: theme.chatBot, borderColor: theme.border, paddingVertical: Spacing.two }]}>
                     <View style={styles.loadingRow}>
-                      <ActivityIndicator size="small" color={theme.primary} />
-                      <ThemedText type="code" style={{ color: theme.textSecondary, fontSize: 11 }}>
-                        Mitra is typing agricultural advice...
+                      <TypingDots theme={theme} />
+                      <ThemedText style={{ color: theme.textSecondary, fontSize: 13, fontWeight: '500', marginLeft: Spacing.two }}>
+                        {getLoadingMessage()}
                       </ThemedText>
                     </View>
                   </View>
