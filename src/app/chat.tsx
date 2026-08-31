@@ -265,6 +265,33 @@ export default function ChatScreen() {
 
   // Chat settings
   const [language, setLanguage] = useState<'hi' | 'en' | 'hinglish'>('hi');
+
+  const STATE_TRANSLATIONS: Record<string, string> = {
+    'Uttar Pradesh': 'उत्तर प्रदेश',
+    'Punjab': 'पंजाब',
+    'Haryana': 'हरियाणा',
+    'Madhya Pradesh': 'मध्य प्रदेश',
+    'Maharashtra': 'महाराष्ट्र',
+    'Rajasthan': 'राजस्थान',
+    'Gujarat': 'गुजरात',
+    'Bihar': 'बिहार',
+    'Karnataka': 'कर्नाटक',
+    'Andhra Pradesh': 'आंध्र प्रदेश'
+  };
+
+  const formatState = (stateName: string) => {
+    if (!stateName) return '';
+    return language === 'hi' ? (STATE_TRANSLATIONS[stateName] || stateName) : stateName;
+  };
+
+  const formatLabel = (text: string) => {
+    if (!text) return '';
+    const parts = text.split('(');
+    if (parts.length < 2) return text;
+    const english = parts[0].trim();
+    const hindi = parts[1].replace(')', '').trim();
+    return language === 'hi' ? hindi : english;
+  };
   const isCompactHeader = width < 400;
   const [model, setModel] = useState<ModelMode>('fast');
 
@@ -1012,7 +1039,7 @@ export default function ChatScreen() {
                   tintColor={theme.primary}
                 />
                 <ThemedText type="smallBold" style={{ fontSize: 16 }}>
-                  संवाद इतिहास / Chat History
+                  {language === 'hi' ? 'संवाद इतिहास' : 'Chat History'}
                 </ThemedText>
               </View>
               <Pressable onPress={() => setIsDrawerOpen(false)} style={styles.closeDrawerBtn}>
@@ -1022,10 +1049,10 @@ export default function ChatScreen() {
 
             <View style={[styles.drawerProfileCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
               <ThemedText type="code" style={{ fontSize: 10, color: theme.primary, fontWeight: '700' }}>
-                सक्रिय प्रोफ़ाइल / ACTIVE PROFILE
+                {language === 'hi' ? 'सक्रिय प्रोफ़ाइल' : 'ACTIVE PROFILE'}
               </ThemedText>
               <ThemedText type="small" style={{ fontSize: 12, marginTop: 2, fontWeight: '600' }}>
-                {farmState} • {farmCrop.split('(')[0]}
+                {formatState(farmState)} • {formatLabel(farmCrop)}
               </ThemedText>
             </View>
 
@@ -1043,12 +1070,12 @@ export default function ChatScreen() {
                 tintColor={theme.primary}
               />
               <ThemedText type="smallBold" style={{ color: theme.primary, fontSize: 14 }}>
-                नया संवाद / Start New Chat
+                {language === 'hi' ? 'नया संवाद' : 'Start New Chat'}
               </ThemedText>
             </Pressable>
 
             <ThemedText type="code" style={styles.historySectionLabel}>
-              पिछले संवाद / PREVIOUS CHATS
+              {language === 'hi' ? 'पिछले संवाद' : 'PREVIOUS CHATS'}
             </ThemedText>
             
             <ScrollView style={styles.drawerScrollView} contentContainerStyle={{ gap: Spacing.two }}>
@@ -1079,7 +1106,7 @@ export default function ChatScreen() {
                           {session.title}
                         </ThemedText>
                         <ThemedText type="code" style={{ fontSize: 9, color: theme.textSecondary }}>
-                          {session.timestamp} • {session.crop}
+                          {session.timestamp} • {formatLabel(session.crop)}
                         </ThemedText>
                       </View>
                     </View>

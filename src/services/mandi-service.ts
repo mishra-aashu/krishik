@@ -120,16 +120,17 @@ export async function fetchLiveMandiPrices(stateName: string): Promise<MandiItem
 
     // Map records to MandiItem format
     return records.map((record: any, index: number) => {
-      const rawComm = record.commodity || '';
+      const rawComm = record.Commodity || record.commodity || '';
       const mappedCommodity = COMMODITY_MAP[rawComm] || `${rawComm}`;
-      const marketName = record.market || record.district || record.state || 'Mandi';
+      const marketName = record.Market || record.market || record.District || record.district || record.State || record.state || 'Mandi';
       
       // Clean market name from redundant suffix keywords
       const cleanMarketName = marketName.replace(/\s*(APMC|Mandi|Market)\s*/gi, '').trim();
 
-      const modalPrice = Number(record.modal_price) || 0;
-      const minPrice = Number(record.min_price) || 0;
-      const maxPrice = Number(record.max_price) || 0;
+      const modalPrice = Number(record.Modal_Price || record.modal_price) || 0;
+      const minPrice = Number(record.Min_Price || record.min_price) || 0;
+      const maxPrice = Number(record.Max_Price || record.max_price) || 0;
+      const arrivalDate = record.Arrival_Date || record.arrival_date || '';
       
       // Generate a realistic small percentage difference indicator based on range
       let changeStr = '0';
@@ -153,7 +154,7 @@ export async function fetchLiveMandiPrices(stateName: string): Promise<MandiItem
       }
 
       return {
-        id: `live-${index}-${record.arrival_date || Date.now()}-${modalPrice}`,
+        id: `live-${index}-${arrivalDate || Date.now()}-${modalPrice}`,
         commodity: mappedCommodity,
         price: modalPrice,
         unit: 'Quintal',
