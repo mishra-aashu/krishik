@@ -1,4 +1,15 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { IncomingMessage, ServerResponse } from 'http';
+
+interface VercelRequest extends IncomingMessage {
+  query: { [key: string]: string | string[] };
+  method?: string;
+}
+
+interface VercelResponse extends ServerResponse {
+  status: (statusCode: number) => VercelResponse;
+  json: (body: any) => VercelResponse;
+  end: () => void;
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS Headers
