@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Linking } from 'react-native';
 import { ThemedText } from './themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -32,31 +32,73 @@ export const CustomMarkdown = React.memo(function CustomMarkdown({ text }: Custo
     textStyle?: any
   ) => {
     const cleanedText = cleanCellText(lineText);
-    const boldParts = cleanedText.split('**');
+    const codeParts = cleanedText.split('`');
 
     return (
       <ThemedText key={keyPrefix} type={type} style={textStyle}>
-        {boldParts.map((boldPart, boldIndex) => {
-          const isBold = boldIndex % 2 === 1;
-          const italicParts = boldPart.split('*');
+        {codeParts.map((codePart, codeIndex) => {
+          const isCode = codeIndex % 2 === 1;
 
-          return italicParts.map((italicPart, italicIndex) => {
-            const isItalic = italicIndex % 2 === 1;
-
+          if (isCode) {
             return (
               <ThemedText
-                key={`${keyPrefix}-b${boldIndex}-i${italicIndex}`}
+                key={`${keyPrefix}-c${codeIndex}`}
                 type="span"
                 style={[
-                  isBold && styles.boldText,
-                  isItalic && styles.italicText,
-                  isBold && { fontWeight: 'bold' },
-                  isItalic && { fontStyle: 'italic' },
+                  styles.codeInlineText,
+                  { color: theme.primary }
                 ]}
               >
-                {italicPart}
+                {codePart}
               </ThemedText>
             );
+          }
+
+          const linkParts = codePart.split(/(\[[^\]]+\]\([^)]+\))/g);
+          return linkParts.map((linkPart, linkIndex) => {
+            const isLink = linkIndex % 2 === 1;
+            if (isLink) {
+              const linkMatch = linkPart.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+              if (linkMatch) {
+                const linkText = linkMatch[1];
+                const url = linkMatch[2];
+                return (
+                  <ThemedText
+                    key={`${keyPrefix}-c${codeIndex}-l${linkIndex}`}
+                    type="span"
+                    style={[styles.linkText, { color: theme.primary }]}
+                    onPress={() => Linking.openURL(url)}
+                  >
+                    {linkText}
+                  </ThemedText>
+                );
+              }
+            }
+
+            const boldParts = linkPart.split('**');
+            return boldParts.map((boldPart, boldIndex) => {
+              const isBold = boldIndex % 2 === 1;
+              const italicParts = boldPart.split('*');
+
+              return italicParts.map((italicPart, italicIndex) => {
+                const isItalic = italicIndex % 2 === 1;
+
+                return (
+                  <ThemedText
+                    key={`${keyPrefix}-c${codeIndex}-l${linkIndex}-b${boldIndex}-i${italicIndex}`}
+                    type="span"
+                    style={[
+                      isBold && styles.boldText,
+                      isItalic && styles.italicText,
+                      isBold && { fontWeight: 'bold' },
+                      isItalic && { fontStyle: 'italic' },
+                    ]}
+                  >
+                    {italicPart}
+                  </ThemedText>
+                );
+              });
+            });
           });
         })}
       </ThemedText>
@@ -223,26 +265,17 @@ export const CustomMarkdown = React.memo(function CustomMarkdown({ text }: Custo
       continue;
     }
 
-    // Heading 3
-    if (trimmedLine.startsWith('### ')) {
+    // Headings (levels 1-6)
+    const headingMatch = trimmedLine.match(/^(#{1,6})\s+(.*)/);
+    if (headingMatch) {
+      const hashes = headingMatch[1];
+      const headingText = headingMatch[2];
+      const level = hashes.length;
+      const fontSize = level === 1 ? 22 : level === 2 ? 20 : level === 3 ? 18 : level === 4 ? 16 : 14;
       renderedElements.push(
-        <View key={`h3-${i}`} style={styles.headingContainer}>
-          {renderInlineStyles(trimmedLine.substring(4), `h3-text-${i}`, 'smallBold', {
-            fontSize: 17,
-            color: theme.primary,
-          })}
-        </View>
-      );
-      continue;
-    }
-
-    // Heading 2 or Heading 1
-    if (trimmedLine.startsWith('## ') || trimmedLine.startsWith('# ')) {
-      const headingText = trimmedLine.startsWith('## ') ? trimmedLine.substring(3) : trimmedLine.substring(2);
-      renderedElements.push(
-        <View key={`h2-${i}`} style={styles.headingContainer}>
-          {renderInlineStyles(headingText, `h2-text-${i}`, 'smallBold', {
-            fontSize: 20,
+        <View key={`h-${level}-${i}`} style={styles.headingContainer}>
+          {renderInlineStyles(headingText, `h-${level}-text-${i}`, 'smallBold', {
+            fontSize,
             color: theme.primary,
           })}
         </View>
@@ -318,6 +351,17 @@ const styles = StyleSheet.create({
   },
   italicText: {
     fontStyle: 'italic',
+  },
+  codeInlineText: {
+    fontFamily: 'monospace',
+    fontSize: 11,
+    backgroundColor: 'rgba(128,128,128,0.12)',
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  linkText: {
+    textDecorationLine: 'underline',
   },
   bulletRow: {
     flexDirection: 'row',

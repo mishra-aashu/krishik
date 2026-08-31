@@ -927,31 +927,50 @@ export default function ExploreScreen() {
                     />
                   )}
 
-                  <View style={[styles.pestDivider, { backgroundColor: theme.border }]} />
-
-                  <View style={styles.pestDetailSection}>
-                    <ThemedText type="code" style={styles.pestLabel}>
-                      {language === 'hi' ? 'विश्लेषण / लक्षण' : 'ANALYSIS / SYMPTOMS'}
-                    </ThemedText>
-                    <ThemedText type="small" style={styles.pestValue}>
+                  <View style={[styles.schemeDetailSection, { backgroundColor: 'rgba(255, 152, 0, 0.05)', borderColor: 'rgba(255, 152, 0, 0.15)', marginTop: Spacing.two }]}>
+                    <View style={styles.detailLabelRow}>
+                      <SymbolView
+                        name={{ ios: 'eye.fill', android: 'visibility', web: 'visibility' } as any}
+                        size={15}
+                        tintColor="#FF9800"
+                      />
+                      <ThemedText type="code" style={[styles.pestLabel, { color: '#FF9800', fontWeight: '700', fontSize: 11, marginBottom: 0 }]}>
+                        {language === 'hi' ? 'विश्लेषण / लक्षण (Symptoms)' : 'ANALYSIS / SYMPTOMS'}
+                      </ThemedText>
+                    </View>
+                    <ThemedText type="small" style={[styles.pestValue, { color: theme.text, fontSize: 13, lineHeight: 18, marginTop: 4 }]}>
                       {diagnosisResult.symptoms}
                     </ThemedText>
                   </View>
 
-                  <View style={styles.pestDetailSection}>
-                    <ThemedText type="code" style={[styles.pestLabel, { color: theme.success }]}>
-                      {language === 'hi' ? 'जैविक उपचार' : 'ORGANIC TREATMENT'}
-                    </ThemedText>
-                    <ThemedText type="small" style={styles.pestValue}>
+                  <View style={[styles.schemeDetailSection, { backgroundColor: 'rgba(76, 175, 80, 0.05)', borderColor: 'rgba(76, 175, 80, 0.15)' }]}>
+                    <View style={styles.detailLabelRow}>
+                      <SymbolView
+                        name={{ ios: 'leaf.fill', android: 'spa', web: 'spa' } as any}
+                        size={15}
+                        tintColor={theme.success}
+                      />
+                      <ThemedText type="code" style={[styles.pestLabel, { color: theme.success, fontWeight: '700', fontSize: 11, marginBottom: 0 }]}>
+                        {language === 'hi' ? 'जैविक उपचार (Organic Treatment)' : 'ORGANIC TREATMENT'}
+                      </ThemedText>
+                    </View>
+                    <ThemedText type="small" style={[styles.pestValue, { color: theme.text, fontSize: 13, lineHeight: 18, marginTop: 4 }]}>
                       {diagnosisResult.organic}
                     </ThemedText>
                   </View>
 
-                  <View style={styles.pestDetailSection}>
-                    <ThemedText type="code" style={[styles.pestLabel, { color: theme.error }]}>
-                      {language === 'hi' ? 'रासायनिक उपचार' : 'CHEMICAL TREATMENT'}
-                    </ThemedText>
-                    <ThemedText type="small" style={styles.pestValue}>
+                  <View style={[styles.schemeDetailSection, { backgroundColor: 'rgba(244, 67, 54, 0.05)', borderColor: 'rgba(244, 67, 54, 0.15)' }]}>
+                    <View style={styles.detailLabelRow}>
+                      <SymbolView
+                        name={{ ios: 'shield.fill', android: 'security', web: 'security' } as any}
+                        size={15}
+                        tintColor={theme.error}
+                      />
+                      <ThemedText type="code" style={[styles.pestLabel, { color: theme.error, fontWeight: '700', fontSize: 11, marginBottom: 0 }]}>
+                        {language === 'hi' ? 'रासायनिक उपचार (Chemical Treatment)' : 'CHEMICAL TREATMENT'}
+                      </ThemedText>
+                    </View>
+                    <ThemedText type="small" style={[styles.pestValue, { color: theme.text, fontSize: 13, lineHeight: 18, marginTop: 4 }]}>
                       {diagnosisResult.chemical}
                     </ThemedText>
                   </View>
@@ -1043,31 +1062,50 @@ export default function ExploreScreen() {
 
                         {isExpanded && (
                           <View style={{ marginTop: Spacing.two, gap: Spacing.two }}>
-                            <View style={[styles.pestDivider, { backgroundColor: theme.border }]} />
-
-                            <View style={styles.pestDetailSection}>
-                              <ThemedText type="code" style={styles.pestLabel}>
-                                {language === 'hi' ? 'लक्षण' : 'SYMPTOMS'}
-                              </ThemedText>
-                              <ThemedText type="small" style={styles.pestValue}>
+                            <View style={[styles.schemeDetailSection, { backgroundColor: 'rgba(255, 152, 0, 0.05)', borderColor: 'rgba(255, 152, 0, 0.15)' }]}>
+                              <View style={styles.detailLabelRow}>
+                                <SymbolView
+                                  name={{ ios: 'eye.fill', android: 'visibility', web: 'visibility' } as any}
+                                  size={15}
+                                  tintColor="#FF9800"
+                                />
+                                <ThemedText type="code" style={[styles.pestLabel, { color: '#FF9800', fontWeight: '700', fontSize: 11, marginBottom: 0 }]}>
+                                  {language === 'hi' ? 'लक्षण (Symptoms)' : 'SYMPTOMS'}
+                                </ThemedText>
+                              </View>
+                              <ThemedText type="small" style={[styles.pestValue, { color: theme.text, fontSize: 13, lineHeight: 18, marginTop: 4 }]}>
                                 {item.symptoms}
                               </ThemedText>
                             </View>
 
-                            <View style={styles.pestDetailSection}>
-                              <ThemedText type="code" style={[styles.pestLabel, { color: theme.success }]}>
-                                {language === 'hi' ? 'जैविक उपचार' : 'ORGANIC TREATMENT'}
-                              </ThemedText>
-                              <ThemedText type="small" style={styles.pestValue}>
+                            <View style={[styles.schemeDetailSection, { backgroundColor: 'rgba(76, 175, 80, 0.05)', borderColor: 'rgba(76, 175, 80, 0.15)' }]}>
+                              <View style={styles.detailLabelRow}>
+                                <SymbolView
+                                  name={{ ios: 'leaf.fill', android: 'spa', web: 'spa' } as any}
+                                  size={15}
+                                  tintColor={theme.success}
+                                />
+                                <ThemedText type="code" style={[styles.pestLabel, { color: theme.success, fontWeight: '700', fontSize: 11, marginBottom: 0 }]}>
+                                  {language === 'hi' ? 'जैविक उपचार (Organic Treatment)' : 'ORGANIC TREATMENT'}
+                                </ThemedText>
+                              </View>
+                              <ThemedText type="small" style={[styles.pestValue, { color: theme.text, fontSize: 13, lineHeight: 18, marginTop: 4 }]}>
                                 {item.result.organic}
                               </ThemedText>
                             </View>
 
-                            <View style={styles.pestDetailSection}>
-                              <ThemedText type="code" style={[styles.pestLabel, { color: theme.error }]}>
-                                {language === 'hi' ? 'रासायनिक उपचार' : 'CHEMICAL TREATMENT'}
-                              </ThemedText>
-                              <ThemedText type="small" style={styles.pestValue}>
+                            <View style={[styles.schemeDetailSection, { backgroundColor: 'rgba(244, 67, 54, 0.05)', borderColor: 'rgba(244, 67, 54, 0.15)' }]}>
+                              <View style={styles.detailLabelRow}>
+                                <SymbolView
+                                  name={{ ios: 'shield.fill', android: 'security', web: 'security' } as any}
+                                  size={15}
+                                  tintColor={theme.error}
+                                />
+                                <ThemedText type="code" style={[styles.pestLabel, { color: theme.error, fontWeight: '700', fontSize: 11, marginBottom: 0 }]}>
+                                  {language === 'hi' ? 'रासायनिक उपचार (Chemical Treatment)' : 'CHEMICAL TREATMENT'}
+                                </ThemedText>
+                              </View>
+                              <ThemedText type="small" style={[styles.pestValue, { color: theme.text, fontSize: 13, lineHeight: 18, marginTop: 4 }]}>
                                 {item.result.chemical}
                               </ThemedText>
                             </View>
@@ -1119,49 +1157,74 @@ export default function ExploreScreen() {
                       <ThemedText type="smallBold" style={{ fontSize: 16 }}>
                         {language === 'hi' ? item.disease.hi : item.disease.en}
                       </ThemedText>
-                      <ThemedText type="code" style={{ fontSize: 10, color: theme.primary, fontWeight: '700' }}>
+                      <ThemedText type="code" style={{ fontSize: 10, color: theme.primary, fontWeight: '700', marginTop: 2 }}>
                         {language === 'hi' ? `फसल: ${item.crop.hi}` : `Crop: ${item.crop.en}`}
                       </ThemedText>
                     </View>
-                    <SymbolView
-                      name={{ ios: 'ladybug.fill', android: 'bug_report', web: 'bug_report' } as any}
-                      size={28}
-                      tintColor={theme.primary}
-                    />
+                    <View style={[styles.schemeIconBadge, { backgroundColor: 'rgba(76, 175, 80, 0.12)' }]}>
+                      <SymbolView
+                        name={{ ios: 'ladybug.fill', android: 'bug_report', web: 'bug_report' } as any}
+                        size={20}
+                        tintColor={theme.primary}
+                      />
+                    </View>
                   </View>
 
-                  <View style={[styles.pestDivider, { backgroundColor: theme.border }]} />
-
-                  <View style={styles.pestDetailSection}>
-                    <ThemedText type="code" style={styles.pestLabel}>
-                      {language === 'hi' ? 'लक्षण' : 'SYMPTOMS'}
-                    </ThemedText>
-                    <ThemedText type="small" style={styles.pestValue}>
+                  <View style={[styles.schemeDetailSection, { backgroundColor: 'rgba(255, 152, 0, 0.05)', borderColor: 'rgba(255, 152, 0, 0.15)', marginTop: Spacing.one }]}>
+                    <View style={styles.detailLabelRow}>
+                      <SymbolView
+                        name={{ ios: 'eye.fill', android: 'visibility', web: 'visibility' } as any}
+                        size={15}
+                        tintColor="#FF9800"
+                      />
+                      <ThemedText type="code" style={[styles.pestLabel, { color: '#FF9800', fontWeight: '700', fontSize: 11, marginBottom: 0 }]}>
+                        {language === 'hi' ? 'लक्षण (Symptoms)' : 'SYMPTOMS'}
+                      </ThemedText>
+                    </View>
+                    <ThemedText type="small" style={[styles.pestValue, { color: theme.text, fontSize: 13, lineHeight: 18, marginTop: 4 }]}>
                       {language === 'hi' ? item.symptoms.hi : item.symptoms.en}
                     </ThemedText>
                   </View>
 
-                  <View style={styles.pestDetailSection}>
-                    <ThemedText type="code" style={[styles.pestLabel, { color: theme.success }]}>
-                      {language === 'hi' ? 'जैविक उपचार' : 'ORGANIC TREATMENT'}
-                    </ThemedText>
-                    <ThemedText type="small" style={styles.pestValue}>
+                  <View style={[styles.schemeDetailSection, { backgroundColor: 'rgba(76, 175, 80, 0.05)', borderColor: 'rgba(76, 175, 80, 0.15)' }]}>
+                    <View style={styles.detailLabelRow}>
+                      <SymbolView
+                        name={{ ios: 'leaf.fill', android: 'spa', web: 'spa' } as any}
+                        size={15}
+                        tintColor={theme.success}
+                      />
+                      <ThemedText type="code" style={[styles.pestLabel, { color: theme.success, fontWeight: '700', fontSize: 11, marginBottom: 0 }]}>
+                        {language === 'hi' ? 'जैविक उपचार (Organic Treatment)' : 'ORGANIC TREATMENT'}
+                      </ThemedText>
+                    </View>
+                    <ThemedText type="small" style={[styles.pestValue, { color: theme.text, fontSize: 13, lineHeight: 18, marginTop: 4 }]}>
                       {language === 'hi' ? item.organic.hi : item.organic.en}
                     </ThemedText>
                   </View>
 
-                  <View style={styles.pestDetailSection}>
-                    <ThemedText type="code" style={[styles.pestLabel, { color: theme.error }]}>
-                      {language === 'hi' ? 'रासायनिक उपचार' : 'CHEMICAL TREATMENT'}
-                    </ThemedText>
-                    <ThemedText type="small" style={styles.pestValue}>
+                  <View style={[styles.schemeDetailSection, { backgroundColor: 'rgba(244, 67, 54, 0.05)', borderColor: 'rgba(244, 67, 54, 0.15)' }]}>
+                    <View style={styles.detailLabelRow}>
+                      <SymbolView
+                        name={{ ios: 'shield.fill', android: 'security', web: 'security' } as any}
+                        size={15}
+                        tintColor={theme.error}
+                      />
+                      <ThemedText type="code" style={[styles.pestLabel, { color: theme.error, fontWeight: '700', fontSize: 11, marginBottom: 0 }]}>
+                        {language === 'hi' ? 'रासायनिक उपचार (Chemical Treatment)' : 'CHEMICAL TREATMENT'}
+                      </ThemedText>
+                    </View>
+                    <ThemedText type="small" style={[styles.pestValue, { color: theme.text, fontSize: 13, lineHeight: 18, marginTop: 4 }]}>
                       {language === 'hi' ? item.chemical.hi : item.chemical.en}
                     </ThemedText>
                   </View>
 
                   <Pressable
                     onPress={() => askAiAboutDisease(item.crop.en, item.disease.en)}
-                    style={({ pressed }) => [styles.askAiBtn, { backgroundColor: theme.primary }, pressed && { opacity: 0.8 }]}
+                    style={({ pressed }) => [
+                      styles.askAiBtn,
+                      { backgroundColor: theme.primary, borderRadius: 12, marginTop: Spacing.one },
+                      pressed && { opacity: 0.85 }
+                    ]}
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.two }}>
                       <SymbolView
@@ -1169,7 +1232,7 @@ export default function ExploreScreen() {
                         size={15}
                         tintColor={theme.onPrimary}
                       />
-                      <ThemedText type="code" style={{ color: theme.onPrimary, fontWeight: '700', flexShrink: 1 }}>
+                      <ThemedText type="code" style={{ color: theme.onPrimary, fontWeight: '700', fontSize: 12 }}>
                         {language === 'hi' ? 'इस बीमारी के बारे में एआई मित्रा से सलाह लें' : 'Consult AI Mitra about this disease'}
                       </ThemedText>
                     </View>
@@ -1200,49 +1263,102 @@ export default function ExploreScreen() {
                   </ThemedText>
                 </View>
               ) : (
-                schemesList.map((scheme, index) => (
-                  <ThemedView key={index} type="card" style={[styles.schemeCard, { borderColor: theme.border }]}>
-                    <View style={styles.schemeHeader}>
-                      <ThemedText type="smallBold" style={{ fontSize: 16, color: theme.primary, flex: 1, marginRight: Spacing.two }}>
-                        {scheme.title}
-                      </ThemedText>
-                      <SymbolView
-                        name={{ ios: 'scroll.fill', android: 'description', web: 'description' } as any}
-                        size={28}
-                        tintColor={theme.primary}
-                      />
-                    </View>
+                schemesList.map((scheme, index) => {
+                  const queryText = language === 'hi'
+                    ? `मुझे "${scheme.title}" के बारे में और जानकारी चाहिए। इसके लाभ, पात्रता और आवेदन करने की प्रक्रिया विस्तार से बताएं।`
+                    : `I want to know more about "${scheme.title}". Please explain the benefits, eligibility criteria, and step-by-step application process.`;
+                  return (
+                    <ThemedView key={index} type="card" style={[styles.schemeCard, { borderColor: theme.border, backgroundColor: theme.card }]}>
+                      <View style={styles.schemeHeader}>
+                        <View style={{ flex: 1, marginRight: Spacing.two }}>
+                          <ThemedText type="smallBold" style={{ fontSize: 18, color: theme.primary, fontWeight: '700' }}>
+                            {scheme.title}
+                          </ThemedText>
+                        </View>
+                        <View style={[styles.schemeIconBadge, { backgroundColor: 'rgba(76, 175, 80, 0.12)' }]}>
+                          <SymbolView
+                            name={{ ios: 'scroll.fill', android: 'description', web: 'description' } as any}
+                            size={20}
+                            tintColor={theme.primary}
+                          />
+                        </View>
+                      </View>
 
-                    <View style={[styles.pestDivider, { backgroundColor: theme.border }]} />
+                      <View style={[styles.schemeDetailSection, { backgroundColor: 'rgba(76, 175, 80, 0.05)', borderColor: 'rgba(76, 175, 80, 0.15)', marginTop: Spacing.one }]}>
+                        <View style={styles.detailLabelRow}>
+                          <SymbolView
+                            name={{ ios: 'gift.fill', android: 'redeem', web: 'redeem' } as any}
+                            size={15}
+                            tintColor={theme.primary}
+                          />
+                          <ThemedText type="code" style={[styles.pestLabel, { color: theme.primary, fontWeight: '700', fontSize: 11, marginBottom: 0 }]}>
+                            {language === 'hi' ? 'योजना लाभ (Benefits)' : 'BENEFITS'}
+                          </ThemedText>
+                        </View>
+                        <ThemedText type="small" style={[styles.pestValue, { color: theme.text, fontSize: 13, lineHeight: 18, marginTop: 4 }]}>
+                          {scheme.benefit}
+                        </ThemedText>
+                      </View>
 
-                    <View style={styles.pestDetailSection}>
-                      <ThemedText type="code" style={styles.pestLabel}>
-                        {language === 'hi' ? 'योजना लाभ' : 'BENEFIT'}
-                      </ThemedText>
-                      <ThemedText type="small" style={styles.pestValue}>
-                        {scheme.benefit}
-                      </ThemedText>
-                    </View>
+                      <View style={[styles.schemeDetailSection, { backgroundColor: 'rgba(33, 150, 243, 0.05)', borderColor: 'rgba(33, 150, 243, 0.15)' }]}>
+                        <View style={styles.detailLabelRow}>
+                          <SymbolView
+                            name={{ ios: 'checkmark.seal.fill', android: 'verified', web: 'verified' } as any}
+                            size={15}
+                            tintColor="#2196F3"
+                          />
+                          <ThemedText type="code" style={[styles.pestLabel, { color: '#2196F3', fontWeight: '700', fontSize: 11, marginBottom: 0 }]}>
+                            {language === 'hi' ? 'पात्रता (Eligibility)' : 'ELIGIBILITY'}
+                          </ThemedText>
+                        </View>
+                        <ThemedText type="small" style={[styles.pestValue, { color: theme.text, fontSize: 13, lineHeight: 18, marginTop: 4 }]}>
+                          {scheme.eligibility}
+                        </ThemedText>
+                      </View>
 
-                    <View style={styles.pestDetailSection}>
-                      <ThemedText type="code" style={styles.pestLabel}>
-                        {language === 'hi' ? 'पात्रता' : 'ELIGIBILITY'}
-                      </ThemedText>
-                      <ThemedText type="small" style={styles.pestValue}>
-                        {scheme.eligibility}
-                      </ThemedText>
-                    </View>
+                      <View style={[styles.schemeDetailSection, { backgroundColor: 'rgba(255, 152, 0, 0.05)', borderColor: 'rgba(255, 152, 0, 0.15)' }]}>
+                        <View style={styles.detailLabelRow}>
+                          <SymbolView
+                            name={{ ios: 'doc.on.doc.fill', android: 'file_copy', web: 'file_copy' } as any}
+                            size={15}
+                            tintColor="#FF9800"
+                          />
+                          <ThemedText type="code" style={[styles.pestLabel, { color: '#FF9800', fontWeight: '700', fontSize: 11, marginBottom: 0 }]}>
+                            {language === 'hi' ? 'आवश्यक दस्तावेज (Required Documents)' : 'REQUIRED DOCUMENTS'}
+                          </ThemedText>
+                        </View>
+                        <ThemedText type="small" style={[styles.pestValue, { color: theme.text, fontSize: 13, lineHeight: 18, marginTop: 4 }]}>
+                          {scheme.documents}
+                        </ThemedText>
+                      </View>
 
-                    <View style={styles.pestDetailSection}>
-                      <ThemedText type="code" style={styles.pestLabel}>
-                        {language === 'hi' ? 'आवश्यक दस्तावेज' : 'REQUIRED DOCUMENTS'}
-                      </ThemedText>
-                      <ThemedText type="small" style={styles.pestValue}>
-                        {scheme.documents}
-                      </ThemedText>
-                    </View>
-                  </ThemedView>
-                ))
+                      <Pressable
+                        onPress={() => {
+                          router.push({
+                            pathname: '/chat',
+                            params: { prefill: queryText }
+                          });
+                        }}
+                        style={({ pressed }) => [
+                          styles.askAiBtn,
+                          { backgroundColor: theme.primary, borderRadius: 12, marginTop: Spacing.one },
+                          pressed && { opacity: 0.85 }
+                        ]}
+                      >
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
+                          <SymbolView
+                            name={{ ios: 'cpu', android: 'smart_toy', web: 'smart_toy' } as any}
+                            size={16}
+                            tintColor={theme.onPrimary}
+                          />
+                          <ThemedText type="code" style={{ color: theme.onPrimary, fontWeight: '700', fontSize: 12 }}>
+                            {language === 'hi' ? 'एआई मित्रा से जानकारी और आवेदन प्रक्रिया पूछें' : 'Ask AI Mitra for details & process'}
+                          </ThemedText>
+                        </View>
+                      </Pressable>
+                    </ThemedView>
+                  );
+                })
               )}
             </View>
           )}
@@ -1412,21 +1528,21 @@ const styles = StyleSheet.create({
     gap: 2
   },
   pestCard: {
-    borderRadius: Spacing.three,
-    padding: Spacing.three,
+    borderRadius: 20,
+    padding: Spacing.three + 2,
     borderWidth: 1,
-    gap: Spacing.two
+    gap: Spacing.three,
+    marginBottom: Spacing.three,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2
   },
   pestHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center'
-  },
-  pestDivider: {
-    height: 1
-  },
-  pestDetailSection: {
-    gap: 4
   },
   pestLabel: {
     fontSize: 9,
@@ -1444,15 +1560,39 @@ const styles = StyleSheet.create({
     marginTop: Spacing.one
   },
   schemeCard: {
-    borderRadius: Spacing.three,
-    padding: Spacing.three,
+    borderRadius: 20,
+    padding: Spacing.three + 2,
     borderWidth: 1,
-    gap: Spacing.two
+    gap: Spacing.three,
+    marginBottom: Spacing.three,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2
   },
   schemeHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center'
+  },
+  schemeIconBadge: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  schemeDetailSection: {
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    gap: 6
+  },
+  detailLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6
   },
   uploadBtn: {
     justifyContent: 'center',

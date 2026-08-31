@@ -12,7 +12,8 @@ export function ThemedText({ style, type = 'default', themeColor, ...rest }: The
   const theme = useTheme();
 
   const flatStyle = StyleSheet.flatten([
-    { color: theme[themeColor ?? 'text'] },
+    type !== 'span' && { color: theme[themeColor ?? 'text'] },
+    type === 'span' && themeColor && { color: theme[themeColor] },
     type === 'default' && styles.default,
     type === 'title' && styles.title,
     type === 'small' && styles.small,

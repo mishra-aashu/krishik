@@ -1145,9 +1145,22 @@ export default function ChatScreen() {
                 pressed && { backgroundColor: theme.backgroundElement }
               ]}
             >
-              <ThemedText style={{ fontSize: 13, color: theme.text, fontWeight: '600' }}>
-                {model === 'fast' ? ' Switch to Smart Model' : '⚡ Switch to Fast Model'}
-              </ThemedText>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
+                <SymbolView
+                  name={
+                    model === 'fast'
+                      ? ({ ios: 'brain.head.profile', android: 'psychology', web: 'psychology' } as any)
+                      : ({ ios: 'bolt.fill', android: 'bolt', web: 'bolt' } as any)
+                  }
+                  size={16}
+                  tintColor={theme.primary}
+                />
+                <ThemedText style={{ fontSize: 13, color: theme.text, fontWeight: '600' }}>
+                  {model === 'fast'
+                    ? (language === 'hi' ? 'स्मार्ट मॉडल पर जाएं' : 'Switch to Smart Model')
+                    : (language === 'hi' ? 'फास्ट मॉडल पर जाएं' : 'Switch to Fast Model')}
+                </ThemedText>
+              </View>
             </Pressable>
 
             <View style={[styles.menuDivider, { backgroundColor: theme.border }]} />
@@ -1162,9 +1175,16 @@ export default function ChatScreen() {
                 pressed && { backgroundColor: theme.backgroundElement }
               ]}
             >
-              <ThemedText style={{ fontSize: 13, color: theme.error, fontWeight: '600' }}>
-                🗑️ Clear Conversation
-              </ThemedText>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
+                <SymbolView
+                  name={{ ios: 'trash.fill', android: 'delete', web: 'delete' } as any}
+                  size={16}
+                  tintColor={theme.error}
+                />
+                <ThemedText style={{ fontSize: 13, color: theme.error, fontWeight: '600' }}>
+                  {language === 'hi' ? 'बातचीत साफ़ करें' : 'Clear Conversation'}
+                </ThemedText>
+              </View>
             </Pressable>
           </ThemedView>
         </View>
