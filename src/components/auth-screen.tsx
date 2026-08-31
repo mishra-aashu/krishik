@@ -9,6 +9,7 @@ import {
   Modal,
   FlatList,
   ActivityIndicator,
+  ImageBackground,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/auth-context';
@@ -223,293 +224,311 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
 
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      {/* Language Selector */}
-      <View style={styles.langToggleContainer}>
-        <Pressable
-          onPress={() => setLang(lang === 'hi' ? 'en' : 'hi')}
-          style={[styles.langToggleBtn, { borderColor: theme.primary }]}
-        >
-          <ThemedText
-            type="smallBold"
-            style={{ color: theme.primary }}
+    <SafeAreaView style={styles.container}>
+      <ImageBackground
+        source={require('@/assets/images/farm_bg.png')}
+        style={styles.bgImage}
+        resizeMode="cover"
+      >
+        {/* Subtle Dark/Emerald Gradient Overlay */}
+        <View style={styles.bgOverlay} />
+
+        {/* Language Selector */}
+        <View style={styles.langToggleContainer}>
+          <Pressable
+            onPress={() => setLang(lang === 'hi' ? 'en' : 'hi')}
+            style={[styles.langToggleBtn, { backgroundColor: theme.dark ? 'rgba(20,40,25,0.85)' : 'rgba(255,255,255,0.92)', borderColor: theme.primary }]}
           >
-            🇮 {lang === 'hi' ? 'Switch to English' : 'हिंदी में बदलें'}
-          </ThemedText>
-        </Pressable>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-
-        {/* Brand Header */}
-        <View style={styles.brandContainer}>
-          <View style={[styles.brandLogo, { backgroundColor: theme.primary }]}>
-            <SymbolView
-              name={{ ios: 'laurel.leading', android: 'spa', web: 'spa' } as any}
-              size={32}
-              tintColor={theme.onPrimary}
-            />
-          </View>
-          <ThemedText type="title" style={[styles.brandName, { color: theme.primary }]}>
-            {t.appName}
-          </ThemedText>
-          <ThemedText type="small" style={[styles.subText, { color: theme.textSecondary }]}>
-            {t.subtitle}
-          </ThemedText>
-          <ThemedText type="subtitle" style={[styles.welcomeText, { color: theme.text }]}>
-            {t.welcome}
-          </ThemedText>
+            <ThemedText
+              type="smallBold"
+              style={{ color: theme.primary }}
+            >
+              🇮 {lang === 'hi' ? 'Switch to English' : 'हिंदी में बदलें'}
+            </ThemedText>
+          </Pressable>
         </View>
 
-        {/* Form Container */}
-        <ThemedView type="card" style={[styles.authCard, { borderColor: theme.border }]}>
-          {/* Mode Selector Tabs */}
-          <View style={styles.modeTabs}>
-            <Pressable
-              onPress={() => {
-                setIsLoginMode(true);
-                setErrorMsg(null);
-                setStep(1);
-              }}
-              style={[
-                styles.modeTabBtn,
-                isLoginMode && [styles.activeModeTab, { borderBottomColor: theme.primary }]
-              ]}
-            >
-              <ThemedText
-                type="smallBold"
-                style={[styles.modeTabText, isLoginMode ? { color: theme.primary } : { color: theme.textSecondary }]}
-              >
-                {t.loginTab}
+        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+
+          {/* Brand Header */}
+          <View style={styles.brandContainer}>
+            <View style={[styles.brandLogo, { backgroundColor: theme.primary }]}>
+              <SymbolView
+                name={{ ios: 'laurel.leading', android: 'spa', web: 'spa' } as any}
+                size={34}
+                tintColor={theme.onPrimary}
+              />
+            </View>
+            <ThemedText type="title" style={[styles.brandName, { color: '#ffffff' }]}>
+              {t.appName}
+            </ThemedText>
+            <View style={styles.taglineBadge}>
+              <ThemedText type="smallBold" style={{ color: '#E8F5E9', fontSize: 13, textTransform: 'uppercase', letterSpacing: 1 }}>
+                {t.subtitle}
               </ThemedText>
-            </Pressable>
-            <Pressable
-              onPress={() => {
-                setIsLoginMode(false);
-                setErrorMsg(null);
-                setStep(1);
-              }}
-              style={[
-                styles.modeTabBtn,
-                !isLoginMode && [styles.activeModeTab, { borderBottomColor: theme.primary }]
-              ]}
-            >
-              <ThemedText
-                type="smallBold"
-                style={[styles.modeTabText, !isLoginMode ? { color: theme.primary } : { color: theme.textSecondary }]}
-              >
-                {t.signupTab}
-              </ThemedText>
-            </Pressable>
+            </View>
+            <ThemedText type="subtitle" style={[styles.welcomeText, { color: '#F1F8E9' }]}>
+              {t.welcome}
+            </ThemedText>
           </View>
 
-          {errorMsg && (
-            <View style={[styles.errorBox, { backgroundColor: theme.error + '1A', borderColor: theme.error }]}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.one }}>
-                <SymbolView
-                  name={{ ios: 'exclamationmark.triangle.fill', android: 'warning', web: 'warning' } as any}
-                  size={14}
-                  tintColor={theme.error}
-                />
-                <ThemedText type="small" style={{ color: theme.error, fontWeight: '600' }}>
-                  {errorMsg}
-                </ThemedText>
-              </View>
-            </View>
-          )}
-
-          {/* Form Content */}
-          {isLoginMode ? (
-            // LOGIN FORM
-            <View style={styles.formFields}>
-              <View style={styles.inputGroup}>
-                <ThemedText type="smallBold" style={styles.inputLabel}>{t.phoneLabel}</ThemedText>
-                <TextInput
-                  style={[styles.inputField, { color: theme.text, borderColor: theme.border, backgroundColor: theme.backgroundElement }]}
-                  placeholder={t.phonePlace}
-                  placeholderTextColor={theme.textSecondary}
-                  value={phone}
-                  onChangeText={(val) => setPhone(val.replace(/[^0-9]/g, ''))}
-                  keyboardType="phone-pad"
-                  maxLength={10}
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <ThemedText type="smallBold" style={styles.inputLabel}>{t.pinLabel}</ThemedText>
-                <TextInput
-                  style={[styles.inputField, { color: theme.text, borderColor: theme.border, backgroundColor: theme.backgroundElement }]}
-                  placeholder={t.pinPlace}
-                  placeholderTextColor={theme.textSecondary}
-                  value={pin}
-                  onChangeText={(val) => setPin(val.replace(/[^0-9]/g, ''))}
-                  keyboardType="numeric"
-                  secureTextEntry
-                  maxLength={4}
-                />
-              </View>
-
+          {/* Form Container (Glassmorphism Card) */}
+          <View style={[
+            styles.authCard,
+            {
+              backgroundColor: theme.dark ? 'rgba(15, 32, 20, 0.88)' : 'rgba(255, 255, 255, 0.90)',
+              borderColor: theme.dark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.6)'
+            }
+          ]}>
+            {/* Mode Selector Tabs */}
+            <View style={styles.modeTabs}>
               <Pressable
-                onPress={handleAuthSubmit}
-                disabled={isLoading}
-                style={({ pressed }) => [
-                  styles.submitBtn,
-                  { backgroundColor: theme.primary },
-                  pressed && { opacity: 0.9 },
-                  isLoading && { opacity: 0.7 }
+                onPress={() => {
+                  setIsLoginMode(true);
+                  setErrorMsg(null);
+                  setStep(1);
+                }}
+                style={[
+                  styles.modeTabBtn,
+                  isLoginMode && [styles.activeModeTab, { borderBottomColor: theme.primary }]
                 ]}
               >
-                {isLoading ? (
-                  <ActivityIndicator size="small" color={theme.onPrimary} />
-                ) : (
-                  <ThemedText type="smallBold" style={[styles.submitBtnText, { color: theme.onPrimary }]}>{t.btnSubmitLogin}</ThemedText>
-                )}
+                <ThemedText
+                  type="smallBold"
+                  style={[styles.modeTabText, isLoginMode ? { color: theme.primary } : { color: theme.textSecondary }]}
+                >
+                  {t.loginTab}
+                </ThemedText>
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  setIsLoginMode(false);
+                  setErrorMsg(null);
+                  setStep(1);
+                }}
+                style={[
+                  styles.modeTabBtn,
+                  !isLoginMode && [styles.activeModeTab, { borderBottomColor: theme.primary }]
+                ]}
+              >
+                <ThemedText
+                  type="smallBold"
+                  style={[styles.modeTabText, !isLoginMode ? { color: theme.primary } : { color: theme.textSecondary }]}
+                >
+                  {t.signupTab}
+                </ThemedText>
               </Pressable>
             </View>
-          ) : (
-            // SIGNUP FORM (MULTI-STEP)
-            <View style={styles.formFields}>
-              {step === 1 ? (
-                // Step 1: Account credentials
-                <View style={{ gap: Spacing.two }}>
-                  <View style={styles.inputGroup}>
-                    <ThemedText type="smallBold" style={styles.inputLabel}>{t.nameLabel}</ThemedText>
-                    <TextInput
-                      style={[styles.inputField, { color: theme.text, borderColor: theme.border, backgroundColor: theme.backgroundElement }]}
-                      placeholder={t.namePlace}
-                      placeholderTextColor={theme.textSecondary}
-                      value={name}
-                      onChangeText={setName}
-                      autoCapitalize="words"
-                    />
-                  </View>
 
-                  <View style={styles.inputGroup}>
-                    <ThemedText type="smallBold" style={styles.inputLabel}>{t.phoneLabel}</ThemedText>
-                    <TextInput
-                      style={[styles.inputField, { color: theme.text, borderColor: theme.border, backgroundColor: theme.backgroundElement }]}
-                      placeholder={t.phonePlace}
-                      placeholderTextColor={theme.textSecondary}
-                      value={phone}
-                      onChangeText={(val) => setPhone(val.replace(/[^0-9]/g, ''))}
-                      keyboardType="phone-pad"
-                      maxLength={10}
-                    />
-                  </View>
-
-                  <View style={styles.inputGroup}>
-                    <ThemedText type="smallBold" style={styles.inputLabel}>{t.pinLabel}</ThemedText>
-                    <TextInput
-                      style={[styles.inputField, { color: theme.text, borderColor: theme.border, backgroundColor: theme.backgroundElement }]}
-                      placeholder={t.pinPlace}
-                      placeholderTextColor={theme.textSecondary}
-                      value={pin}
-                      onChangeText={(val) => setPin(val.replace(/[^0-9]/g, ''))}
-                      keyboardType="numeric"
-                      secureTextEntry
-                      maxLength={4}
-                    />
-                  </View>
-
-                  <Pressable
-                    onPress={handleNextStep}
-                    style={({ pressed }) => [
-                      styles.submitBtn,
-                      { backgroundColor: theme.primary },
-                      pressed && { opacity: 0.9 }
-                    ]}
-                  >
-                    <ThemedText type="smallBold" style={[styles.submitBtnText, { color: theme.onPrimary }]}>{t.btnNext}</ThemedText>
-                  </Pressable>
+            {errorMsg && (
+              <View style={[styles.errorBox, { backgroundColor: theme.error + '1A', borderColor: theme.error }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.one }}>
+                  <SymbolView
+                    name={{ ios: 'exclamationmark.triangle.fill', android: 'warning', web: 'warning' } as any}
+                    size={14}
+                    tintColor={theme.error}
+                  />
+                  <ThemedText type="small" style={{ color: theme.error, fontWeight: '600' }}>
+                    {errorMsg}
+                  </ThemedText>
                 </View>
-              ) : (
-                // Step 2: Farm Profile Details
-                <View style={{ gap: Spacing.two }}>
-                  <View style={styles.inputGroup}>
-                    <ThemedText type="smallBold" style={styles.inputLabel}>{t.stateLabel}</ThemedText>
-                    <Pressable
-                      onPress={() => openModal('state')}
-                      style={[styles.selectorInputBtn, { borderColor: theme.border, backgroundColor: theme.backgroundElement }]}
-                    >
-                      <ThemedText type="small" style={{ color: selectedState ? theme.text : theme.textSecondary }}>
-                        {selectedState || t.selectPlace}
-                      </ThemedText>
-                    </Pressable>
-                  </View>
+              </View>
+            )}
 
-                  <View style={styles.inputGroup}>
-                    <ThemedText type="smallBold" style={styles.inputLabel}>{t.soilLabel}</ThemedText>
-                    <Pressable
-                      onPress={() => openModal('soil')}
-                      style={[styles.selectorInputBtn, { borderColor: theme.border, backgroundColor: theme.backgroundElement }]}
-                    >
-                      <ThemedText type="small" style={{ color: selectedSoil ? theme.text : theme.textSecondary }}>
-                        {selectedSoil || t.selectPlace}
-                      </ThemedText>
-                    </Pressable>
-                  </View>
+            {/* Form Content */}
+            {isLoginMode ? (
+              // LOGIN FORM
+              <View style={styles.formFields}>
+                <View style={styles.inputGroup}>
+                  <ThemedText type="smallBold" style={styles.inputLabel}>{t.phoneLabel}</ThemedText>
+                  <TextInput
+                    style={[styles.inputField, { color: theme.text, borderColor: theme.border, backgroundColor: theme.dark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.7)' }]}
+                    placeholder={t.phonePlace}
+                    placeholderTextColor={theme.textSecondary}
+                    value={phone}
+                    onChangeText={(val) => setPhone(val.replace(/[^0-9]/g, ''))}
+                    keyboardType="phone-pad"
+                    maxLength={10}
+                  />
+                </View>
 
-                  <View style={styles.inputGroup}>
-                    <ThemedText type="smallBold" style={styles.inputLabel}>{t.cropLabel}</ThemedText>
-                    <Pressable
-                      onPress={() => openModal('crop')}
-                      style={[styles.selectorInputBtn, { borderColor: theme.border, backgroundColor: theme.backgroundElement }]}
-                    >
-                      <ThemedText type="small" style={{ color: selectedCrop ? theme.text : theme.textSecondary }}>
-                        {selectedCrop || t.selectPlace}
-                      </ThemedText>
-                    </Pressable>
-                  </View>
+                <View style={styles.inputGroup}>
+                  <ThemedText type="smallBold" style={styles.inputLabel}>{t.pinLabel}</ThemedText>
+                  <TextInput
+                    style={[styles.inputField, { color: theme.text, borderColor: theme.border, backgroundColor: theme.dark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.7)' }]}
+                    placeholder={t.pinPlace}
+                    placeholderTextColor={theme.textSecondary}
+                    value={pin}
+                    onChangeText={(val) => setPin(val.replace(/[^0-9]/g, ''))}
+                    keyboardType="numeric"
+                    secureTextEntry
+                    maxLength={4}
+                  />
+                </View>
 
-                  <View style={styles.signupNavBtns}>
+                <Pressable
+                  onPress={handleAuthSubmit}
+                  disabled={isLoading}
+                  style={({ pressed }) => [
+                    styles.submitBtn,
+                    { backgroundColor: theme.primary },
+                    pressed && { opacity: 0.9 },
+                    isLoading && { opacity: 0.7 }
+                  ]}
+                >
+                  {isLoading ? (
+                    <ActivityIndicator size="small" color={theme.onPrimary} />
+                  ) : (
+                    <ThemedText type="smallBold" style={[styles.submitBtnText, { color: theme.onPrimary }]}>{t.btnSubmitLogin}</ThemedText>
+                  )}
+                </Pressable>
+              </View>
+            ) : (
+              // SIGNUP FORM (MULTI-STEP)
+              <View style={styles.formFields}>
+                {step === 1 ? (
+                  // Step 1: Account credentials
+                  <View style={{ gap: Spacing.two }}>
+                    <View style={styles.inputGroup}>
+                      <ThemedText type="smallBold" style={styles.inputLabel}>{t.nameLabel}</ThemedText>
+                      <TextInput
+                        style={[styles.inputField, { color: theme.text, borderColor: theme.border, backgroundColor: theme.dark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.7)' }]}
+                        placeholder={t.namePlace}
+                        placeholderTextColor={theme.textSecondary}
+                        value={name}
+                        onChangeText={setName}
+                        autoCapitalize="words"
+                      />
+                    </View>
+
+                    <View style={styles.inputGroup}>
+                      <ThemedText type="smallBold" style={styles.inputLabel}>{t.phoneLabel}</ThemedText>
+                      <TextInput
+                        style={[styles.inputField, { color: theme.text, borderColor: theme.border, backgroundColor: theme.dark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.7)' }]}
+                        placeholder={t.phonePlace}
+                        placeholderTextColor={theme.textSecondary}
+                        value={phone}
+                        onChangeText={(val) => setPhone(val.replace(/[^0-9]/g, ''))}
+                        keyboardType="phone-pad"
+                        maxLength={10}
+                      />
+                    </View>
+
+                    <View style={styles.inputGroup}>
+                      <ThemedText type="smallBold" style={styles.inputLabel}>{t.pinLabel}</ThemedText>
+                      <TextInput
+                        style={[styles.inputField, { color: theme.text, borderColor: theme.border, backgroundColor: theme.dark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.7)' }]}
+                        placeholder={t.pinPlace}
+                        placeholderTextColor={theme.textSecondary}
+                        value={pin}
+                        onChangeText={(val) => setPin(val.replace(/[^0-9]/g, ''))}
+                        keyboardType="numeric"
+                        secureTextEntry
+                        maxLength={4}
+                      />
+                    </View>
+
                     <Pressable
-                      onPress={() => setStep(1)}
+                      onPress={handleNextStep}
                       style={({ pressed }) => [
-                        styles.backBtn,
-                        { borderColor: theme.border },
-                        pressed && { backgroundColor: theme.backgroundSelected }
-                      ]}
-                    >
-                      <ThemedText type="smallBold" style={{ color: theme.textSecondary }}>{t.btnBack}</ThemedText>
-                    </Pressable>
-
-                    <Pressable
-                      onPress={handleAuthSubmit}
-                      disabled={isLoading}
-                      style={({ pressed }) => [
-                        styles.signupSubmitBtn,
+                        styles.submitBtn,
                         { backgroundColor: theme.primary },
-                        pressed && { opacity: 0.9 },
-                        isLoading && { opacity: 0.7 }
+                        pressed && { opacity: 0.9 }
                       ]}
                     >
-                      {isLoading ? (
-                        <ActivityIndicator size="small" color={theme.onPrimary} />
-                      ) : (
-                        <ThemedText type="smallBold" style={[styles.submitBtnText, { color: theme.onPrimary }]}>{t.btnSubmitSignup}</ThemedText>
-                      )}
+                      <ThemedText type="smallBold" style={[styles.submitBtnText, { color: theme.onPrimary }]}>{t.btnNext}</ThemedText>
                     </Pressable>
                   </View>
-                </View>
-              )}
-            </View>
-          )}
-        </ThemedView>
+                ) : (
+                  // Step 2: Farm Profile Details
+                  <View style={{ gap: Spacing.two }}>
+                    <View style={styles.inputGroup}>
+                      <ThemedText type="smallBold" style={styles.inputLabel}>{t.stateLabel}</ThemedText>
+                      <Pressable
+                        onPress={() => openModal('state')}
+                        style={[styles.selectorInputBtn, { borderColor: theme.border, backgroundColor: theme.dark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.7)' }]}
+                      >
+                        <ThemedText type="small" style={{ color: selectedState ? theme.text : theme.textSecondary }}>
+                          {selectedState || t.selectPlace}
+                        </ThemedText>
+                      </Pressable>
+                    </View>
 
-        {/* Demo Bypass / Skip for now Button */}
-        <Pressable
-          onPress={handleSkipLogin}
-          disabled={isLoading}
-          style={({ pressed }) => [
-            styles.skipBtn,
-            pressed && { opacity: 0.8 }
-          ]}
-        >
-          <ThemedText type="smallBold" style={[styles.skipBtnText, { color: theme.primary }]}>
-            {t.btnSkip}
-          </ThemedText>
-        </Pressable>
-      </ScrollView>
+                    <View style={styles.inputGroup}>
+                      <ThemedText type="smallBold" style={styles.inputLabel}>{t.soilLabel}</ThemedText>
+                      <Pressable
+                        onPress={() => openModal('soil')}
+                        style={[styles.selectorInputBtn, { borderColor: theme.border, backgroundColor: theme.dark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.7)' }]}
+                      >
+                        <ThemedText type="small" style={{ color: selectedSoil ? theme.text : theme.textSecondary }}>
+                          {selectedSoil || t.selectPlace}
+                        </ThemedText>
+                      </Pressable>
+                    </View>
+
+                    <View style={styles.inputGroup}>
+                      <ThemedText type="smallBold" style={styles.inputLabel}>{t.cropLabel}</ThemedText>
+                      <Pressable
+                        onPress={() => openModal('crop')}
+                        style={[styles.selectorInputBtn, { borderColor: theme.border, backgroundColor: theme.dark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.7)' }]}
+                      >
+                        <ThemedText type="small" style={{ color: selectedCrop ? theme.text : theme.textSecondary }}>
+                          {selectedCrop || t.selectPlace}
+                        </ThemedText>
+                      </Pressable>
+                    </View>
+
+                    <View style={styles.signupNavBtns}>
+                      <Pressable
+                        onPress={() => setStep(1)}
+                        style={({ pressed }) => [
+                          styles.backBtn,
+                          { borderColor: theme.border },
+                          pressed && { backgroundColor: theme.backgroundSelected }
+                        ]}
+                      >
+                        <ThemedText type="smallBold" style={{ color: theme.textSecondary }}>{t.btnBack}</ThemedText>
+                      </Pressable>
+
+                      <Pressable
+                        onPress={handleAuthSubmit}
+                        disabled={isLoading}
+                        style={({ pressed }) => [
+                          styles.signupSubmitBtn,
+                          { backgroundColor: theme.primary },
+                          pressed && { opacity: 0.9 },
+                          isLoading && { opacity: 0.7 }
+                        ]}
+                      >
+                        {isLoading ? (
+                          <ActivityIndicator size="small" color={theme.onPrimary} />
+                        ) : (
+                          <ThemedText type="smallBold" style={[styles.submitBtnText, { color: theme.onPrimary }]}>{t.btnSubmitSignup}</ThemedText>
+                        )}
+                      </Pressable>
+                    </View>
+                  </View>
+                )}
+              </View>
+            )}
+          </View>
+
+          {/* Demo Bypass / Skip for now Button */}
+          <Pressable
+            onPress={handleSkipLogin}
+            disabled={isLoading}
+            style={({ pressed }) => [
+              styles.skipBtn,
+              { backgroundColor: theme.dark ? 'rgba(15, 32, 20, 0.85)' : 'rgba(255, 255, 255, 0.90)' },
+              pressed && { opacity: 0.8 }
+            ]}
+          >
+            <ThemedText type="smallBold" style={[styles.skipBtnText, { color: theme.primary }]}>
+              {t.btnSkip}
+            </ThemedText>
+          </Pressable>
+        </ScrollView>
+      </ImageBackground>
 
       {/* Selector Modals */}
       <SelectionModal
@@ -555,9 +574,18 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
   },
+  bgImage: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+  bgOverlay: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(5, 20, 10, 0.45)',
+  },
   scrollContent: {
     paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.two,
+    paddingVertical: Spacing.four,
     alignItems: 'center',
     justifyContent: 'center',
     flexGrow: 1,
@@ -567,39 +595,88 @@ const styles = StyleSheet.create({
   },
   langToggleContainer: {
     position: 'absolute',
-    top: Spacing.two,
+    top: Spacing.three,
     right: Spacing.four,
     zIndex: 10,
   },
   langToggleBtn: {
     borderWidth: 1,
-    borderRadius: Spacing.two,
+    borderRadius: 20,
     paddingVertical: Spacing.one,
     paddingHorizontal: Spacing.two,
+    ...Platform.select({
+      web: {
+        backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
+        boxShadow: '0 4px 14px rgba(0,0,0,0.2)',
+      } as any,
+      default: {
+        elevation: 4,
+      }
+    })
   },
   brandContainer: {
     alignItems: 'center',
     marginBottom: Spacing.three,
-    gap: Spacing.half,
+    gap: Spacing.one,
   },
   brandLogo: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 68,
+    height: 68,
+    borderRadius: 34,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.half,
+    borderWidth: 2,
+    borderColor: '#C8E6C9',
+    ...Platform.select({
+      web: {
+        boxShadow: '0 8px 24px rgba(46, 125, 50, 0.65)',
+      } as any,
+      default: {
+        elevation: 8,
+      }
+    })
   },
   brandIcon: {
     fontSize: 36,
   },
   brandName: {
-    fontSize: 32,
+    fontSize: 34,
     fontFamily: 'Pravah-Bold',
+    ...Platform.select({
+      web: {
+        textShadow: '0 2px 10px rgba(0,0,0,0.5)',
+      } as any,
+      default: {}
+    })
+  },
+  taglineBadge: {
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    paddingHorizontal: 14,
+    paddingVertical: 4,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.35)',
+    marginVertical: 2,
+    ...Platform.select({
+      web: {
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+      } as any,
+      default: {}
+    })
   },
   welcomeText: {
     fontSize: 22,
     marginTop: Spacing.half,
+    fontWeight: '700',
+    ...Platform.select({
+      web: {
+        textShadow: '0 2px 8px rgba(0,0,0,0.4)',
+      } as any,
+      default: {}
+    })
   },
   subText: {
     fontSize: 15,
@@ -611,11 +688,25 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.three,
     borderWidth: 1,
     padding: Spacing.three,
+    ...Platform.select({
+      web: {
+        backdropFilter: 'blur(24px)',
+        WebkitBackdropFilter: 'blur(24px)',
+        boxShadow: '0 20px 48px rgba(0, 0, 0, 0.28), 0 0 2px rgba(255, 255, 255, 0.8) inset',
+      } as any,
+      default: {
+        elevation: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.3,
+        shadowRadius: 18,
+      }
+    })
   },
   modeTabs: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.06)',
+    borderBottomColor: 'rgba(0,0,0,0.08)',
     marginBottom: Spacing.three,
   },
   modeTabBtn: {
@@ -667,6 +758,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: Spacing.three,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 6px 18px rgba(46, 125, 50, 0.4)',
+      } as any,
+      default: {
+        elevation: 4,
+      }
+    })
   },
   submitBtnText: {
     color: '#ffffff',
@@ -694,7 +793,21 @@ const styles = StyleSheet.create({
   },
   skipBtn: {
     marginTop: Spacing.three,
-    paddingVertical: Spacing.one,
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.4)',
+    ...Platform.select({
+      web: {
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
+      } as any,
+      default: {
+        elevation: 4,
+      }
+    })
   },
   skipBtnText: {
     fontSize: 14,
