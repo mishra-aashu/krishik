@@ -1,0 +1,188 @@
+[
+  {
+    "id": "wheat",
+    "name": "Wheat (गेहूं)",
+    "en": "Wheat",
+    "hi": "गेहूं"
+  },
+  {
+    "id": "paddy",
+    "name": "Paddy (धान)",
+    "en": "Paddy",
+    "hi": "धान"
+  },
+  {
+    "id": "mustard",
+    "name": "Mustard (सरसों)",
+    "en": "Mustard",
+    "hi": "सरसों"
+  },
+  {
+    "id": "cotton",
+    "name": "Cotton (कपास)",
+    "en": "Cotton",
+    "hi": "कपास"
+  },
+  {
+    "id": "sugarcane",
+    "name": "Sugarcane (गन्ना)",
+    "en": "Sugarcane",
+    "hi": "गन्ना"
+  },
+  {
+    "id": "potato",
+    "name": "Potato (आलू)",
+    "en": "Potato",
+    "hi": "आलू"
+  },
+  {
+    "id": "maize",
+    "name": "Maize (मक्का)",
+    "en": "Maize",
+    "hi": "मक्का"
+  },
+  {
+    "id": "soybean",
+    "name": "Soybean (सोयाबीन)",
+    "en": "Soybean",
+    "hi": "सोयाबीन"
+  },
+  {
+    "id": "onion",
+    "name": "Onion (प्याज)",
+    "en": "Onion",
+    "hi": "प्याज"
+  },
+  {
+    "id": "garlic",
+    "name": "Garlic (लहसुन)",
+    "en": "Garlic",
+    "hi": "लहसुन"
+  },
+  {
+    "id": "tomato",
+    "name": "Tomato (टमाटर)",
+    "en": "Tomato",
+    "hi": "टमाटर"
+  },
+  {
+    "id": "chilli",
+    "name": "Chilli (मिर्च)",
+    "en": "Chilli",
+    "hi": "मिर्च"
+  },
+  {
+    "id": "ginger",
+    "name": "Ginger (अदरक)",
+    "en": "Ginger",
+    "hi": "अदरक"
+  },
+  {
+    "id": "turmeric",
+    "name": "Turmeric (हल्दी)",
+    "en": "Turmeric",
+    "hi": "हल्दी"
+  },
+  {
+    "id": "groundnut",
+    "name": "Groundnut (मूंगफली)",
+    "en": "Groundnut",
+    "hi": "मूंगफली"
+  },
+  {
+    "id": "gram",
+    "name": "Gram (चना)",
+    "en": "Gram",
+    "hi": "चना"
+  },
+  {
+    "id": "pea",
+    "name": "Pea (मटर)",
+    "en": "Pea",
+    "hi": "मटर"
+  },
+  {
+    "id": "pigeon_pea",
+    "name": "Pigeon Pea (अरहर)",
+    "en": "Pigeon Pea",
+    "hi": "अरहर"
+  },
+  {
+    "id": "mung_bean",
+    "name": "Mung Bean (मूंग)",
+    "en": "Mung Bean",
+    "hi": "मूंग"
+  },
+  {
+    "id": "black_gram",
+    "name": "Black Gram (उड़द)",
+    "en": "Black Gram",
+    "hi": "उड़द"
+  },
+  {
+    "id": "lentil",
+    "name": "Lentil (मसूर)",
+    "en": "Lentil",
+    "hi": "मसूर"
+  },
+  {
+    "id": "pearl_millet",
+    "name": "Pearl Millet (बाजरा)",
+    "en": "Pearl Millet",
+    "hi": "बाजरा"
+  },
+  {
+    "id": "finger_millet",
+    "name": "Finger Millet (रागी)",
+    "en": "Finger Millet",
+    "hi": "रागी"
+  },
+  {
+    "id": "sorghum",
+    "name": "Sorghum (ज्वार)",
+    "en": "Sorghum",
+    "hi": "ज्वार"
+  },
+  {
+    "id": "barley",
+    "name": "Barley (जौ)",
+    "en": "Barley",
+    "hi": "जौ"
+  },
+  {
+    "id": "sesame",
+    "name": "Sesame (तिल)",
+    "en": "Sesame",
+    "hi": "तिल"
+  },
+  {
+    "id": "sunflower",
+    "name": "Sunflower (सूरजमुखी)",
+    "en": "Sunflower",
+    "hi": "सूरजमुखी"
+  },
+  {
+    "id": "cauliflower",
+    "name": "Cauliflower (फूलगोभी)",
+    "en": "Cauliflower",
+    "hi": "फूलगोभी"
+  },
+  {
+    "id": "cabbage",
+    "name": "Cabbage (पत्तागोभी)",
+    "en": "Cabbage",
+    "hi": "पत्तागोभी"
+  },
+  {
+    "id": "brinjal",
+    "name": "Brinjal (बैंगन)",
+    "en": "Brinjal",
+    "hi": "बैंगन"
+  },
+  {
+    "id": "okra",
+    "name": "Okra (भिंडी)",
+    "en": "Okra",
+    "hi": "भिंडी"
+  }
+]

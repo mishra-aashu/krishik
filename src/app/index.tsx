@@ -21,6 +21,11 @@ import { Colors, Spacing, BottomTabInset, MaxContentWidth } from '@/constants/th
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/context/auth-context';
 import { LocalStorage } from '@/utils/storage';
+import { fetchWeatherData, getWeatherCondition, generateWeatherAdvisory, type RawWeatherData } from '@/services/weather-service';
+import { fetchLiveMandiPrices, type MandiItem } from '@/services/mandi-service';
+
+import cropsData from '@/constants/crops.json';
+import { SelectionModal } from '@/components/selection-modal';
 
 // Constants for Profile
 const STATES = [
@@ -31,10 +36,7 @@ const SOILS = [
   'Alluvial Soil (जलोढ़)', 'Black Soil (काली मिट्टी)', 'Red Soil (लाल मिट्टी)', 
   'Sandy Soil (बलुई मिट्टी)', 'Clayey Soil (चिकनी मिट्टी)', 'Loamy Soil (दोमट)'
 ];
-const CROPS = [
-  'Wheat (गेहूं)', 'Paddy (धान)', 'Mustard (सरसों)', 'Cotton (कपास)', 
-  'Sugarcane (गन्ना)', 'Potato (आलू)', 'Maize (मक्का)', 'Soybean (सोयाबीन)'
-];
+const CROPS = cropsData.map(c => c.name);
 
 // Initial Mandi Prices (Mock)
 const INITIAL_MANDI_PRICES = [
@@ -54,6 +56,40 @@ export default function HomeScreen() {
 
   // Language state
   const [language, setLanguage] = useState<'hi' | 'en'>('hi');
+
+  // Weather state
+  const [weatherData, setWeatherData] = useState<RawWeatherData | null>(null);
+  const [isLoadingWeather, setIsLoadingWeather] = useState(true);
+  const [weatherError, setWeatherError] = useState<string | null>(null);
+
+  // Fetch weather when farmState changes
+  useEffect(() => {
+    let isMounted = true;
+    async function loadWeather() {
+      if (!farmState) return;
+      setIsLoadingWeather(true);
+      setWeatherError(null);
+      try {
+        const data = await fetchWeatherData(farmState);
+        if (isMounted) {
+          setWeatherData(data);
+        }
+      } catch (err) {
+        console.error('Error fetching weather:', err);
+        if (isMounted) {
+          setWeatherError('Failed to load weather');
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingWeather(false);
+        }
+      }
+    }
+    loadWeather();
+    return () => {
+      isMounted = false;
+    };
+  }, [farmState]);
 
   // Load language preference
   useEffect(() => {
@@ -102,44 +138,51 @@ export default function HomeScreen() {
   // Modal selector controls
   const [activeModal, setActiveModal] = useState<'state' | 'soil' | 'crop' | null>(null);
 
-  // Mandi prices state
-  const [mandiPrices, setMandiPrices] = useState(INITIAL_MANDI_PRICES);
-  const [mandiSearch, setMandiSearch] = useState('');
-  const [isRefreshingPrices, setIsRefreshingPrices] = useState(false);
-
-  // Weather Advisory Mock Data Generator
-  const getWeatherAdvisory = () => {
-    const cropName = formatLabel(farmCrop);
-    const isHindi = language === 'hi';
-    const stateName = formatState(farmState);
-    if (farmState === 'Punjab' || farmState === 'Haryana') {
-      return {
-        temp: '31°C',
-        status: isHindi ? 'धूप' : 'Sunny',
-        advice: isHindi
-          ? `${stateName} में आज धूप खिली है। अपनी ${cropName} की फसल में यूरिया डालने के लिए उपयुक्त समय है। यदि मिट्टी सूखी दिखे तो शाम को सिंचाई करें।`
-          : `Sunny day in ${stateName}. Ideal for applying urea top-dressing to your ${cropName} crop. Irrigate in the evening if soil looks dry.`
-      };
-    }
-    if (farmState === 'Uttar Pradesh' || farmState === 'Bihar') {
-      return {
-        temp: '29°C',
-        status: isHindi ? 'आर्द्र' : 'Humid',
-        advice: isHindi
-          ? `अधिक आर्द्रता दर्ज की गई है। ${cropName} की फसल में जड़ के कीटों और फफूंद के पत्तों के धब्बों से सावधान रहें। आवश्यकतानुसार जैविक नीम के तेल का छिड़काव करें।`
-          : `High humidity detected. Watch out for root pests and fungal leaf spots on your ${cropName}. Spray organic neem oil if needed.`
-      };
-    }
-    return {
-      temp: '32°C',
-      status: isHindi ? 'आंशिक बादल' : 'Partly Cloudy',
-      advice: isHindi
-        ? `मौसम स्थिर है। खरपतवार हटाने और खेत की तैयारी के लिए अच्छा दिन है। ${cropName} के लिए जल निकासी नाली साफ रखें।`
-        : `Weather is stable. Good day for weed removal and field preparation. Ensure proper drainage channels are clear for ${cropName}.`
-    };
+  const openModal = (type: 'state' | 'soil' | 'crop') => {
+    setActiveModal(type);
   };
 
-  const weather = getWeatherAdvisory();
+  const closeModal = () => {
+    setActiveModal(null);
+  };
+
+  // Mandi prices state
+  const [mandiPrices, setMandiPrices] = useState<MandiItem[]>(INITIAL_MANDI_PRICES);
+  const [mandiSearch, setMandiSearch] = useState('');
+  const [isRefreshingPrices, setIsRefreshingPrices] = useState(false);
+  const [isLoadingMandi, setIsLoadingMandi] = useState(true);
+  const [mandiError, setMandiError] = useState<string | null>(null);
+
+  // Fetch live Mandi prices when farmState changes
+  useEffect(() => {
+    let isMounted = true;
+    async function loadMandi() {
+      if (!farmState) return;
+      setIsLoadingMandi(true);
+      setMandiError(null);
+      try {
+        const data = await fetchLiveMandiPrices(farmState);
+        if (isMounted) {
+          setMandiPrices(data.length > 0 ? data : INITIAL_MANDI_PRICES);
+        }
+      } catch (err) {
+        console.error('Error fetching live mandi prices:', err);
+        if (isMounted) {
+          // Fall back to mock prices so the screen is never blank
+          setMandiPrices(INITIAL_MANDI_PRICES);
+          setMandiError('Failed to fetch live prices');
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingMandi(false);
+        }
+      }
+    }
+    loadMandi();
+    return () => {
+      isMounted = false;
+    };
+  }, [farmState]);
 
   // Save changes to storage
   const saveProfileValue = async (key: 'state' | 'soil' | 'crop', value: string) => {
@@ -155,29 +198,25 @@ export default function HomeScreen() {
       nextCrop = value;
     }
 
-    await updateProfile(nextState, nextSoil, nextCrop);
-    setActiveModal(null);
+    await updateProfile(userName, nextState, nextSoil, nextCrop);
+    closeModal();
   };
 
 
   // Refresh Mandi prices
-  const refreshMandiPrices = () => {
+  const refreshMandiPrices = async () => {
+    if (!farmState) return;
     setIsRefreshingPrices(true);
-    setTimeout(() => {
-      const updated = mandiPrices.map(item => {
-        const fluctuationPercent = (Math.random() * 2 - 1) * 0.015; // +/- 1.5%
-        const newPrice = Math.round(item.price * (1 + fluctuationPercent));
-        const diff = newPrice - item.price;
-        const changeStr = diff > 0 ? `+₹${diff}` : diff < 0 ? `-₹${Math.abs(diff)}` : '0';
-        return {
-          ...item,
-          price: newPrice,
-          change: changeStr
-        };
-      });
-      setMandiPrices(updated);
+    setMandiError(null);
+    try {
+      const data = await fetchLiveMandiPrices(farmState);
+      setMandiPrices(data.length > 0 ? data : INITIAL_MANDI_PRICES);
+    } catch (err) {
+      console.error('Error refreshing Mandi prices:', err);
+      // Keep existing prices or load initial ones
+    } finally {
       setIsRefreshingPrices(false);
-    }, 800);
+    }
   };
 
   // Filter prices
@@ -194,56 +233,7 @@ export default function HomeScreen() {
     });
   };
 
-  const renderModalContent = () => {
-    let list: string[] = [];
-    let title = '';
-    let key: 'state' | 'soil' | 'crop' = 'state';
 
-    if (activeModal === 'state') {
-      list = STATES;
-      title = 'Select State (राज्य चुनें)';
-      key = 'state';
-    } else if (activeModal === 'soil') {
-      list = SOILS;
-      title = 'Select Soil Type (मिट्टी का प्रकार)';
-      key = 'soil';
-    } else if (activeModal === 'crop') {
-      list = CROPS;
-      title = 'Select Crop (फसल चुनें)';
-      key = 'crop';
-    }
-
-    return (
-      <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
-        <ThemedView type="backgroundElement" style={styles.modalCard}>
-          <View style={styles.modalHeader}>
-            <ThemedText type="smallBold">{title}</ThemedText>
-            <Pressable onPress={() => setActiveModal(null)} style={styles.closeBtn}>
-              <ThemedText type="smallBold" style={{ color: theme.error }}>✕</ThemedText>
-            </Pressable>
-          </View>
-
-          <FlatList
-            data={list}
-            keyExtractor={(item) => item}
-            renderItem={({ item }) => (
-              <Pressable
-                onPress={() => saveProfileValue(key, item)}
-                style={({ pressed }) => [
-                  styles.modalItem,
-                  { borderBottomColor: theme.border },
-                  pressed && { backgroundColor: theme.backgroundSelected }
-                ]}
-              >
-                <ThemedText type="small">{item}</ThemedText>
-              </Pressable>
-            )}
-            style={styles.modalList}
-          />
-        </ThemedView>
-      </View>
-    );
-  };
 
   return (
     <ThemedView style={styles.container}>
@@ -259,7 +249,7 @@ export default function HomeScreen() {
                 <SymbolView
                   name={{ ios: 'laurel.leading', android: 'spa', web: 'spa' } as any}
                   size={22}
-                  tintColor="#ffffff"
+                  tintColor={theme.onPrimary}
                 />
               </View>
               <View>
@@ -292,28 +282,92 @@ export default function HomeScreen() {
 
           {/* Weather Widget */}
           <ThemedView type="backgroundElement" style={styles.weatherCard}>
-            <View style={styles.weatherRow}>
-              <View>
-                <ThemedText type="smallBold" style={{ fontSize: 24 }}>{weather.temp}</ThemedText>
-                <ThemedText type="small" style={{ color: theme.textSecondary }}>{weather.status}</ThemedText>
+            {isLoadingWeather ? (
+              <View style={[styles.weatherCenter, { height: 110 }]}>
+                <ActivityIndicator size="small" color={theme.primary} />
+                <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: Spacing.two }}>
+                  {language === 'hi' ? 'मौसम लोड हो रहा है...' : 'Loading weather forecast...'}
+                </ThemedText>
               </View>
-              <SymbolView
-                name={{ ios: 'sun.max.fill', android: 'wb_sunny', web: 'wb_sunny' } as any}
-                size={36}
-                tintColor={theme.accent}
-              />
-            </View>
-            <View style={[styles.weatherDivider, { backgroundColor: theme.border }]} />
-            <View style={styles.weatherAdviceRow}>
-              <SymbolView
-                name={{ ios: 'lightbulb.fill', android: 'lightbulb', web: 'lightbulb' } as any}
-                size={18}
-                tintColor={theme.accent}
-              />
-              <ThemedText type="small" style={styles.weatherAdviceText}>
-                {weather.advice}
-              </ThemedText>
-            </View>
+            ) : weatherError || !weatherData ? (
+              <View style={{ gap: Spacing.two }}>
+                <View style={styles.weatherRow}>
+                  <View>
+                    <ThemedText type="smallBold" style={{ fontSize: 18, color: theme.error }}>
+                      {language === 'hi' ? 'मौसम लोड करने में त्रुटि' : 'Weather unavailable'}
+                    </ThemedText>
+                    <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                      {language === 'hi' ? 'कृपया बाद में पुनः प्रयास करें' : 'Please try again later'}
+                    </ThemedText>
+                  </View>
+                  <SymbolView
+                    name={{ ios: 'exclamationmark.triangle.fill', android: 'warning', web: 'warning' } as any}
+                    size={32}
+                    tintColor={theme.error}
+                  />
+                </View>
+                <View style={[styles.weatherDivider, { backgroundColor: theme.border }]} />
+                <Pressable
+                  onPress={() => {
+                    setIsLoadingWeather(true);
+                    setWeatherError(null);
+                    fetchWeatherData(farmState)
+                      .then(data => {
+                        setWeatherData(data);
+                        setIsLoadingWeather(false);
+                      })
+                      .catch(err => {
+                        console.error('Retry error:', err);
+                        setWeatherError('Failed to load weather');
+                        setIsLoadingWeather(false);
+                      });
+                  }}
+                  style={({ pressed }) => [
+                    styles.retryButton,
+                    { borderColor: theme.primary },
+                    pressed && { backgroundColor: theme.primary + '1A' }
+                  ]}
+                >
+                  <ThemedText type="code" style={{ color: theme.primary, fontWeight: '700' }}>
+                    {language === 'hi' ? 'पुनः प्रयास करें' : 'Retry'}
+                  </ThemedText>
+                </Pressable>
+              </View>
+            ) : (
+              <>
+                <View style={styles.weatherRow}>
+                  <View>
+                    <ThemedText type="smallBold" style={{ fontSize: 24 }}>{weatherData.temp}°C</ThemedText>
+                    <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                      {language === 'hi' ? getWeatherCondition(weatherData.weatherCode).hi : getWeatherCondition(weatherData.weatherCode).en} (RH: {weatherData.humidity}%)
+                    </ThemedText>
+                  </View>
+                  <SymbolView
+                    name={getWeatherCondition(weatherData.weatherCode).icon as any}
+                    size={36}
+                    tintColor={theme.accent}
+                  />
+                </View>
+                <View style={[styles.weatherDivider, { backgroundColor: theme.border }]} />
+                <View style={styles.weatherAdviceRow}>
+                  <SymbolView
+                    name={{ ios: 'lightbulb.fill', android: 'lightbulb', web: 'lightbulb' } as any}
+                    size={18}
+                    tintColor={theme.accent}
+                  />
+                  <ThemedText type="small" style={styles.weatherAdviceText}>
+                    {generateWeatherAdvisory(
+                      weatherData.temp,
+                      weatherData.humidity,
+                      weatherData.weatherCode,
+                      formatState(farmState),
+                      formatLabel(farmCrop),
+                      language
+                    )}
+                  </ThemedText>
+                </View>
+              </>
+            )}
           </ThemedView>
 
           {/* Farm Profile Card */}
@@ -346,7 +400,7 @@ export default function HomeScreen() {
             <View style={styles.profileSelectors}>
               {/* State Picker Button */}
               <Pressable
-                onPress={() => setActiveModal('state')}
+                onPress={() => openModal('state')}
                 style={({ pressed }) => [
                   styles.selectorButton,
                   { backgroundColor: theme.backgroundElement, borderColor: theme.border },
@@ -377,7 +431,7 @@ export default function HomeScreen() {
 
               {/* Soil Picker Button */}
               <Pressable
-                onPress={() => setActiveModal('soil')}
+                onPress={() => openModal('soil')}
                 style={({ pressed }) => [
                   styles.selectorButton,
                   { backgroundColor: theme.backgroundElement, borderColor: theme.border },
@@ -408,7 +462,7 @@ export default function HomeScreen() {
 
               {/* Crop Picker Button */}
               <Pressable
-                onPress={() => setActiveModal('crop')}
+                onPress={() => openModal('crop')}
                 style={({ pressed }) => [
                   styles.selectorButton,
                   { backgroundColor: theme.backgroundElement, borderColor: theme.border },
@@ -552,15 +606,15 @@ export default function HomeScreen() {
               ]}
             >
               {isRefreshingPrices ? (
-                <ActivityIndicator size="small" color="#ffffff" />
+                <ActivityIndicator size="small" color={theme.onPrimary} />
               ) : (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.one }}>
                   <SymbolView
                     name={{ ios: 'arrow.clockwise', android: 'refresh', web: 'refresh' } as any}
                     size={12}
-                    tintColor="#ffffff"
+                    tintColor={theme.onPrimary}
                   />
-                  <ThemedText type="code" style={styles.refreshBtnText}>
+                  <ThemedText type="code" style={[styles.refreshBtnText, { color: theme.onPrimary }]}>
                     {language === 'hi' ? 'ताज़ा करें' : 'Refresh'}
                   </ThemedText>
                 </View>
@@ -577,7 +631,14 @@ export default function HomeScreen() {
               onChangeText={setMandiSearch}
             />
 
-            {filteredMandiPrices.length === 0 ? (
+            {isLoadingMandi ? (
+              <View style={{ paddingVertical: Spacing.four, alignItems: 'center', justifyContent: 'center' }}>
+                <ActivityIndicator size="small" color={theme.primary} />
+                <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: Spacing.two }}>
+                  {language === 'hi' ? 'ताज़ा मंडी भाव लोड हो रहे हैं...' : 'Loading latest market rates...'}
+                </ThemedText>
+              </View>
+            ) : filteredMandiPrices.length === 0 ? (
               <ThemedText type="small" style={styles.emptyText}>
                 {language === 'hi' ? 'खोज से कोई फसल या मंडी नहीं मिली।' : 'No commodities match your search.'}
               </ThemedText>
@@ -587,7 +648,7 @@ export default function HomeScreen() {
                 const isZero = item.change === '0';
                 return (
                   <View key={item.id} style={[styles.mandiItem, { borderBottomColor: theme.border }]}>
-                    <View>
+                    <View style={{ flex: 1, paddingRight: Spacing.two }}>
                       <ThemedText type="smallBold">{formatLabel(item.commodity)}</ThemedText>
                       <ThemedText type="code" style={{ fontSize: 10, color: theme.textSecondary }}>
                         {formatState(item.state.replace(' Mandi', ''))} {language === 'hi' ? 'मंडी' : 'Mandi'}
@@ -625,14 +686,41 @@ export default function HomeScreen() {
         </ScrollView>
 
         {/* Modal Pickers */}
-        <Modal
+        <SelectionModal
           visible={activeModal !== null}
-          transparent={true}
-          animationType="fade"
-          onRequestClose={() => setActiveModal(null)}
-        >
-          {activeModal !== null && renderModalContent()}
-        </Modal>
+          title={
+            activeModal === 'state'
+              ? (language === 'hi' ? 'राज्य चुनें' : 'Select State')
+              : activeModal === 'soil'
+              ? (language === 'hi' ? 'मिट्टी का प्रकार चुनें' : 'Select Soil Type')
+              : (language === 'hi' ? 'फसल चुनें' : 'Select Crop')
+          }
+          placeholder={
+            activeModal === 'state'
+              ? (language === 'hi' ? 'राज्य खोजें...' : 'Search State...')
+              : activeModal === 'soil'
+              ? (language === 'hi' ? 'मिट्टी खोजें...' : 'Search Soil...')
+              : (language === 'hi' ? 'फसल खोजें...' : 'Search Crop...')
+          }
+          list={
+            activeModal === 'state'
+              ? STATES
+              : activeModal === 'soil'
+              ? SOILS
+              : CROPS
+          }
+          selectedValue={
+            activeModal === 'state'
+              ? farmState
+              : activeModal === 'soil'
+              ? farmSoil
+              : farmCrop
+          }
+          onSelect={(value) => {
+            if (activeModal) saveProfileValue(activeModal, value);
+          }}
+          onClose={closeModal}
+        />
       </SafeAreaView>
     </ThemedView>
   );
@@ -697,6 +785,18 @@ const styles = StyleSheet.create({
     padding: Spacing.three,
     gap: Spacing.two,
   },
+  weatherCenter: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+  },
+  retryButton: {
+    borderWidth: 1,
+    paddingVertical: Spacing.one,
+    paddingHorizontal: Spacing.three,
+    borderRadius: Spacing.two,
+    alignSelf: 'center',
+  },
   weatherRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -747,6 +847,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    ...Platform.select({
+      web: { outlineStyle: 'none' } as any,
+      default: {}
+    })
   },
   selectorLeft: {
     flexDirection: 'row',
@@ -875,6 +979,10 @@ const styles = StyleSheet.create({
     height: 24,
     justifyContent: 'center',
     alignItems: 'center',
+    ...Platform.select({
+      web: { outlineStyle: 'none' } as any,
+      default: {}
+    })
   },
   modalList: {
     marginTop: Spacing.two,
@@ -882,5 +990,9 @@ const styles = StyleSheet.create({
   modalItem: {
     paddingVertical: Spacing.three,
     borderBottomWidth: 1,
+    ...Platform.select({
+      web: { outlineStyle: 'none' } as any,
+      default: {}
+    })
   },
 });

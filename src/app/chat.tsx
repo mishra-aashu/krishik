@@ -22,12 +22,23 @@ import { useAuth } from '@/context/auth-context';
 import { LocalStorage } from '@/utils/storage';
 import { sendMessageToGroq, type ModelMode } from '@/services/chat-service';
 import { CustomMarkdown } from '@/components/custom-markdown';
+import Animated, { FadeInRight, FadeInLeft, FadeInDown } from 'react-native-reanimated';
+import * as Speech from 'expo-speech';
+import { startRecording, stopRecording, transcribeAudio } from '@/services/transcription-service';
 
 interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: string;
+}
+
+interface ChatSession {
+  id: string;
+  title: string;
+  crop: string;
+  timestamp: string;
+  messages: ChatMessage[];
 }
 
 export default function ChatScreen() {
@@ -51,12 +62,83 @@ export default function ChatScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  // Multi-session state
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  // Voice & speech states
+  const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
+
+  // Stop reading aloud when leaving the chat
+  useEffect(() => {
+    return () => {
+      Speech.stop();
+    };
+  }, []);
+
+  const handleVoiceInput = async () => {
+    if (isRecording) {
+      try {
+        const uri = await stopRecording();
+        setIsRecording(false);
+        setIsTranscribing(true);
+        setErrorMsg(null);
+        
+        const transcribedText = await transcribeAudio(uri, language);
+        if (transcribedText.trim()) {
+          setInputValue(transcribedText);
+        }
+      } catch (err: any) {
+        console.error('Recording/transcription error:', err);
+        setErrorMsg(err.message || 'Failed to process voice input.');
+        setIsRecording(false);
+      } finally {
+        setIsTranscribing(false);
+      }
+    } else {
+      try {
+        setErrorMsg(null);
+        await startRecording();
+        setIsRecording(true);
+      } catch (err: any) {
+        console.error('Failed to start recording:', err);
+        setErrorMsg(err.message || 'Microphone access failed.');
+        setIsRecording(false);
+      }
+    }
+  };
+
+  const toggleSpeech = async (msg: ChatMessage) => {
+    if (speakingMessageId === msg.id) {
+      Speech.stop();
+      setSpeakingMessageId(null);
+    } else {
+      Speech.stop();
+      setSpeakingMessageId(msg.id);
+      
+      const cleanText = msg.content
+        .replace(/[#*`_-]/g, '') // remove markdown symbols
+        .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1') // replace links with plain text
+        .trim();
+        
+      Speech.speak(cleanText, {
+        language: language === 'hi' ? 'hi-IN' : 'en-IN',
+        rate: 0.85,
+        onDone: () => setSpeakingMessageId(null),
+        onError: () => setSpeakingMessageId(null),
+      });
+    }
+  };
+
   // Load profile and settings
   useEffect(() => {
     async function loadConfig() {
       // Load language preference
       const savedLang = await LocalStorage.getItem('chat_lang');
-
       if (savedLang === 'hi' || savedLang === 'en' || savedLang === 'hinglish') {
         setLanguage(savedLang);
       }
@@ -67,29 +149,68 @@ export default function ChatScreen() {
         setModel(savedModel);
       }
 
-      // Load chat history if present
-      const savedHistory = await LocalStorage.getItem('chat_history');
-      if (savedHistory) {
+      // Load sessions history
+      const savedSessions = await LocalStorage.getItem('chat_sessions');
+      let loadedSessions: ChatSession[] = [];
+      if (savedSessions) {
         try {
-          const parsed = JSON.parse(savedHistory);
+          const parsed = JSON.parse(savedSessions);
           if (Array.isArray(parsed)) {
-            // Clean up any overly large messages in stored history to fix the 413 error from root
-            const cleanHistory = parsed.map(msg => ({
-              ...msg,
-              content: typeof msg.content === 'string' && msg.content.length > 4000
-                ? msg.content.slice(0, 4000) + '\n... [truncated/छोटा किया गया]'
-                : msg.content
-            }));
-            setMessages(cleanHistory);
-            await LocalStorage.setItem('chat_history', JSON.stringify(cleanHistory));
+            loadedSessions = parsed;
           }
         } catch (e) {
-          console.error('Error parsing chat history:', e);
+          console.error('Error parsing chat sessions:', e);
         }
+      }
+
+      // Also migrate old 'chat_history' if present
+      const oldHistory = await LocalStorage.getItem('chat_history');
+      if (oldHistory && loadedSessions.length === 0) {
+        try {
+          const parsedHistory = JSON.parse(oldHistory);
+          if (Array.isArray(parsedHistory) && parsedHistory.length > 0) {
+            const firstMsg = parsedHistory.find(m => m.role === 'user')?.content || 'Previous Chat';
+            const title = firstMsg.slice(0, 30) + (firstMsg.length > 30 ? '...' : '');
+            const newSession: ChatSession = {
+              id: Date.now().toString(),
+              title,
+              crop: farmCrop || 'Wheat',
+              timestamp: new Date().toLocaleDateString(),
+              messages: parsedHistory,
+            };
+            loadedSessions = [newSession];
+            await LocalStorage.setItem('chat_sessions', JSON.stringify(loadedSessions));
+            await LocalStorage.removeItem('chat_history');
+          }
+        } catch (e) {
+          console.error('Error migrating old history:', e);
+        }
+      }
+
+      setSessions(loadedSessions);
+
+      if (loadedSessions.length > 0) {
+        // Load the most recent session
+        setActiveSessionId(loadedSessions[0].id);
+        setMessages(loadedSessions[0].messages);
+      } else {
+        // Create an initial empty session
+        const initialSessionId = Date.now().toString();
+        const initialSession: ChatSession = {
+          id: initialSessionId,
+          title: savedLang === 'hi' ? 'नया संवाद' : 'New Conversation',
+          crop: farmCrop ? farmCrop.split(' ')[0] : 'Wheat',
+          timestamp: new Date().toLocaleDateString(),
+          messages: [],
+        };
+        setSessions([initialSession]);
+        setActiveSessionId(initialSessionId);
+        setMessages([]);
+        await LocalStorage.setItem('chat_sessions', JSON.stringify([initialSession]));
       }
     }
     loadConfig();
-  }, []);
+  }, [farmCrop]);
 
   // Handle incoming prefill queries from other screens
   useEffect(() => {
@@ -105,9 +226,103 @@ export default function ChatScreen() {
     }
   }, [params.prefill]);
 
-  // Save chat history to storage
-  const saveHistory = async (history: ChatMessage[]) => {
-    await LocalStorage.setItem('chat_history', JSON.stringify(history));
+  // Save active session messages & auto-title
+  const updateActiveSessionMessages = async (newMessages: ChatMessage[]) => {
+    setMessages(newMessages);
+
+    let sessionTitleUpdate = {};
+    const firstUserMsg = newMessages.find(m => m.role === 'user');
+    if (firstUserMsg) {
+      const cleanTitle = firstUserMsg.content.slice(0, 30) + (firstUserMsg.content.length > 30 ? '...' : '');
+      const currentSession = sessions.find(s => s.id === activeSessionId);
+      if (currentSession && (currentSession.title === 'New Conversation' || currentSession.title === 'नया संवाद')) {
+        sessionTitleUpdate = { title: cleanTitle };
+      }
+    }
+
+    const updatedSessions = sessions.map(s => {
+      if (s.id === activeSessionId) {
+        return {
+          ...s,
+          messages: newMessages,
+          ...sessionTitleUpdate
+        };
+      }
+      return s;
+    });
+
+    setSessions(updatedSessions);
+    await LocalStorage.setItem('chat_sessions', JSON.stringify(updatedSessions));
+  };
+
+  const handleNewChat = async () => {
+    const newSessionId = Date.now().toString();
+    const newSession: ChatSession = {
+      id: newSessionId,
+      title: language === 'hi' ? 'नया संवाद' : 'New Conversation',
+      crop: farmCrop ? farmCrop.split(' ')[0] : 'Wheat',
+      timestamp: new Date().toLocaleDateString(),
+      messages: [],
+    };
+    const updatedSessions = [newSession, ...sessions];
+    setSessions(updatedSessions);
+    setActiveSessionId(newSessionId);
+    setMessages([]);
+    await LocalStorage.setItem('chat_sessions', JSON.stringify(updatedSessions));
+    setIsDrawerOpen(false);
+  };
+
+  const handleSelectSession = (sessionId: string) => {
+    const session = sessions.find(s => s.id === sessionId);
+    if (session) {
+      setActiveSessionId(sessionId);
+      setMessages(session.messages);
+      setIsDrawerOpen(false);
+    }
+  };
+
+  const handleDeleteSession = async (sessionId: string) => {
+    const updatedSessions = sessions.filter(s => s.id !== sessionId);
+    setSessions(updatedSessions);
+
+    if (activeSessionId === sessionId) {
+      if (updatedSessions.length > 0) {
+        setActiveSessionId(updatedSessions[0].id);
+        setMessages(updatedSessions[0].messages);
+      } else {
+        const newSessionId = Date.now().toString();
+        const newSession: ChatSession = {
+          id: newSessionId,
+          title: language === 'hi' ? 'नया संवाद' : 'New Conversation',
+          crop: farmCrop ? farmCrop.split(' ')[0] : 'Wheat',
+          timestamp: new Date().toLocaleDateString(),
+          messages: [],
+        };
+        setSessions([newSession]);
+        setActiveSessionId(newSessionId);
+        setMessages([]);
+        await LocalStorage.setItem('chat_sessions', JSON.stringify([newSession]));
+        return;
+      }
+    }
+
+    await LocalStorage.setItem('chat_sessions', JSON.stringify(updatedSessions));
+  };
+
+  const handleClearAllChats = async () => {
+    const newSessionId = Date.now().toString();
+    const newSession: ChatSession = {
+      id: newSessionId,
+      title: language === 'hi' ? 'नया संवाद' : 'New Conversation',
+      crop: farmCrop ? farmCrop.split(' ')[0] : 'Wheat',
+      timestamp: new Date().toLocaleDateString(),
+      messages: [],
+    };
+    setSessions([newSession]);
+    setActiveSessionId(newSessionId);
+    setMessages([]);
+    await LocalStorage.setItem('chat_sessions', JSON.stringify([newSession]));
+    setIsDrawerOpen(false);
   };
 
   // Scroll to bottom
@@ -132,8 +347,7 @@ export default function ChatScreen() {
     };
 
     const newMessages = [...messages, userMsg];
-    setMessages(newMessages);
-    saveHistory(newMessages);
+    await updateActiveSessionMessages(newMessages);
     scrollToBottom();
 
     setIsLoading(true);
@@ -150,8 +364,7 @@ export default function ChatScreen() {
       const botReply = await sendMessageToGroq(
         historyPayload,
         { state: farmState, soilType: farmSoil, crop: farmCrop },
-        model,
-        language
+        model
       );
 
       const botMsg: ChatMessage = {
@@ -162,8 +375,7 @@ export default function ChatScreen() {
       };
 
       const finalMessages = [...newMessages, botMsg];
-      setMessages(finalMessages);
-      saveHistory(finalMessages);
+      await updateActiveSessionMessages(finalMessages);
     } catch (err: any) {
       console.error(err);
       setErrorMsg(err.message || 'API connection failed. Please check your internet connection.');
@@ -174,8 +386,7 @@ export default function ChatScreen() {
   };
 
   const handleClearChat = async () => {
-    setMessages([]);
-    await LocalStorage.removeItem('chat_history');
+    await updateActiveSessionMessages([]);
   };
 
   const toggleLanguage = async (lang: 'hi' | 'en' | 'hinglish') => {
@@ -199,10 +410,24 @@ export default function ChatScreen() {
         >
           {/* Header Panel */}
           <View style={[styles.headerPanel, { borderBottomColor: theme.border }]}>
-             <View style={[styles.headerInfoRow, { flexShrink: 1 }]}>
+            <View style={[styles.headerInfoRow, { flexShrink: 1 }]}>
+              <Pressable
+                onPress={() => router.back()}
+                style={({ pressed }) => [
+                  styles.backButton,
+                  pressed && { opacity: 0.7 }
+                ]}
+              >
+                <SymbolView
+                  name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' } as any}
+                  size={20}
+                  tintColor={theme.primary}
+                />
+              </Pressable>
+
               <View style={styles.avatarMini}>
                 <SymbolView
-                  name={{ ios: 'cpu', android: 'smart_toy', web: 'smart_toy' } as any}
+                  name={{ ios: 'laurel.leading', android: 'spa', web: 'spa' } as any}
                   size={16}
                   tintColor={theme.primary}
                 />
@@ -217,100 +442,36 @@ export default function ChatScreen() {
 
             <View style={styles.headerControls}>
               <Pressable
-                onPress={toggleModel}
+                onPress={() => setIsDrawerOpen(true)}
                 style={({ pressed }) => [
-                  styles.controlBadge,
-                  { backgroundColor: theme.backgroundElement, borderColor: theme.border, borderWidth: 1 },
+                  styles.controlIconBtn,
                   pressed && { opacity: 0.8 }
                 ]}
               >
-                <ThemedText type="small" style={[styles.controlBadgeText, { color: theme.text }]}>
-                  {isCompactHeader
-                    ? (model === 'fast' ? '⚡' : '🧠')
-                    : (model === 'fast' ? '⚡ Fast' : '🧠 Smart')}
-                </ThemedText>
+                <SymbolView
+                  name={{ ios: 'line.horizontal.3', android: 'menu', web: 'menu' } as any}
+                  size={20}
+                  tintColor={theme.primary}
+                />
               </Pressable>
 
               <Pressable
-                onPress={handleClearChat}
+                onPress={() => setIsMenuOpen(true)}
                 style={({ pressed }) => [
-                  styles.controlBadge,
-                  { backgroundColor: theme.backgroundElement, borderColor: theme.border, borderWidth: 1 },
+                  styles.controlIconBtn,
                   pressed && { opacity: 0.8 }
                 ]}
               >
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: isCompactHeader ? 0 : Spacing.one }}>
-                  <SymbolView
-                    name={{ ios: 'trash.fill', android: 'delete', web: 'delete' } as any}
-                    size={isCompactHeader ? 12 : 10}
-                    tintColor={theme.error}
-                  />
-                  {!isCompactHeader && (
-                    <ThemedText type="code" style={[styles.controlBadgeText, { color: theme.error }]}>
-                      Clear
-                    </ThemedText>
-                  )}
-                </View>
+                <SymbolView
+                  name={{ ios: 'ellipsis.vertical', android: 'more_vert', web: 'more_vert' } as any}
+                  size={20}
+                  tintColor={theme.primary}
+                />
               </Pressable>
             </View>
           </View>
 
-          {/* Language Selection Tab Bar */}
-          <View style={[styles.langBar, { borderBottomColor: theme.border }]}>
-            <Pressable
-              onPress={() => toggleLanguage('hi')}
-              style={[
-                styles.langTab,
-                language === 'hi' && { borderBottomColor: theme.primary }
-              ]}
-            >
-              <ThemedText 
-                type="smallBold" 
-                style={[
-                  styles.langTabText, 
-                  language === 'hi' ? { color: theme.primary } : { color: theme.textSecondary }
-                ]}
-              >
-                हिंदी
-              </ThemedText>
-            </Pressable>
 
-            <Pressable
-              onPress={() => toggleLanguage('hinglish')}
-              style={[
-                styles.langTab,
-                language === 'hinglish' && { borderBottomColor: theme.primary }
-              ]}
-            >
-              <ThemedText 
-                type="smallBold" 
-                style={[
-                  styles.langTabText, 
-                  language === 'hinglish' ? { color: theme.primary } : { color: theme.textSecondary }
-                ]}
-              >
-                Hinglish
-              </ThemedText>
-            </Pressable>
-
-            <Pressable
-              onPress={() => toggleLanguage('en')}
-              style={[
-                styles.langTab,
-                language === 'en' && { borderBottomColor: theme.primary }
-              ]}
-            >
-              <ThemedText 
-                type="smallBold" 
-                style={[
-                  styles.langTabText, 
-                  language === 'en' ? { color: theme.primary } : { color: theme.textSecondary }
-                ]}
-              >
-                English
-              </ThemedText>
-            </Pressable>
-          </View>
 
           {/* Chat Messages Area */}
           <ScrollView
@@ -320,7 +481,10 @@ export default function ChatScreen() {
             onContentSizeChange={scrollToBottom}
           >
             {messages.length === 0 ? (
-              <View style={styles.welcomeContainer}>
+              <Animated.View
+                entering={FadeInDown.duration(400).springify()}
+                style={styles.welcomeContainer}
+              >
                 <View style={[styles.welcomeLogo, { backgroundColor: theme.backgroundElement }]}>
                   <SymbolView
                     name={{ ios: 'laurel.leading', android: 'spa', web: 'spa' } as any}
@@ -398,19 +562,23 @@ export default function ChatScreen() {
                     </View>
                   </Pressable>
                 </View>
-              </View>
+              </Animated.View>
             ) : (
               messages.map((msg) => {
                 const isUser = msg.role === 'user';
                 return (
-                  <View key={msg.id} style={styles.messageRowContainer}>
+                  <Animated.View
+                    key={msg.id}
+                    entering={isUser ? FadeInRight.duration(350).springify() : FadeInLeft.duration(350).springify()}
+                    style={styles.messageRowContainer}
+                  >
                     {!isUser && (
                       <View style={styles.botHeaderRow}>
                         <View style={[styles.avatarBubble, { backgroundColor: theme.primary }]}>
                           <SymbolView
                             name={{ ios: 'laurel.leading', android: 'spa', web: 'spa' } as any}
                             size={12}
-                            tintColor="#ffffff"
+                            tintColor={theme.onPrimary}
                           />
                         </View>
                         <ThemedText type="smallBold" style={[styles.botSenderName, { color: theme.textSecondary }]}>
@@ -434,37 +602,67 @@ export default function ChatScreen() {
                         ]}
                       >
                         {isUser ? (
-                          <ThemedText type="small" style={{ color: '#000000' }}>
+                          <ThemedText type="small" style={{ color: theme.text }}>
                             {msg.content}
                           </ThemedText>
                         ) : (
                           <CustomMarkdown text={msg.content} />
                         )}
-                        <ThemedText
-                          type="code"
-                          style={[
-                            styles.timestamp,
-                            { color: isUser ? 'rgba(0,0,0,0.5)' : theme.textSecondary }
-                          ]}
-                        >
-                          {msg.timestamp}
-                        </ThemedText>
+                        <View style={styles.bubbleFooter}>
+                          <ThemedText
+                            type="code"
+                            style={[
+                              styles.timestamp,
+                              { color: theme.textSecondary }
+                            ]}
+                          >
+                            {msg.timestamp}
+                          </ThemedText>
+
+                          {!isUser && (
+                            <Pressable
+                              onPress={() => toggleSpeech(msg)}
+                              style={({ pressed }) => [
+                                styles.listenButton,
+                                pressed && { opacity: 0.7 }
+                              ]}
+                            >
+                              <SymbolView
+                                name={speakingMessageId === msg.id ? "stop.fill" : "speaker.wave.2.fill" as any}
+                                size={14}
+                                tintColor={speakingMessageId === msg.id ? theme.error : theme.primary}
+                              />
+                              <ThemedText
+                                type="code"
+                                style={[
+                                  styles.listenText,
+                                  { color: speakingMessageId === msg.id ? theme.error : theme.primary }
+                                ]}
+                              >
+                                {speakingMessageId === msg.id ? (language === 'hi' ? 'रोकें' : 'Stop') : (language === 'hi' ? 'सुनें' : 'Listen')}
+                              </ThemedText>
+                            </Pressable>
+                          )}
+                        </View>
                       </View>
                     </View>
-                  </View>
+                  </Animated.View>
                 );
               })
             )}
 
             {/* Loading Indicator / Bot Typing */}
             {isLoading && (
-              <View style={styles.messageRowContainer}>
+              <Animated.View
+                entering={FadeInLeft.duration(350).springify()}
+                style={styles.messageRowContainer}
+              >
                 <View style={styles.botHeaderRow}>
                   <View style={[styles.avatarBubble, { backgroundColor: theme.primary }]}>
                     <SymbolView
                       name={{ ios: 'laurel.leading', android: 'spa', web: 'spa' } as any}
                       size={12}
-                      tintColor="#ffffff"
+                      tintColor={theme.onPrimary}
                     />
                   </View>
                   <ThemedText type="smallBold" style={[styles.botSenderName, { color: theme.textSecondary }]}>
@@ -481,7 +679,7 @@ export default function ChatScreen() {
                     </View>
                   </View>
                 </View>
-              </View>
+              </Animated.View>
             )}
 
             {/* Error Message display */}
@@ -517,34 +715,205 @@ export default function ChatScreen() {
 
           {/* Input Bar */}
           <View style={[styles.inputBar, { borderTopColor: theme.border }]}>
+            <Pressable
+              onPress={handleVoiceInput}
+              disabled={isLoading || isTranscribing}
+              style={({ pressed }) => [
+                styles.micButton,
+                { backgroundColor: isRecording ? theme.error : theme.primary + '18' },
+                pressed && { opacity: 0.8 },
+                (isLoading || isTranscribing) && { opacity: 0.5 }
+              ]}
+            >
+              {isTranscribing ? (
+                <ActivityIndicator size="small" color={theme.primary} />
+              ) : (
+                <SymbolView
+                  name={isRecording ? "stop.fill" : "mic.fill" as any}
+                  size={18}
+                  tintColor={isRecording ? theme.onPrimary : theme.primary}
+                />
+              )}
+            </Pressable>
+
             <TextInput
               style={[
                 styles.textInput,
                 { color: theme.text, borderColor: theme.border, backgroundColor: theme.backgroundElement }
               ]}
-              placeholder={language === 'hi' ? "फसल या खाद के बारे में पूछें..." : "Ask about crops, soils, pest controls..."}
+              placeholder={
+                isRecording 
+                  ? (language === 'hi' ? "बोलिए, हम सुन रहे हैं..." : "Speak now, we are listening...") 
+                  : isTranscribing 
+                    ? (language === 'hi' ? "आवाज को अनुवाद किया जा रहा है..." : "Transcribing voice...") 
+                    : (language === 'hi' ? "फसल या खाद के बारे में पूछें..." : "Ask about crops...")
+              }
               placeholderTextColor={theme.textSecondary}
               value={inputValue}
               onChangeText={setInputValue}
               onSubmitEditing={() => handleSendQuery(inputValue)}
-              editable={!isLoading}
+              editable={!isLoading && !isRecording && !isTranscribing}
             />
 
             <Pressable
               onPress={() => handleSendQuery(inputValue)}
-              disabled={isLoading || !inputValue.trim()}
+              disabled={isLoading || !inputValue.trim() || isRecording || isTranscribing}
               style={({ pressed }) => [
                 styles.sendButton,
                 { backgroundColor: theme.primary },
-                (isLoading || !inputValue.trim()) && { opacity: 0.5 },
+                (isLoading || !inputValue.trim() || isRecording || isTranscribing) && { opacity: 0.5 },
                 pressed && { opacity: 0.8 }
               ]}
             >
-              <ThemedText style={styles.sendIcon}>➔</ThemedText>
+              <ThemedText style={[styles.sendIcon, { color: theme.onPrimary }]}>➔</ThemedText>
             </Pressable>
           </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
+
+      {/* Sidebar Drawer Overlay */}
+      {isDrawerOpen && (
+        <View style={styles.drawerBackdrop}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setIsDrawerOpen(false)} />
+          <ThemedView type="card" style={[styles.drawerContainer, { backgroundColor: theme.chatBot, borderColor: theme.border }]}>
+            <View style={styles.drawerHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
+                <SymbolView
+                  name={{ ios: 'laurel.leading', android: 'spa', web: 'spa' } as any}
+                  size={18}
+                  tintColor={theme.primary}
+                />
+                <ThemedText type="smallBold" style={{ fontSize: 16 }}>
+                  संवाद इतिहास / Chat History
+                </ThemedText>
+              </View>
+              <Pressable onPress={() => setIsDrawerOpen(false)} style={styles.closeDrawerBtn}>
+                <ThemedText style={{ color: theme.textSecondary, fontSize: 16, fontWeight: '700' }}>✕</ThemedText>
+              </Pressable>
+            </View>
+
+            <View style={[styles.drawerProfileCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+              <ThemedText type="code" style={{ fontSize: 10, color: theme.primary, fontWeight: '700' }}>
+                सक्रिय प्रोफ़ाइल / ACTIVE PROFILE
+              </ThemedText>
+              <ThemedText type="small" style={{ fontSize: 12, marginTop: 2, fontWeight: '600' }}>
+                {farmState} • {farmCrop.split('(')[0]}
+              </ThemedText>
+            </View>
+
+            <Pressable
+              onPress={handleNewChat}
+              style={({ pressed }) => [
+                styles.newChatBtn,
+                { borderColor: theme.primary },
+                pressed && { opacity: 0.8 }
+              ]}
+            >
+              <SymbolView
+                name={{ ios: 'plus', android: 'add', web: 'add' } as any}
+                size={16}
+                tintColor={theme.primary}
+              />
+              <ThemedText type="smallBold" style={{ color: theme.primary, fontSize: 14 }}>
+                नया संवाद / Start New Chat
+              </ThemedText>
+            </Pressable>
+
+            <ThemedText type="code" style={styles.historySectionLabel}>
+              पिछले संवाद / PREVIOUS CHATS
+            </ThemedText>
+            
+            <ScrollView style={styles.drawerScrollView} contentContainerStyle={{ gap: Spacing.two }}>
+              {sessions.map((session) => {
+                const isActive = session.id === activeSessionId;
+                return (
+                  <Pressable
+                    key={session.id}
+                    onPress={() => handleSelectSession(session.id)}
+                    style={({ pressed }) => [
+                      styles.sessionItem,
+                      { backgroundColor: theme.backgroundElement, borderColor: isActive ? theme.primary : theme.border },
+                      pressed && { opacity: 0.8 }
+                    ]}
+                  >
+                    <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
+                      <SymbolView
+                        name={{ ios: 'bubble.left.and.bubble.right.fill', android: 'chat', web: 'chat' } as any}
+                        size={14}
+                        tintColor={isActive ? theme.primary : theme.textSecondary}
+                      />
+                      <View style={{ flex: 1 }}>
+                        <ThemedText
+                          type="smallBold"
+                          numberOfLines={1}
+                          style={{ fontSize: 12, color: isActive ? theme.primary : theme.text }}
+                        >
+                          {session.title}
+                        </ThemedText>
+                        <ThemedText type="code" style={{ fontSize: 9, color: theme.textSecondary }}>
+                          {session.timestamp} • {session.crop}
+                        </ThemedText>
+                      </View>
+                    </View>
+                    
+                    <Pressable
+                      onPress={() => handleDeleteSession(session.id)}
+                      style={{ padding: Spacing.one }}
+                    >
+                      <SymbolView
+                        name={{ ios: 'trash', android: 'delete', web: 'delete' } as any}
+                        size={14}
+                        tintColor={theme.error}
+                      />
+                    </Pressable>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+
+          </ThemedView>
+        </View>
+      )}
+
+      {/* Dropdown Menu Overlay */}
+      {isMenuOpen && (
+        <View style={styles.menuBackdrop}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setIsMenuOpen(false)} />
+          <ThemedView type="card" style={[styles.dropdownMenu, { backgroundColor: theme.chatBot, borderColor: theme.border }]}>
+            <Pressable
+              onPress={() => {
+                toggleModel();
+                setIsMenuOpen(false);
+              }}
+              style={({ pressed }) => [
+                styles.menuOption,
+                pressed && { backgroundColor: theme.backgroundElement }
+              ]}
+            >
+              <ThemedText style={{ fontSize: 13, color: theme.text, fontWeight: '600' }}>
+                {model === 'fast' ? ' Switch to Smart Model' : '⚡ Switch to Fast Model'}
+              </ThemedText>
+            </Pressable>
+
+            <View style={[styles.menuDivider, { backgroundColor: theme.border }]} />
+
+            <Pressable
+              onPress={() => {
+                handleClearChat();
+                setIsMenuOpen(false);
+              }}
+              style={({ pressed }) => [
+                styles.menuOption,
+                pressed && { backgroundColor: theme.backgroundElement }
+              ]}
+            >
+              <ThemedText style={{ fontSize: 13, color: theme.error, fontWeight: '600' }}>
+                🗑️ Clear Conversation
+              </ThemedText>
+            </Pressable>
+          </ThemedView>
+        </View>
+      )}
     </ThemedView>
   );
 }
@@ -577,6 +946,118 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
+  },
+  backButton: {
+    marginRight: Spacing.one,
+    paddingVertical: Spacing.one,
+    paddingHorizontal: Spacing.two,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  controlIconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(46,111,64,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  menuBackdrop: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'transparent',
+    zIndex: 99999,
+  },
+  dropdownMenu: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 110 : 90,
+    right: Spacing.three,
+    width: 200,
+    borderRadius: Spacing.two,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 5,
+    paddingVertical: Spacing.one,
+  },
+  menuOption: {
+    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    justifyContent: 'center',
+  },
+  menuDivider: {
+    height: 1,
+    width: '100%',
+  },
+  drawerBackdrop: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    zIndex: 9999,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  drawerContainer: {
+    width: '80%',
+    maxWidth: 300,
+    height: '100%',
+    borderLeftWidth: 1,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingHorizontal: Spacing.three,
+    flexDirection: 'column',
+  },
+  drawerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.three,
+  },
+  closeDrawerBtn: {
+    padding: Spacing.one,
+  },
+  drawerProfileCard: {
+    borderWidth: 1,
+    borderRadius: Spacing.two,
+    padding: Spacing.two,
+    marginBottom: Spacing.three,
+  },
+  newChatBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.two,
+    borderWidth: 1,
+    borderRadius: Spacing.three,
+    paddingVertical: Spacing.two,
+    marginBottom: Spacing.three,
+  },
+  historySectionLabel: {
+    fontSize: 9,
+    opacity: 0.6,
+    marginBottom: Spacing.two,
+  },
+  drawerScrollView: {
+    flex: 1,
+  },
+  sessionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderRadius: Spacing.two,
+    padding: Spacing.two,
+  },
+  drawerFooter: {
+    borderTopWidth: 1,
+    paddingVertical: Spacing.three,
+    alignItems: 'center',
+  },
+  clearAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    paddingVertical: Spacing.one,
+    paddingHorizontal: Spacing.three,
   },
   avatarMini: {
     width: 30,
@@ -764,5 +1245,30 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 18,
     fontWeight: '700',
+  },
+  micButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bubbleFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: Spacing.two,
+  },
+  listenButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  listenText: {
+    fontSize: 9,
+    fontWeight: '800',
   },
 });

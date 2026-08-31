@@ -9,34 +9,46 @@ import { Platform } from 'react-native';
 
 export const Colors = {
   light: {
-    text: '#1C1D1A',
-    background: '#FAF9F6', // Alabaster/Off-white
-    backgroundElement: '#EAE8E1', // Soft Clay
-    backgroundSelected: '#D7D4C9', // Selected Clay
-    textSecondary: '#5C5E5A',
-    primary: '#1E4620', // Forest Green
-    accent: '#D4AF37', // Harvest Gold
-    border: '#DFDDD7',
-    chatUser: '#E2F0D9', // Soft light green for user chat bubbles
-    chatBot: '#F0EFEA', // Soft light grey/cream for bot chat bubbles
-    success: '#2E7D32',
-    error: '#D32F2F',
+    // Surfaces — pure, minimal, modern
+    text: '#0A1A0E',
+    background: '#FFFFFF',
+    backgroundElement: '#F2F8F3',     // Very light sage
+    backgroundSelected: '#E0F0E4',    // Crisp green selected tint
+    textSecondary: '#4D6B54',         // Natural forest secondary
+    // Brand — deep, confident, trustworthy
+    primary: '#166534',               // Rich Deep Emerald
+    accent: '#D97706',                // Warm Amber (not gold)
+    // Chrome
+    border: '#D1E4D4',                // Soft sage border
+    // Chat
+    chatUser: '#DCFCE7',              // Clean mint-green user bubble
+    chatBot: '#F4F7F4',               // Neutral white-sage bot bubble
+    // States
+    success: '#15803D',               // Strong green
+    error: '#B91C1C',                 // Deep red
     card: '#FFFFFF',
+    onPrimary: '#FFFFFF',
   },
   dark: {
-    text: '#F1F3F0',
-    background: '#0E140F', // Deep Forest Dark
-    backgroundElement: '#1B221C', // Dark Forest Element
-    backgroundSelected: '#28352A', // Selected dark forest
-    textSecondary: '#A0A59E',
-    primary: '#2E6F40', // Lush Green
-    accent: '#E5A93B', // Warm Gold
-    border: '#252F26',
-    chatUser: '#1B3D22', // Dark green for user chat bubbles
-    chatBot: '#212A22', // Darker forest for bot chat bubbles
-    success: '#4CAF50',
-    error: '#EF5350',
-    card: '#161D17',
+    // Surfaces — warm dark, NOT grey/blue/neon
+    text: '#E8F0EA',
+    background: '#0C1410',            // Very deep warm dark-green black
+    backgroundElement: '#131F17',     // Elevated card surface
+    backgroundSelected: '#1C3224',    // Pressed/selected state
+    textSecondary: '#7A9E83',         // Warm sage secondary
+    // Brand — rich, balanced, natural (NOT neon)
+    primary: '#4ADE80',               // Green-400, vivid but not neon
+    accent: '#FBB024',                // Rich warm gold
+    // Chrome
+    border: '#1E3527',                // Dark sage border
+    // Chat
+    chatUser: '#14392A',              // Dark forest-green user bubble
+    chatBot: '#151D17',               // Near-surface bot bubble
+    onPrimary: '#0C1410',
+    // States
+    success: '#4ADE80',               // Same as primary
+    error: '#F87171',                 // Soft coral red
+    card: '#101810',
   },
 } as const;
 

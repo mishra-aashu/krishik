@@ -1,17 +1,35 @@
 :root {
   --font-display:
-    'Pravah-Regular', Spline Sans, Inter, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji,
+    'Pravah-Regular', 'Inter', ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji,
     Segoe UI Symbol, Noto Color Emoji;
   --font-mono:
     ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
   --font-rounded: 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif;
   --font-serif: Georgia, 'Times New Roman', serif;
+
+  /* Light theme accent colours */
+  --color-primary: #166534;
+  --color-accent: #D97706;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Dark theme accent colours */
+    --color-primary: #4ADE80;
+    --color-accent: #FBB024;
+  }
+}
+
+/* Premium text selection highlight */
+::selection {
+  background: rgba(61, 214, 140, 0.25);
+  color: inherit;
 }
 
 /* Custom premium scrollbar style for all scrollable views on web */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -19,18 +37,17 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(128, 128, 128, 0.35);
+  background: rgba(61, 214, 140, 0.3);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(128, 128, 128, 0.55);
+  background: rgba(61, 214, 140, 0.55);
 }
 
 /* Firefox compatibility */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(128, 128, 128, 0.35) transparent;
+  scrollbar-color: rgba(61, 214, 140, 0.3) transparent;
 }
-
 

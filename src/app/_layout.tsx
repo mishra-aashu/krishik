@@ -1,11 +1,12 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, ThemeProvider as NavThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import AppTabs from '@/components/app-tabs';
 import { AuthProvider, useAuth } from '@/context/auth-context';
 import { AuthScreen } from '@/components/auth-screen';
+import { ThemeProvider } from '@/context/theme-context';
 
 import { useFonts } from 'expo-font';
 
@@ -13,9 +14,11 @@ SplashScreen.preventAutoHideAsync();
 
 export default function TabLayout() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 
@@ -34,14 +37,14 @@ function AppContent() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <NavThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <AnimatedSplashOverlay />
       {isAuthenticated ? (
         <AppTabs />
       ) : (
         <AuthScreen onLoginSuccess={() => {}} />
       )}
-    </ThemeProvider>
+    </NavThemeProvider>
   );
 }
 

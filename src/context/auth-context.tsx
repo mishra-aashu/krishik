@@ -19,7 +19,7 @@ interface AuthContextType {
     pin: string
   ) => Promise<boolean>;
   logout: () => Promise<void>;
-  updateProfile: (state: string, soil: string, crop: string) => Promise<void>;
+  updateProfile: (name: string, state: string, soil: string, crop: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -162,16 +162,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsAuthenticated(false);
   };
 
-  const updateProfile = async (state: string, soil: string, crop: string) => {
+  const updateProfile = async (name: string, state: string, soil: string, crop: string) => {
+    await LocalStorage.setItem('user_name', name);
     await LocalStorage.setItem('farm_state', state);
     await LocalStorage.setItem('farm_soil', soil);
     await LocalStorage.setItem('farm_crop', crop);
 
     // Also update registered state if the user changes it
+    await LocalStorage.setItem('registered_name', name);
     await LocalStorage.setItem('registered_state', state);
     await LocalStorage.setItem('registered_soil', soil);
     await LocalStorage.setItem('registered_crop', crop);
 
+    setUserName(name);
     setFarmState(state);
     setFarmSoil(soil);
     setFarmCrop(crop);

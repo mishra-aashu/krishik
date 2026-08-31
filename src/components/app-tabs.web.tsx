@@ -8,9 +8,11 @@ import {
   TabListProps,
 } from 'expo-router/ui';
 import { SymbolView } from 'expo-symbols';
-import { Pressable, useColorScheme, View, StyleSheet, useWindowDimensions, Platform } from 'react-native';
+import { Pressable, View, StyleSheet, useWindowDimensions, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
+import { usePathname } from 'expo-router';
 import { ExternalLink } from './external-link';
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
@@ -21,6 +23,8 @@ import { useTheme } from '@/hooks/use-theme';
 export default function AppTabs() {
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
+  const pathname = usePathname();
+  const isChatScreen = pathname === '/chat';
 
   return (
     <Tabs style={[styles.tabsContainer, isMobile ? styles.mobileLayout : styles.desktopLayout]}>
@@ -46,6 +50,13 @@ export default function AppTabs() {
               <TabButton
                 iconName={{ ios: 'square.grid.2x2.fill', web: 'widgets', android: 'widgets' }}
                 label="Utilities"
+                isMobile={false}
+              />
+            </TabTrigger>
+            <TabTrigger name="profile" href="/profile" asChild>
+              <TabButton
+                iconName={{ ios: 'person.crop.circle.fill', web: 'account_circle', android: 'account_circle' }}
+                label="Profile"
                 isMobile={false}
               />
             </TabTrigger>
@@ -81,6 +92,13 @@ export default function AppTabs() {
                 isMobile={true}
               />
             </TabTrigger>
+            <TabTrigger name="profile" href="/profile" asChild>
+              <TabButton
+                iconName={{ ios: 'person.crop.circle.fill', web: 'account_circle', android: 'account_circle' }}
+                label="Profile"
+                isMobile={true}
+              />
+            </TabTrigger>
           </CustomTabList>
         </TabList>
       )}
@@ -112,21 +130,23 @@ export function TabButton({ iconName, label, isFocused, isMobile, ...props }: Ta
       <View
         style={[
           isMobile ? styles.mobileTabButton : styles.desktopTabButton,
-          isFocused
-            ? { backgroundColor: theme.primary, borderColor: theme.primary }
-            : { backgroundColor: theme.backgroundElement, borderColor: theme.border }
+          isMobile
+            ? { backgroundColor: 'transparent', borderColor: 'transparent' }
+            : (isFocused
+                ? { backgroundColor: theme.primary, borderColor: theme.primary }
+                : { backgroundColor: theme.backgroundElement, borderColor: theme.border })
         ]}
       >
         <SymbolView
           name={iconName}
           size={isMobile ? 24 : 18}
-          tintColor={isFocused ? '#ffffff' : theme.textSecondary}
+          tintColor={isFocused ? (isMobile ? theme.primary : '#ffffff') : theme.textSecondary}
         />
         <ThemedText 
           type={isMobile ? "code" : "small"} 
           style={[
             isMobile ? styles.mobileTabButtonText : styles.desktopTabButtonText,
-            { color: isFocused ? '#ffffff' : theme.textSecondary }
+            { color: isFocused ? (isMobile ? theme.primary : '#ffffff') : theme.textSecondary }
           ]}
         >
           {label}
@@ -143,6 +163,8 @@ interface CustomTabListProps extends TabListProps {
 export function CustomTabList({ children, isMobile, ...props }: CustomTabListProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const pathname = usePathname();
+  const isChatScreen = pathname === '/chat';
 
   return (
     <View 
@@ -150,7 +172,8 @@ export function CustomTabList({ children, isMobile, ...props }: CustomTabListPro
       style={[
         isMobile ? styles.mobileTabListContainer : styles.desktopTabListContainer,
         isMobile && { paddingBottom: Math.max(Spacing.two, insets.bottom) },
-        { backgroundColor: theme.background, borderColor: theme.border }
+        { backgroundColor: theme.background, borderColor: theme.border },
+        isMobile && isChatScreen && { display: 'none' }
       ]}
     >
       <ThemedView 
@@ -261,7 +284,6 @@ const styles = StyleSheet.create({
     gap: 4,
     flex: 1,
     maxWidth: 120,
-    borderWidth: 1,
     ...Platform.select({
       web: {
         outlineStyle: 'none',

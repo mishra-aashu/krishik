@@ -18,6 +18,9 @@ import { SymbolView } from 'expo-symbols';
 import { Colors, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
+import cropsData from '@/constants/crops.json';
+import { SelectionModal } from '@/components/selection-modal';
+
 const STATES = [
   'Uttar Pradesh', 'Punjab', 'Haryana', 'Madhya Pradesh', 
   'Maharashtra', 'Rajasthan', 'Gujarat', 'Bihar', 'Karnataka', 'Andhra Pradesh'
@@ -26,10 +29,7 @@ const SOILS = [
   'Alluvial Soil (जलोढ़)', 'Black Soil (काली मिट्टी)', 'Red Soil (लाल मिट्टी)', 
   'Sandy Soil (बलुई मिट्टी)', 'Clayey Soil (चिकनी मिट्टी)', 'Loamy Soil (दोमट)'
 ];
-const CROPS = [
-  'Wheat (गेहूं)', 'Paddy (धान)', 'Mustard (सरसों)', 'Cotton (कपास)', 
-  'Sugarcane (गन्ना)', 'Potato (आलू)', 'Maize (मक्का)', 'Soybean (सोयाबीन)'
-];
+const CROPS = cropsData.map(c => c.name);
 
 interface AuthScreenProps {
   onLoginSuccess: () => void;
@@ -54,6 +54,14 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
 
   // Selector modal states
   const [activeModal, setActiveModal] = useState<'state' | 'soil' | 'crop' | null>(null);
+
+  const openModal = (type: 'state' | 'soil' | 'crop') => {
+    setActiveModal(type);
+  };
+
+  const closeModal = () => {
+    setActiveModal(null);
+  };
 
   // Status states
   const [isLoading, setIsLoading] = useState(false);
@@ -212,59 +220,7 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
     onLoginSuccess();
   };
 
-  const renderModalContent = () => {
-    let list: string[] = [];
-    let title = '';
-    let setter: (val: string) => void = () => {};
 
-    if (activeModal === 'state') {
-      list = STATES;
-      title = t.statePlaceholder;
-      setter = setSelectedState;
-    } else if (activeModal === 'soil') {
-      list = SOILS;
-      title = t.soilPlaceholder;
-      setter = setSelectedSoil;
-    } else if (activeModal === 'crop') {
-      list = CROPS;
-      title = t.cropPlaceholder;
-      setter = setSelectedCrop;
-    }
-
-    return (
-      <View style={styles.modalOverlay}>
-        <ThemedView type="backgroundElement" style={styles.modalCard}>
-          <View style={styles.modalHeader}>
-            <ThemedText type="smallBold">{title}</ThemedText>
-            <Pressable onPress={() => setActiveModal(null)} style={styles.closeBtn}>
-              <ThemedText type="smallBold" style={{ color: theme.error }}>✕</ThemedText>
-            </Pressable>
-          </View>
-
-          <FlatList
-            data={list}
-            keyExtractor={(item) => item}
-            renderItem={({ item }) => (
-              <Pressable
-                onPress={() => {
-                  setter(item);
-                  setActiveModal(null);
-                }}
-                style={({ pressed }) => [
-                  styles.modalItem,
-                  { borderBottomColor: theme.border },
-                  pressed && { backgroundColor: theme.backgroundSelected }
-                ]}
-              >
-                <ThemedText type="small">{item}</ThemedText>
-              </Pressable>
-            )}
-            style={styles.modalList}
-          />
-        </ThemedView>
-      </View>
-    );
-  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -290,7 +246,7 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
             <SymbolView
               name={{ ios: 'laurel.leading', android: 'spa', web: 'spa' } as any}
               size={32}
-              tintColor="#ffffff"
+              tintColor={theme.onPrimary}
             />
           </View>
           <ThemedText type="title" style={[styles.brandName, { color: theme.primary }]}>
@@ -403,9 +359,9 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                 ]}
               >
                 {isLoading ? (
-                  <ActivityIndicator size="small" color="#ffffff" />
+                  <ActivityIndicator size="small" color={theme.onPrimary} />
                 ) : (
-                  <ThemedText type="smallBold" style={styles.submitBtnText}>{t.btnSubmitLogin}</ThemedText>
+                  <ThemedText type="smallBold" style={[styles.submitBtnText, { color: theme.onPrimary }]}>{t.btnSubmitLogin}</ThemedText>
                 )}
               </Pressable>
             </View>
@@ -462,7 +418,7 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                       pressed && { opacity: 0.9 }
                     ]}
                   >
-                    <ThemedText type="smallBold" style={styles.submitBtnText}>{t.btnNext}</ThemedText>
+                    <ThemedText type="smallBold" style={[styles.submitBtnText, { color: theme.onPrimary }]}>{t.btnNext}</ThemedText>
                   </Pressable>
                 </View>
               ) : (
@@ -471,7 +427,7 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                   <View style={styles.inputGroup}>
                     <ThemedText type="smallBold" style={styles.inputLabel}>{t.stateLabel}</ThemedText>
                     <Pressable
-                      onPress={() => setActiveModal('state')}
+                      onPress={() => openModal('state')}
                       style={[styles.selectorInputBtn, { borderColor: theme.border, backgroundColor: theme.backgroundElement }]}
                     >
                       <ThemedText type="small" style={{ color: selectedState ? theme.text : theme.textSecondary }}>
@@ -483,7 +439,7 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                   <View style={styles.inputGroup}>
                     <ThemedText type="smallBold" style={styles.inputLabel}>{t.soilLabel}</ThemedText>
                     <Pressable
-                      onPress={() => setActiveModal('soil')}
+                      onPress={() => openModal('soil')}
                       style={[styles.selectorInputBtn, { borderColor: theme.border, backgroundColor: theme.backgroundElement }]}
                     >
                       <ThemedText type="small" style={{ color: selectedSoil ? theme.text : theme.textSecondary }}>
@@ -495,7 +451,7 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                   <View style={styles.inputGroup}>
                     <ThemedText type="smallBold" style={styles.inputLabel}>{t.cropLabel}</ThemedText>
                     <Pressable
-                      onPress={() => setActiveModal('crop')}
+                      onPress={() => openModal('crop')}
                       style={[styles.selectorInputBtn, { borderColor: theme.border, backgroundColor: theme.backgroundElement }]}
                     >
                       <ThemedText type="small" style={{ color: selectedCrop ? theme.text : theme.textSecondary }}>
@@ -527,9 +483,9 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                       ]}
                     >
                       {isLoading ? (
-                        <ActivityIndicator size="small" color="#ffffff" />
+                        <ActivityIndicator size="small" color={theme.onPrimary} />
                       ) : (
-                        <ThemedText type="smallBold" style={styles.submitBtnText}>{t.btnSubmitSignup}</ThemedText>
+                        <ThemedText type="smallBold" style={[styles.submitBtnText, { color: theme.onPrimary }]}>{t.btnSubmitSignup}</ThemedText>
                       )}
                     </Pressable>
                   </View>
@@ -555,14 +511,40 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
       </ScrollView>
 
       {/* Selector Modals */}
-      <Modal
+      <SelectionModal
         visible={activeModal !== null}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setActiveModal(null)}
-      >
-        {activeModal !== null && renderModalContent()}
-      </Modal>
+        title={
+          activeModal === 'state'
+            ? t.statePlaceholder
+            : activeModal === 'soil'
+            ? t.soilPlaceholder
+            : t.cropPlaceholder
+        }
+        placeholder={
+          lang === 'hi' ? 'खोजें...' : 'Search...'
+        }
+        list={
+          activeModal === 'state'
+            ? STATES
+            : activeModal === 'soil'
+            ? SOILS
+            : CROPS
+        }
+        selectedValue={
+          activeModal === 'state'
+            ? selectedState
+            : activeModal === 'soil'
+            ? selectedSoil
+            : selectedCrop
+        }
+        onSelect={(value) => {
+          if (activeModal === 'state') setSelectedState(value);
+          else if (activeModal === 'soil') setSelectedSoil(value);
+          else if (activeModal === 'crop') setSelectedCrop(value);
+          closeModal();
+        }}
+        onClose={closeModal}
+      />
     </SafeAreaView>
   );
 }
@@ -740,6 +722,10 @@ const styles = StyleSheet.create({
     height: 24,
     justifyContent: 'center',
     alignItems: 'center',
+    ...Platform.select({
+      web: { outlineStyle: 'none' } as any,
+      default: {}
+    })
   },
   modalList: {
     marginTop: Spacing.two,
@@ -747,5 +733,9 @@ const styles = StyleSheet.create({
   modalItem: {
     paddingVertical: Spacing.three,
     borderBottomWidth: 1,
+    ...Platform.select({
+      web: { outlineStyle: 'none' } as any,
+      default: {}
+    })
   },
 });

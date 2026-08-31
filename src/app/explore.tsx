@@ -7,15 +7,23 @@ import {
   View,
   Platform,
   useWindowDimensions,
+  ActivityIndicator,
+  Alert,
+  Animated,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { SymbolView } from 'expo-symbols';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { LocalStorage } from '@/utils/storage';
+import { useAuth } from '@/context/auth-context';
+import { fetchDynamicSchemes, diagnoseCropDisease, type Scheme, type DiagnosisResult } from '@/services/ai-service';
+import * as ImagePicker from 'expo-image-picker';
+import cropsData from '@/constants/crops.json';
 
 // Agronomic data constants per Acre
 const AGRONOMY_PRESETS = {
@@ -188,6 +196,8 @@ export default function ExploreScreen() {
   const { width } = useWindowDimensions();
   const [language, setLanguage] = useState<'hi' | 'en'>('hi');
 
+
+
   const getTabLabel = (tab: 'calc' | 'pest' | 'scheme') => {
     const isHindi = language === 'hi';
     const isSmall = width < 390;
@@ -207,15 +217,17 @@ export default function ExploreScreen() {
     return '';
   };
 
-  useEffect(() => {
-    const loadLanguage = async () => {
-      const savedLang = await LocalStorage.getItem('chat_lang');
-      if (savedLang === 'hi' || savedLang === 'en') {
-        setLanguage(savedLang);
-      }
-    };
-    loadLanguage();
-  }, []);
+  useFocusEffect(
+    React.useCallback(() => {
+      const loadLanguage = async () => {
+        const savedLang = await LocalStorage.getItem('chat_lang');
+        if (savedLang === 'hi' || savedLang === 'en') {
+          setLanguage(savedLang);
+        }
+      };
+      loadLanguage();
+    }, [])
+  );
 
   const formatLabel = (text: string) => {
     if (!text) return '';
@@ -235,7 +247,254 @@ export default function ExploreScreen() {
   const [landArea, setLandArea] = useState('1');
   const [landUnit, setLandUnit] = useState<'acre' | 'bigha'>('acre');
   const [calcCrop, setCalcCrop] = useState('Wheat (गेहूं)');
-  const [activeTab, setActiveTab] = useState<'calc' | 'pest' | 'scheme'>('calc');
+  const [activeView, setActiveView] = useState<'main' | 'calc' | 'pest' | 'scheme'>('main');
+
+  const { farmState, farmCrop } = useAuth();
+
+  // AI Schemes state
+  const [schemesList, setSchemesList] = useState<Scheme[]>([]);
+  const [isLoadingSchemes, setIsLoadingSchemes] = useState(false);
+
+  // AI Diagnosis state
+  const [diagnosisCrop, setDiagnosisCrop] = useState('');
+  const [cropSearchQuery, setCropSearchQuery] = useState('');
+  const [diagnosisSymptoms, setDiagnosisSymptoms] = useState('');
+
+  // Auto-prefill diagnosis crop based on user profile and language
+  useEffect(() => {
+    if (farmCrop) {
+      setDiagnosisCrop(formatLabel(farmCrop));
+    }
+  }, [farmCrop, language]);
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [isDiagnosing, setIsDiagnosing] = useState(false);
+  const [diagnosisResult, setDiagnosisResult] = useState<DiagnosisResult | null>(null);
+
+  // Diagnosis History Type & State
+  interface DiagnosisHistoryItem {
+    id: string;
+    crop: string;
+    symptoms: string;
+    image: string | null;
+    result: DiagnosisResult;
+    timestamp: string;
+  }
+  const [diagnosisHistory, setDiagnosisHistory] = useState<DiagnosisHistoryItem[]>([]);
+  const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
+
+  // Animation for scanning line
+  const [scanAnim] = useState(() => new Animated.Value(0));
+  const translateY = scanAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 180]
+  });
+
+  // Set default crop in diagnosis input when farmCrop changes
+  useEffect(() => {
+    if (farmCrop) {
+      const cleanCrop = farmCrop.split('(')[0].trim();
+      setDiagnosisCrop(cleanCrop);
+    }
+  }, [farmCrop]);
+
+  // Load diagnosis history on mount
+  useEffect(() => {
+    const loadHistory = async () => {
+      try {
+        const historyData = await LocalStorage.getItem('pest_diagnosis_history');
+        if (historyData) {
+          setDiagnosisHistory(JSON.parse(historyData));
+        }
+      } catch (err) {
+        console.error('[ExploreScreen] Error loading diagnosis history:', err);
+      }
+    };
+    loadHistory();
+  }, []);
+
+  // Loop the scanning line animation during diagnosis
+  useEffect(() => {
+    if (isDiagnosing) {
+      scanAnim.setValue(0);
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(scanAnim, {
+            toValue: 1,
+            duration: 2000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scanAnim, {
+            toValue: 0,
+            duration: 2000,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    } else {
+      scanAnim.setValue(0);
+    }
+  }, [isDiagnosing]);
+
+  // Select or take a photo using expo-image-picker
+  const pickImage = async (useCamera: boolean) => {
+    try {
+      if (Platform.OS !== 'web') {
+        const permissionResult = useCamera
+          ? await ImagePicker.requestCameraPermissionsAsync()
+          : await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+        if (permissionResult.status !== 'granted') {
+          Alert.alert(
+            language === 'hi' ? 'अनुमति आवश्यक' : 'Permission Required',
+            language === 'hi'
+              ? (useCamera ? 'फोटो लेने के लिए कैमरा अनुमति की आवश्यकता है।' : 'फोटो चुनने के लिए गैलरी अनुमति की आवश्यकता है।')
+              : (useCamera ? 'Camera permission is required to capture photos.' : 'Media library permission is required to select photos.')
+          );
+          return;
+        }
+      }
+
+      const options: ImagePicker.ImagePickerOptions = {
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.6,
+        base64: true,
+      };
+
+      const result = useCamera
+        ? await ImagePicker.launchCameraAsync(options)
+        : await ImagePicker.launchImageLibraryAsync(options);
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        const base64Str = asset.base64
+          ? `data:image/jpeg;base64,${asset.base64}`
+          : asset.uri;
+        setUploadedImage(base64Str);
+      }
+    } catch (err) {
+      console.error('Error selecting image:', err);
+      Alert.alert(
+        language === 'hi' ? 'त्रुटि' : 'Error',
+        language === 'hi' ? 'फोटो चुनने में समस्या आई।' : 'Failed to select image.'
+      );
+    }
+  };
+
+  const handleImageInput = (useCamera: boolean) => {
+    if (Platform.OS === 'web') {
+      pickImage(false); // Web default to file manager
+    } else {
+      pickImage(useCamera);
+    }
+  };
+
+  const deleteHistoryItem = async (id: string) => {
+    const updated = diagnosisHistory.filter(item => item.id !== id);
+    setDiagnosisHistory(updated);
+    await LocalStorage.setItem('pest_diagnosis_history', JSON.stringify(updated));
+  };
+
+  const clearAllHistory = async () => {
+    setDiagnosisHistory([]);
+    await LocalStorage.removeItem('pest_diagnosis_history');
+  };
+
+  const formatDate = (isoString: string) => {
+    try {
+      const date = new Date(isoString);
+      return date.toLocaleDateString(language === 'hi' ? 'hi-IN' : 'en-US', {
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return isoString;
+    }
+  };
+
+  // Fetch dynamic schemes
+  useEffect(() => {
+    let isMounted = true;
+    async function loadSchemes() {
+      const state = farmState || 'Punjab';
+      const crop = farmCrop || 'Wheat (गेहूं)';
+      setIsLoadingSchemes(true);
+      try {
+        const data = await fetchDynamicSchemes(state, crop, language);
+        if (isMounted) {
+          setSchemesList(data.length > 0 ? data : SCHEMES.map(s => ({
+            title: language === 'hi' ? s.title.hi : s.title.en,
+            benefit: language === 'hi' ? s.benefit.hi : s.benefit.en,
+            eligibility: language === 'hi' ? s.eligibility.hi : s.eligibility.en,
+            documents: language === 'hi' ? s.documents.hi : s.documents.en,
+          })));
+        }
+      } catch (err) {
+        console.error('Error fetching dynamic schemes:', err);
+        if (isMounted) {
+          setSchemesList(SCHEMES.map(s => ({
+            title: language === 'hi' ? s.title.hi : s.title.en,
+            benefit: language === 'hi' ? s.benefit.hi : s.benefit.en,
+            eligibility: language === 'hi' ? s.eligibility.hi : s.eligibility.en,
+            documents: language === 'hi' ? s.documents.hi : s.documents.en,
+          })));
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingSchemes(false);
+        }
+      }
+    }
+
+    if (activeView === 'scheme') {
+      loadSchemes();
+    }
+  }, [farmState, farmCrop, activeView, language]);
+
+  const handleDiagnose = async () => {
+    if (!diagnosisCrop || (!diagnosisSymptoms && !uploadedImage)) return;
+    setIsDiagnosing(true);
+    setDiagnosisResult(null);
+    try {
+      const result = await diagnoseCropDisease(
+        diagnosisCrop,
+        diagnosisSymptoms,
+        uploadedImage || undefined,
+        language
+      );
+      setDiagnosisResult(result);
+
+      // Save to history
+      const newHistoryItem: DiagnosisHistoryItem = {
+        id: Math.random().toString(36).substring(7),
+        crop: diagnosisCrop,
+        symptoms: diagnosisSymptoms || (language === 'hi' ? 'कोई विवरण नहीं (फ़ोटो से जांच)' : 'No description (from photo)'),
+        image: uploadedImage,
+        result: result,
+        timestamp: new Date().toISOString()
+      };
+      const updatedHistory = [newHistoryItem, ...diagnosisHistory];
+      setDiagnosisHistory(updatedHistory);
+      await LocalStorage.setItem('pest_diagnosis_history', JSON.stringify(updatedHistory));
+    } catch (err) {
+      console.error('Error diagnosing crop:', err);
+      setDiagnosisResult({
+        disease: language === 'hi' ? 'पहचान में त्रुटि' : 'Detection Error',
+        symptoms: diagnosisSymptoms || 'N/A',
+        organic: language === 'hi'
+          ? 'कृपया दोबारा प्रयास करें। सुनिश्चित करें कि आपका इंटरनेट चालू है और पत्ती की फोटो स्पष्ट है।'
+          : 'Please try again. Ensure internet is connected and leaf photo is clear.',
+        chemical: language === 'hi'
+          ? 'आप हमारे चैट सेक्शन में भी सीधे कृषि मित्रा से सलाह ले सकते हैं।'
+          : 'You can also consult AI Mitra in the chat section directly.'
+      });
+    } finally {
+      setIsDiagnosing(false);
+    }
+  };
 
   const calculateDosage = () => {
     const area = parseFloat(landArea) || 0;
@@ -268,77 +527,152 @@ export default function ExploreScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.header}>
-          <ThemedText type="smallBold" style={styles.headerTitle}>
-            {language === 'hi' ? 'कृषि यूटिलिटीज' : 'Krishi Utilities'}
-          </ThemedText>
-          <ThemedText type="small" style={[styles.headerSub, { color: theme.textSecondary, fontWeight: '600' }]}>
-            {language === 'hi' ? 'कृषि उपकरण और डेटाबेस' : 'Agronomic Tools & Database'}
-          </ThemedText>
-        </View>
-
-        {/* Segmented Control Selector */}
-        <View style={[styles.segmentedControl, { backgroundColor: theme.backgroundElement }]}>
-          <Pressable
-            onPress={() => setActiveTab('calc')}
-            style={[styles.segmentBtn, activeTab === 'calc' && [styles.segmentBtnActive, { backgroundColor: theme.card }]]}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.one }}>
+        {activeView === 'main' ? (
+          <View style={styles.header}>
+            <ThemedText type="smallBold" style={styles.headerTitle}>
+              {language === 'hi' ? 'कृषि यूटिलिटीज' : 'Krishi Utilities'}
+            </ThemedText>
+            <ThemedText type="small" style={[styles.headerSub, { color: theme.textSecondary, fontWeight: '600' }]}>
+              {language === 'hi' ? 'कृषि उपकरण और डेटाबेस' : 'Agronomic Tools & Database'}
+            </ThemedText>
+          </View>
+        ) : (
+          <View style={styles.subPageHeader}>
+            <Pressable
+              onPress={() => setActiveView('main')}
+              style={({ pressed }) => [
+                styles.backBtn,
+                { backgroundColor: theme.backgroundElement },
+                pressed && { opacity: 0.8 }
+              ]}
+            >
               <SymbolView
-                name={{ ios: 'plus.minus.and.percent', android: 'calculate', web: 'calculate' } as any}
-                size={15}
-                tintColor={activeTab === 'calc' ? theme.primary : theme.textSecondary}
+                name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' } as any}
+                size={20}
+                tintColor={theme.text}
               />
-              <ThemedText
-                type="smallBold"
-                style={[styles.segmentBtnText, activeTab === 'calc' ? { color: theme.primary } : { color: theme.textSecondary }]}
-              >
-                {getTabLabel('calc')}
+            </Pressable>
+            <View style={{ flex: 1 }}>
+              <ThemedText type="smallBold" style={{ fontSize: 20 }}>
+                {activeView === 'calc' && (language === 'hi' ? 'खुराक कैलकुलेटर' : 'Crop Input Calculator')}
+                {activeView === 'pest' && (language === 'hi' ? 'एआई फसल रोग निदान' : 'AI Crop Disease Diagnosis')}
+                {activeView === 'scheme' && (language === 'hi' ? 'सरकारी योजनाएं' : 'Government Schemes')}
               </ThemedText>
             </View>
-          </Pressable>
+          </View>
+        )}
 
-          <Pressable
-            onPress={() => setActiveTab('pest')}
-            style={[styles.segmentBtn, activeTab === 'pest' && [styles.segmentBtnActive, { backgroundColor: theme.card }]]}
+        {activeView === 'main' ? (
+          <ScrollView
+            contentContainerStyle={[styles.scrollContent, contentPlatformStyle]}
+            showsVerticalScrollIndicator={false}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.one }}>
+            <Pressable
+              onPress={() => setActiveView('calc')}
+              style={({ pressed }) => [
+                styles.optionCard,
+                { borderColor: theme.border, backgroundColor: theme.card },
+                pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] }
+              ]}
+            >
+              <View style={[styles.optionIconContainer, { backgroundColor: 'rgba(76, 175, 80, 0.12)' }]}>
+                <SymbolView
+                  name={{ ios: 'plus.minus.and.percent', android: 'calculate', web: 'calculate' } as any}
+                  size={24}
+                  tintColor={theme.primary}
+                />
+              </View>
+              <View style={styles.optionContent}>
+                <ThemedText type="smallBold" style={[styles.optionTitle, { color: theme.text }]}>
+                  {language === 'hi' ? 'खुराक कैलकुलेटर' : 'Crop Input Calculator'}
+                </ThemedText>
+                <ThemedText type="small" style={[styles.optionDescription, { color: theme.textSecondary }]}>
+                  {language === 'hi'
+                    ? 'अपनी भूमि के क्षेत्रफल के अनुसार बीज दर, सिंचाई चक्र और उर्वरक आवश्यकताओं की गणना करें।'
+                    : 'Calculate seed rates, irrigation counts, and fertilizer requirements (NPK) according to your acreage.'}
+                </ThemedText>
+              </View>
               <SymbolView
-                name={{ ios: 'ladybug.fill', android: 'bug_report', web: 'bug_report' } as any}
-                size={15}
-                tintColor={activeTab === 'pest' ? theme.primary : theme.textSecondary}
+                name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any}
+                size={18}
+                tintColor={theme.textSecondary}
               />
-              <ThemedText
-                type="smallBold"
-                style={[styles.segmentBtnText, activeTab === 'pest' ? { color: theme.primary } : { color: theme.textSecondary }]}
-              >
-                {getTabLabel('pest')}
-              </ThemedText>
-            </View>
-          </Pressable>
+            </Pressable>
 
-          <Pressable
-            onPress={() => setActiveTab('scheme')}
-            style={[styles.segmentBtn, activeTab === 'scheme' && [styles.segmentBtnActive, { backgroundColor: theme.card }]]}
+            <Pressable
+              onPress={() => setActiveView('pest')}
+              style={({ pressed }) => [
+                styles.optionCard,
+                { borderColor: theme.border, backgroundColor: theme.card },
+                pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] }
+              ]}
+            >
+              <View style={[styles.optionIconContainer, { backgroundColor: 'rgba(244, 67, 54, 0.12)' }]}>
+                <SymbolView
+                  name={{ ios: 'ladybug.fill', android: 'bug_report', web: 'bug_report' } as any}
+                  size={24}
+                  tintColor="#EF5350"
+                />
+              </View>
+              <View style={styles.optionContent}>
+                <ThemedText type="smallBold" style={[styles.optionTitle, { color: theme.text }]}>
+                  {language === 'hi' ? 'एआई फसल रोग निदान' : 'AI Crop Disease Diagnosis'}
+                </ThemedText>
+                <ThemedText type="small" style={[styles.optionDescription, { color: theme.textSecondary }]}>
+                  {language === 'hi'
+                    ? 'फसल की बीमारी का निदान करने के लिए पत्ती की फोटो लें और जैविक व रासायनिक उपचार तुरंत पाएं।'
+                    : 'Describe symptoms or take a photo of the infected crop to diagnose the disease and get treatments.'}
+                </ThemedText>
+              </View>
+              <SymbolView
+                name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any}
+                size={18}
+                tintColor={theme.textSecondary}
+              />
+            </Pressable>
+
+            <Pressable
+              onPress={() => setActiveView('scheme')}
+              style={({ pressed }) => [
+                styles.optionCard,
+                { borderColor: theme.border, backgroundColor: theme.card },
+                pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] }
+              ]}
+            >
+              <View style={[styles.optionIconContainer, { backgroundColor: 'rgba(33, 150, 243, 0.12)' }]}>
+                <SymbolView
+                  name={{ ios: 'scroll.fill', android: 'description', web: 'description' } as any}
+                  size={24}
+                  tintColor="#2196F3"
+                />
+              </View>
+              <View style={styles.optionContent}>
+                <ThemedText type="smallBold" style={[styles.optionTitle, { color: theme.text }]}>
+                  {language === 'hi' ? 'सरकारी योजनाएं' : 'Government Schemes'}
+                </ThemedText>
+                <ThemedText type="small" style={[styles.optionDescription, { color: theme.textSecondary }]}>
+                  {language === 'hi'
+                    ? 'कृषि लोन, पीएम किसान सम्मान निधि और राज्य कृषि सब्सिडी व योजनाओं का विवरण देखें।'
+                    : 'View government agricultural loans, PM Kisan Nidhi, state subsidies and schemes details.'}
+                </ThemedText>
+              </View>
+              <SymbolView
+                name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any}
+                size={18}
+                tintColor={theme.textSecondary}
+              />
+            </Pressable>
+          </ScrollView>
+        ) : (
+          <ScrollView
+            contentContainerStyle={[
+              styles.scrollContent,
+              contentPlatformStyle,
+              activeView === 'pest' && { flexGrow: 1, justifyContent: 'center' }
+            ]}
+            showsVerticalScrollIndicator={false}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.one }}>
-              <SymbolView
-                name={{ ios: 'scroll.fill', android: 'description', web: 'description' } as any}
-                size={15}
-                tintColor={activeTab === 'scheme' ? theme.primary : theme.textSecondary}
-              />
-              <ThemedText
-                type="smallBold"
-                style={[styles.segmentBtnText, activeTab === 'scheme' ? { color: theme.primary } : { color: theme.textSecondary }]}
-              >
-                {getTabLabel('scheme')}
-              </ThemedText>
-            </View>
-          </Pressable>
-        </View>
-
-        <ScrollView contentContainerStyle={[styles.scrollContent, contentPlatformStyle]} showsVerticalScrollIndicator={false}>
-          {activeTab === 'calc' && (
+            {activeView === 'calc' && (
             <View style={styles.sectionContainer}>
               <ThemedView type="card" style={[styles.card, { borderColor: theme.border }]}>
                 <ThemedText type="smallBold" style={styles.cardTitle}>
@@ -374,7 +708,7 @@ export default function ExploreScreen() {
                         onPress={() => setLandUnit('acre')}
                         style={[styles.unitBtn, landUnit === 'acre' && [styles.unitBtnActive, { backgroundColor: theme.primary }]]}
                       >
-                        <ThemedText type="code" style={[styles.unitBtnText, landUnit === 'acre' ? { color: '#ffffff', fontWeight: '700' } : { color: theme.textSecondary }]}>
+                        <ThemedText type="code" style={[styles.unitBtnText, landUnit === 'acre' ? { color: theme.onPrimary, fontWeight: '700' } : { color: theme.textSecondary }]}>
                           {language === 'hi' ? 'एकड़' : 'Acre'}
                         </ThemedText>
                       </Pressable>
@@ -382,7 +716,7 @@ export default function ExploreScreen() {
                         onPress={() => setLandUnit('bigha')}
                         style={[styles.unitBtn, landUnit === 'bigha' && [styles.unitBtnActive, { backgroundColor: theme.primary }]]}
                       >
-                        <ThemedText type="code" style={[styles.unitBtnText, landUnit === 'bigha' ? { color: '#ffffff', fontWeight: '700' } : { color: theme.textSecondary }]}>
+                        <ThemedText type="code" style={[styles.unitBtnText, landUnit === 'bigha' ? { color: theme.onPrimary, fontWeight: '700' } : { color: theme.textSecondary }]}>
                           {language === 'hi' ? 'बीघा' : 'Bigha'}
                         </ThemedText>
                       </Pressable>
@@ -406,7 +740,7 @@ export default function ExploreScreen() {
                             calcCrop === crop && { backgroundColor: theme.primary }
                           ]}
                         >
-                          <ThemedText type="code" style={[styles.cropPillText, calcCrop === crop ? { color: '#ffffff', fontWeight: '700' } : { color: theme.text }]}>
+                          <ThemedText type="code" style={[styles.cropPillText, calcCrop === crop ? { color: theme.onPrimary, fontWeight: '700' } : { color: theme.text }]}>
                             {formatLabel(crop)}
                           </ThemedText>
                         </Pressable>
@@ -495,10 +829,432 @@ export default function ExploreScreen() {
             </View>
           )}
 
-          {activeTab === 'pest' && (
+          {activeView === 'pest' && (
             <View style={styles.sectionContainer}>
+              {/* AI Diagnostic Center Card */}
+              <ThemedView type="card" style={[styles.card, { borderColor: theme.border }]}>
+                <ThemedText type="smallBold" style={styles.cardTitle}>
+                  {language === 'hi' ? 'एआई फसल रोग निदान' : 'AI Crop Disease Diagnosis'}
+                </ThemedText>
+                <ThemedText type="small" style={{ color: theme.textSecondary, marginBottom: Spacing.two }}>
+                  {language === 'hi'
+                    ? 'फ़ोटो अपलोड करें और फसल की बीमारी तुरंत पहचानें।'
+                    : 'Upload photo to diagnose disease instantly.'}
+                </ThemedText>
+
+                <View style={{ gap: Spacing.three }}>
+                  {/* Select Crop Pills Row */}
+                  <View style={{ gap: Spacing.one }}>
+                    <ThemedText type="code" style={styles.formLabel}>
+                      {language === 'hi' ? 'फसल चुनें' : 'SELECT CROP'}
+                    </ThemedText>
+
+                    {/* Crop Search Bar */}
+                    <TextInput
+                      style={{
+                        height: 40,
+                        borderColor: theme.border,
+                        borderWidth: 1,
+                        borderRadius: 8,
+                        paddingHorizontal: Spacing.three,
+                        color: theme.text,
+                        backgroundColor: theme.backgroundElement,
+                        fontSize: 13,
+                        marginBottom: Spacing.one
+                      }}
+                      value={cropSearchQuery}
+                      onChangeText={setCropSearchQuery}
+                      placeholder={language === 'hi' ? 'फसल का नाम खोजें (जैसे: आलू, गेहूँ)...' : 'Search crop name (e.g. Potato, Wheat)...'}
+                      placeholderTextColor={theme.textSecondary}
+                      clearButtonMode="while-editing"
+                    />
+
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={{ gap: Spacing.one, paddingVertical: Spacing.one }}
+                    >
+                      {cropsData
+                        .filter((cropItem) =>
+                          cropItem.name.toLowerCase().includes(cropSearchQuery.toLowerCase())
+                        )
+                        .map((cropItem) => {
+                          const isSelected = formatLabel(cropItem.name) === diagnosisCrop;
+                          return (
+                            <Pressable
+                              key={cropItem.id}
+                              onPress={() => setDiagnosisCrop(formatLabel(cropItem.name))}
+                              style={({ pressed }) => [
+                                styles.cropPill,
+                                {
+                                  borderColor: isSelected ? theme.primary : theme.border,
+                                  backgroundColor: isSelected ? 'rgba(76, 175, 80, 0.12)' : theme.backgroundElement,
+                                  borderWidth: isSelected ? 2 : 1
+                                },
+                                pressed && { opacity: 0.8 }
+                              ]}
+                            >
+                              <ThemedText
+                                type="smallBold"
+                                style={{
+                                  color: isSelected ? theme.primary : theme.text,
+                                  fontSize: 13,
+                                  fontWeight: isSelected ? '700' : '500'
+                                }}
+                              >
+                                {formatLabel(cropItem.name)}
+                              </ThemedText>
+                            </Pressable>
+                          );
+                        })}
+                    </ScrollView>
+                  </View>
+
+                  {/* Upload Image Section */}
+                  <View style={{ gap: Spacing.one }}>
+                    <ThemedText type="code" style={styles.formLabel}>
+                      {language === 'hi' ? 'पौधे / पत्ती की फोटो' : 'CROP / LEAF PHOTO'}
+                    </ThemedText>
+                    <View style={{ flexDirection: 'row', gap: Spacing.two, alignItems: 'center' }}>
+                      <Pressable
+                        onPress={() => handleImageInput(true)}
+                        disabled={isDiagnosing}
+                        style={({ pressed }) => [
+                          styles.uploadBtn,
+                          {
+                            borderColor: theme.primary,
+                            borderWidth: 1.5,
+                            borderStyle: 'solid',
+                            backgroundColor: 'rgba(76, 175, 80, 0.08)',
+                            borderRadius: Spacing.two,
+                            paddingVertical: 12,
+                            flex: 1,
+                            alignItems: 'center'
+                          },
+                          (pressed || isDiagnosing) && { opacity: 0.8 }
+                        ]}
+                      >
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.one }}>
+                          <SymbolView
+                            name={{ ios: 'camera.fill', android: 'photo_camera', web: 'photo_camera' } as any}
+                            size={16}
+                            tintColor={theme.primary}
+                          />
+                          <ThemedText type="code" style={{ color: theme.primary, fontWeight: '700', fontSize: 13 }}>
+                            {language === 'hi' ? 'कैमरा फोटो' : 'Take Photo'}
+                          </ThemedText>
+                        </View>
+                      </Pressable>
+
+                      <Pressable
+                        onPress={() => handleImageInput(false)}
+                        disabled={isDiagnosing}
+                        style={({ pressed }) => [
+                          styles.uploadBtn,
+                          {
+                            borderColor: theme.primary,
+                            borderWidth: 1.5,
+                            borderStyle: 'solid',
+                            backgroundColor: 'rgba(76, 175, 80, 0.08)',
+                            borderRadius: Spacing.two,
+                            paddingVertical: 12,
+                            flex: 1,
+                            alignItems: 'center'
+                          },
+                          (pressed || isDiagnosing) && { opacity: 0.8 }
+                        ]}
+                      >
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.one }}>
+                          <SymbolView
+                            name={{ ios: 'photo.fill', android: 'image', web: 'image' } as any}
+                            size={16}
+                            tintColor={theme.primary}
+                          />
+                          <ThemedText type="code" style={{ color: theme.primary, fontWeight: '700', fontSize: 13 }}>
+                            {language === 'hi' ? 'गैलरी' : 'Gallery'}
+                          </ThemedText>
+                        </View>
+                      </Pressable>
+                    </View>
+
+                    {uploadedImage && (
+                      <View style={[styles.imagePreviewContainer, { borderColor: theme.border }]}>
+                        <Image
+                          source={{ uri: uploadedImage }}
+                          style={styles.imagePreview}
+                          contentFit="cover"
+                        />
+                        <Pressable
+                          onPress={() => setUploadedImage(null)}
+                          disabled={isDiagnosing}
+                          style={[styles.removeImageBtn, { backgroundColor: theme.error }]}
+                        >
+                          <ThemedText type="code" style={{ color: '#ffffff', fontSize: 11, fontWeight: '700' }}>✕</ThemedText>
+                        </Pressable>
+
+                        {isDiagnosing && (
+                          <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0, 0, 0, 0.4)', justifyContent: 'center', alignItems: 'center' }]}>
+                            <Animated.View
+                              style={[
+                                styles.scanLine,
+                                {
+                                  backgroundColor: theme.success,
+                                  transform: [{ translateY }]
+                                }
+                              ]}
+                            />
+                            <ActivityIndicator size="large" color={theme.success} />
+                            <ThemedText type="smallBold" style={{ color: '#ffffff', marginTop: Spacing.two }}>
+                              {language === 'hi' ? 'एआई पत्ती का विश्लेषण कर रहा है...' : 'AI analyzing leaf...'}
+                            </ThemedText>
+                          </View>
+                        )}
+                      </View>
+                    )}
+                  </View>
+
+                  <Pressable
+                    onPress={handleDiagnose}
+                    disabled={isDiagnosing || !diagnosisCrop || !uploadedImage}
+                    style={({ pressed }) => [
+                      styles.diagnoseBtn,
+                      {
+                        backgroundColor: (isDiagnosing || !diagnosisCrop || !uploadedImage) ? theme.border : theme.primary,
+                        borderRadius: Spacing.two,
+                        paddingVertical: Spacing.two,
+                        alignItems: 'center'
+                      },
+                      (pressed || isDiagnosing || !diagnosisCrop || !uploadedImage) && { opacity: 0.7 }
+                    ]}
+                  >
+                    {isDiagnosing && !uploadedImage ? (
+                      <ActivityIndicator size="small" color={theme.onPrimary} />
+                    ) : (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.one }}>
+                        <SymbolView
+                          name={{ ios: 'checkmark.shield.fill', android: 'verified_user', web: 'verified_user' } as any}
+                          size={15}
+                          tintColor={theme.onPrimary}
+                        />
+                        <ThemedText type="smallBold" style={{ color: theme.onPrimary }}>
+                          {language === 'hi' ? 'एआई रोग निदान शुरू करें' : 'Start AI Diagnosis'}
+                        </ThemedText>
+                      </View>
+                    )}
+                  </Pressable>
+                </View>
+              </ThemedView>
+
+              {/* Diagnosis Result */}
+              {diagnosisResult && (
+                <ThemedView type="card" style={[styles.pestCard, { borderColor: theme.success, borderWidth: 2 }]}>
+                  <View style={styles.pestHeaderRow}>
+                    <View style={{ flex: 1, marginRight: Spacing.two }}>
+                      <ThemedText type="smallBold" style={{ fontSize: 18, color: theme.success }}>
+                        {diagnosisResult.disease}
+                      </ThemedText>
+                      <ThemedText type="code" style={{ fontSize: 10, color: theme.primary, fontWeight: '700' }}>
+                        {language === 'hi' ? 'निदान परिणाम' : 'DIAGNOSIS RESULT'}
+                      </ThemedText>
+                    </View>
+                    <SymbolView
+                      name={{ ios: 'checkmark.shield.fill', android: 'verified_user', web: 'verified_user' } as any}
+                      size={28}
+                      tintColor={theme.success}
+                    />
+                  </View>
+
+                  {uploadedImage && (
+                    <Image
+                      source={{ uri: uploadedImage }}
+                      style={{ width: '100%', height: 120, borderRadius: 8, marginTop: Spacing.one }}
+                      contentFit="cover"
+                    />
+                  )}
+
+                  <View style={[styles.pestDivider, { backgroundColor: theme.border }]} />
+
+                  <View style={styles.pestDetailSection}>
+                    <ThemedText type="code" style={styles.pestLabel}>
+                      {language === 'hi' ? 'विश्लेषण / लक्षण' : 'ANALYSIS / SYMPTOMS'}
+                    </ThemedText>
+                    <ThemedText type="small" style={styles.pestValue}>
+                      {diagnosisResult.symptoms}
+                    </ThemedText>
+                  </View>
+
+                  <View style={styles.pestDetailSection}>
+                    <ThemedText type="code" style={[styles.pestLabel, { color: theme.success }]}>
+                      {language === 'hi' ? 'जैविक उपचार' : 'ORGANIC TREATMENT'}
+                    </ThemedText>
+                    <ThemedText type="small" style={styles.pestValue}>
+                      {diagnosisResult.organic}
+                    </ThemedText>
+                  </View>
+
+                  <View style={styles.pestDetailSection}>
+                    <ThemedText type="code" style={[styles.pestLabel, { color: theme.error }]}>
+                      {language === 'hi' ? 'रासायनिक उपचार' : 'CHEMICAL TREATMENT'}
+                    </ThemedText>
+                    <ThemedText type="small" style={styles.pestValue}>
+                      {diagnosisResult.chemical}
+                    </ThemedText>
+                  </View>
+
+                  <View style={{ flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.one }}>
+                    <Pressable
+                      onPress={() => {
+                        setDiagnosisSymptoms('');
+                        setUploadedImage(null);
+                        setDiagnosisResult(null);
+                      }}
+                      style={({ pressed }) => [
+                        styles.clearBtn,
+                        { borderColor: theme.border, borderWidth: 1, borderRadius: Spacing.two, flex: 1, paddingVertical: Spacing.two, alignItems: 'center' },
+                        pressed && { opacity: 0.8 }
+                      ]}
+                    >
+                      <ThemedText type="code" style={{ color: theme.textSecondary, fontWeight: '700' }}>
+                        {language === 'hi' ? 'साफ़ करें' : 'Clear'}
+                      </ThemedText>
+                    </Pressable>
+
+                    <Pressable
+                      onPress={() => askAiAboutDisease(diagnosisCrop, diagnosisResult.disease)}
+                      style={({ pressed }) => [
+                        styles.askAiBtn,
+                        { backgroundColor: theme.primary, borderRadius: Spacing.two, flex: 2, paddingVertical: Spacing.two, alignItems: 'center', marginTop: 0 },
+                        pressed && { opacity: 0.8 }
+                      ]}
+                    >
+                      <ThemedText type="code" style={{ color: theme.onPrimary, fontWeight: '700' }}>
+                        {language === 'hi' ? 'चैट में सलाह लें' : 'Consult in Chat'}
+                      </ThemedText>
+                    </Pressable>
+                  </View>
+                </ThemedView>
+              )}
+
+              {/* Diagnosis History */}
+              {diagnosisHistory.length > 0 && (
+                <View style={{ marginTop: Spacing.two, gap: Spacing.two }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <ThemedText type="smallBold" style={{ fontSize: 16 }}>
+                      {language === 'hi' ? 'पिछली जांचें (इतिहास)' : 'Diagnosis History'}
+                    </ThemedText>
+                    <Pressable onPress={clearAllHistory}>
+                      <ThemedText type="code" style={{ color: theme.error, fontWeight: '700' }}>
+                        {language === 'hi' ? 'इतिहास साफ़ करें' : 'Clear History'}
+                      </ThemedText>
+                    </Pressable>
+                  </View>
+
+                  {diagnosisHistory.map((item) => {
+                    const isExpanded = expandedHistoryId === item.id;
+                    return (
+                      <ThemedView key={item.id} type="card" style={[styles.pestCard, { borderColor: theme.border }]}>
+                        <Pressable onPress={() => setExpandedHistoryId(isExpanded ? null : item.id)}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
+                            {item.image ? (
+                              <Image
+                                source={{ uri: item.image }}
+                                style={{ width: 50, height: 50, borderRadius: 8 }}
+                                contentFit="cover"
+                              />
+                            ) : (
+                              <View style={{ width: 50, height: 50, borderRadius: 8, backgroundColor: theme.backgroundElement, alignItems: 'center', justifyContent: 'center' }}>
+                                <SymbolView
+                                  name={{ ios: 'doc.plaintext', android: 'description', web: 'description' } as any}
+                                  size={20}
+                                  tintColor={theme.textSecondary}
+                                />
+                              </View>
+                            )}
+                            <View style={{ flex: 1 }}>
+                              <ThemedText type="smallBold" style={{ fontSize: 14 }}>
+                                {item.result.disease}
+                              </ThemedText>
+                              <ThemedText type="code" style={{ fontSize: 10, color: theme.textSecondary }}>
+                                {language === 'hi' ? `फसल: ${item.crop}` : `Crop: ${item.crop}`} • {formatDate(item.timestamp)}
+                              </ThemedText>
+                            </View>
+                            <SymbolView
+                              name={{ ios: isExpanded ? 'chevron.up' : 'chevron.down', android: isExpanded ? 'keyboard_arrow_up' : 'keyboard_arrow_down', web: isExpanded ? 'keyboard_arrow_up' : 'keyboard_arrow_down' } as any}
+                              size={18}
+                              tintColor={theme.textSecondary}
+                            />
+                          </View>
+                        </Pressable>
+
+                        {isExpanded && (
+                          <View style={{ marginTop: Spacing.two, gap: Spacing.two }}>
+                            <View style={[styles.pestDivider, { backgroundColor: theme.border }]} />
+
+                            <View style={styles.pestDetailSection}>
+                              <ThemedText type="code" style={styles.pestLabel}>
+                                {language === 'hi' ? 'लक्षण' : 'SYMPTOMS'}
+                              </ThemedText>
+                              <ThemedText type="small" style={styles.pestValue}>
+                                {item.symptoms}
+                              </ThemedText>
+                            </View>
+
+                            <View style={styles.pestDetailSection}>
+                              <ThemedText type="code" style={[styles.pestLabel, { color: theme.success }]}>
+                                {language === 'hi' ? 'जैविक उपचार' : 'ORGANIC TREATMENT'}
+                              </ThemedText>
+                              <ThemedText type="small" style={styles.pestValue}>
+                                {item.result.organic}
+                              </ThemedText>
+                            </View>
+
+                            <View style={styles.pestDetailSection}>
+                              <ThemedText type="code" style={[styles.pestLabel, { color: theme.error }]}>
+                                {language === 'hi' ? 'रासायनिक उपचार' : 'CHEMICAL TREATMENT'}
+                              </ThemedText>
+                              <ThemedText type="small" style={styles.pestValue}>
+                                {item.result.chemical}
+                              </ThemedText>
+                            </View>
+
+                            <View style={{ flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.one }}>
+                              <Pressable
+                                onPress={() => deleteHistoryItem(item.id)}
+                                style={({ pressed }) => [
+                                  styles.clearBtn,
+                                  { borderColor: theme.error, borderWidth: 1, borderRadius: Spacing.two, flex: 1, paddingVertical: Spacing.two, alignItems: 'center' },
+                                  pressed && { opacity: 0.8 }
+                                ]}
+                              >
+                                <ThemedText type="code" style={{ color: theme.error, fontWeight: '700' }}>
+                                  {language === 'hi' ? 'हटाएं' : 'Delete'}
+                                </ThemedText>
+                              </Pressable>
+
+                              <Pressable
+                                onPress={() => askAiAboutDisease(item.crop, item.result.disease)}
+                                style={({ pressed }) => [
+                                  styles.askAiBtn,
+                                  { backgroundColor: theme.primary, borderRadius: Spacing.two, flex: 2, paddingVertical: Spacing.two, alignItems: 'center', marginTop: 0 },
+                                  pressed && { opacity: 0.8 }
+                                ]}
+                              >
+                                <ThemedText type="code" style={{ color: theme.onPrimary, fontWeight: '700' }}>
+                                  {language === 'hi' ? 'चैट में सलाह लें' : 'Consult in Chat'}
+                                </ThemedText>
+                              </Pressable>
+                            </View>
+                          </View>
+                        )}
+                      </ThemedView>
+                    );
+                  })}
+                </View>
+              )}
+
+              {/* Standard Directory */}
               <ThemedText type="smallBold" style={styles.sectionHeading}>
-                {language === 'hi' ? 'सामान्य कीट और रोग सूची' : 'Common Pests & Disease Index'}
+                {language === 'hi' ? 'सामान्य कीट और रोग निर्देशिका' : 'Common Pests & Disease Index'}
               </ThemedText>
 
               {PEST_DIRECTORY.map((item) => (
@@ -556,9 +1312,9 @@ export default function ExploreScreen() {
                       <SymbolView
                         name={{ ios: 'cpu', android: 'smart_toy', web: 'smart_toy' } as any}
                         size={15}
-                        tintColor="#ffffff"
+                        tintColor={theme.onPrimary}
                       />
-                      <ThemedText type="code" style={{ color: '#ffffff', fontWeight: '700', flexShrink: 1 }}>
+                      <ThemedText type="code" style={{ color: theme.onPrimary, fontWeight: '700', flexShrink: 1 }}>
                         {language === 'hi' ? 'इस बीमारी के बारे में एआई मित्रा से सलाह लें' : 'Consult AI Mitra about this disease'}
                       </ThemedText>
                     </View>
@@ -568,58 +1324,75 @@ export default function ExploreScreen() {
             </View>
           )}
 
-          {activeTab === 'scheme' && (
+          {activeView === 'scheme' && (
             <View style={styles.sectionContainer}>
-              <ThemedText type="smallBold" style={styles.sectionHeading}>
-                {language === 'hi' ? 'कृषि कल्याणकारी योजनाएं' : 'Agricultural Welfare Schemes'}
-              </ThemedText>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <ThemedText type="smallBold" style={styles.sectionHeading}>
+                  {language === 'hi' ? 'कृषि कल्याणकारी योजनाएं' : 'Agricultural Welfare Schemes'}
+                </ThemedText>
+                {farmState && (
+                  <ThemedText type="code" style={{ fontSize: 10, color: theme.primary, fontWeight: '700', marginTop: Spacing.one }}>
+                    {formatLabel(farmState)} • {formatLabel(farmCrop || 'Wheat (गेहूं)')}
+                  </ThemedText>
+                )}
+              </View>
 
-              {SCHEMES.map((scheme, index) => (
-                <ThemedView key={index} type="card" style={[styles.schemeCard, { borderColor: theme.border }]}>
-                  <View style={styles.schemeHeader}>
-                    <ThemedText type="smallBold" style={{ fontSize: 16, color: theme.primary, flex: 1, marginRight: Spacing.two }}>
-                      {language === 'hi' ? scheme.title.hi : scheme.title.en}
-                    </ThemedText>
-                    <SymbolView
-                      name={{ ios: 'scroll.fill', android: 'description', web: 'description' } as any}
-                      size={28}
-                      tintColor={theme.primary}
-                    />
-                  </View>
+              {isLoadingSchemes ? (
+                <View style={{ paddingVertical: Spacing.four, alignItems: 'center' }}>
+                  <ActivityIndicator size="small" color={theme.primary} />
+                  <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: Spacing.two }}>
+                    {language === 'hi' ? 'आपके राज्य के लिए योजनाएं लोड हो रही हैं...' : 'Loading schemes for your state...'}
+                  </ThemedText>
+                </View>
+              ) : (
+                schemesList.map((scheme, index) => (
+                  <ThemedView key={index} type="card" style={[styles.schemeCard, { borderColor: theme.border }]}>
+                    <View style={styles.schemeHeader}>
+                      <ThemedText type="smallBold" style={{ fontSize: 16, color: theme.primary, flex: 1, marginRight: Spacing.two }}>
+                        {scheme.title}
+                      </ThemedText>
+                      <SymbolView
+                        name={{ ios: 'scroll.fill', android: 'description', web: 'description' } as any}
+                        size={28}
+                        tintColor={theme.primary}
+                      />
+                    </View>
 
-                  <View style={[styles.pestDivider, { backgroundColor: theme.border }]} />
+                    <View style={[styles.pestDivider, { backgroundColor: theme.border }]} />
 
-                  <View style={styles.pestDetailSection}>
-                    <ThemedText type="code" style={styles.pestLabel}>
-                      {language === 'hi' ? 'योजना लाभ' : 'BENEFIT'}
-                    </ThemedText>
-                    <ThemedText type="small" style={styles.pestValue}>
-                      {language === 'hi' ? scheme.benefit.hi : scheme.benefit.en}
-                    </ThemedText>
-                  </View>
+                    <View style={styles.pestDetailSection}>
+                      <ThemedText type="code" style={styles.pestLabel}>
+                        {language === 'hi' ? 'योजना लाभ' : 'BENEFIT'}
+                      </ThemedText>
+                      <ThemedText type="small" style={styles.pestValue}>
+                        {scheme.benefit}
+                      </ThemedText>
+                    </View>
 
-                  <View style={styles.pestDetailSection}>
-                    <ThemedText type="code" style={styles.pestLabel}>
-                      {language === 'hi' ? 'पात्रता' : 'ELIGIBILITY'}
-                    </ThemedText>
-                    <ThemedText type="small" style={styles.pestValue}>
-                      {language === 'hi' ? scheme.eligibility.hi : scheme.eligibility.en}
-                    </ThemedText>
-                  </View>
+                    <View style={styles.pestDetailSection}>
+                      <ThemedText type="code" style={styles.pestLabel}>
+                        {language === 'hi' ? 'पात्रता' : 'ELIGIBILITY'}
+                      </ThemedText>
+                      <ThemedText type="small" style={styles.pestValue}>
+                        {scheme.eligibility}
+                      </ThemedText>
+                    </View>
 
-                  <View style={styles.pestDetailSection}>
-                    <ThemedText type="code" style={styles.pestLabel}>
-                      {language === 'hi' ? 'आवश्यक दस्तावेज' : 'REQUIRED DOCUMENTS'}
-                    </ThemedText>
-                    <ThemedText type="small" style={styles.pestValue}>
-                      {language === 'hi' ? scheme.documents.hi : scheme.documents.en}
-                    </ThemedText>
-                  </View>
-                </ThemedView>
-              ))}
+                    <View style={styles.pestDetailSection}>
+                      <ThemedText type="code" style={styles.pestLabel}>
+                        {language === 'hi' ? 'आवश्यक दस्तावेज' : 'REQUIRED DOCUMENTS'}
+                      </ThemedText>
+                      <ThemedText type="small" style={styles.pestValue}>
+                        {scheme.documents}
+                      </ThemedText>
+                    </View>
+                  </ThemedView>
+                ))
+              )}
             </View>
           )}
-        </ScrollView>
+          </ScrollView>
+        )}
       </SafeAreaView>
     </ThemedView>
   );
@@ -640,7 +1413,8 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: Spacing.three,
     paddingTop: Spacing.three,
-    paddingBottom: Spacing.two
+    paddingBottom: Spacing.two,
+    width: '100%'
   },
   headerTitle: {
     fontSize: 20
@@ -683,6 +1457,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: Spacing.three,
+    paddingTop: Spacing.three,
     paddingBottom: BottomTabInset + Spacing.four,
     gap: Spacing.three
   },
@@ -823,5 +1598,121 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center'
+  },
+  uploadBtn: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Platform.select({
+      web: { outlineStyle: 'none' } as any,
+      default: {}
+    })
+  },
+  diagnoseBtn: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Platform.select({
+      web: { outlineStyle: 'none' } as any,
+      default: {}
+    })
+  },
+  clearBtn: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Platform.select({
+      web: { outlineStyle: 'none' } as any,
+      default: {}
+    })
+  },
+  imagePreviewContainer: {
+    position: 'relative',
+    height: 180,
+    width: '100%',
+    borderRadius: Spacing.two,
+    overflow: 'hidden',
+    borderWidth: 1,
+    marginTop: Spacing.one,
+    marginBottom: Spacing.one
+  },
+  imagePreview: {
+    width: '100%',
+    height: '100%'
+  },
+  removeImageBtn: {
+    position: 'absolute',
+    top: Spacing.two,
+    right: Spacing.two,
+    borderRadius: 15,
+    width: 26,
+    height: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 3,
+    zIndex: 10
+  },
+  scanLine: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 4,
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.8,
+    shadowRadius: 4,
+    elevation: 5,
+    zIndex: 5
+  },
+  subPageHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.three,
+    paddingTop: Spacing.two,
+    paddingBottom: Spacing.two,
+    gap: Spacing.three,
+    width: '100%'
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  optionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: Spacing.three,
+    padding: Spacing.three,
+    borderWidth: 1,
+    gap: Spacing.three,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2
+  },
+  optionIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  optionContent: {
+    flex: 1,
+    gap: 4,
+    paddingRight: Spacing.one
+  },
+  optionTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    letterSpacing: 0.2
+  },
+  optionDescription: {
+    fontSize: 12.5,
+    lineHeight: 18
   }
 });

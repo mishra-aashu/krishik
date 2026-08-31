@@ -32,15 +32,8 @@ export type ModelMode = 'smart' | 'fast';
 export async function sendMessageToGroq(
   chatHistory: { role: 'user' | 'assistant'; content: string }[],
   farmProfile: FarmProfile,
-  mode: ModelMode = 'fast',
-  language: 'en' | 'hi' | 'hinglish' = 'hi'
+  mode: ModelMode = 'fast'
 ): Promise<string> {
-  const languageInstructions = {
-    en: "Respond in clear English. Keep the tone professional yet friendly, encouraging, and accessible to farmers.",
-    hi: "Respond only in clear Hindi (Devanagari script - हिंदी). Use common agricultural Hindi terms (like सिंचाई, खाद, कीट, उर्वरक) to ensure the farmer understands. Keep the language polite (using 'आप').",
-    hinglish: "Respond in Hinglish (Hindi written in Roman/Latin alphabet, e.g., 'Aapko khet me nitrogen ki matra badhani chahiye'). Keep it readable, natural, and casual but highly informative."
-  };
-
   const systemMessage = `You are "Krishi Mitra" (कृषि मित्र), an expert agricultural AI assistant designed to help Indian farmers.
 Your goal is to provide scientific, practical, and highly localized farming solutions.
 
@@ -54,7 +47,7 @@ Instructions:
 2. Format your response beautifully using markdown: bold text, clear headings (using ###), and bullet points or numbered lists.
 3. Offer organic/bio-fertilizer options alongside recommended chemical remedies.
 4. Keep the tone warm, respectful, and empowering.
-5. ${languageInstructions[language]}
+5. Respond in the exact same language and script (Devanagari, Roman/Latin, etc.) that the user used to ask their question. If the user writes in Hindi Devanagari (हिंदी), respond in Hindi. If they write in Hinglish (Hindi words written in English letters, e.g. 'fasal me pani kab dale'), respond in natural Hinglish. If they write in English, respond in English. If they write in any other regional Indian language (e.g. Punjabi, Marathi, Telugu, Bengali), respond in that same language and script.
 
 Strict Rule: Do not hallucinate. If you are unsure about a pest disease, crop behavior, or local weather conditions, advise the farmer to consult their local Krishi Vigyan Kendra (KVK) or Kisan Call Centre (1800-180-1551).`;
 
