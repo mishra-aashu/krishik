@@ -1,13 +1,18 @@
-/**
- * Server-side API route for Mandi price data.
- * This runs on the server (Node.js), so there are NO CORS restrictions.
- * The client calls /api/mandi?state=Punjab and this route proxies to
- * api.data.gov.in keeping the API key on the server side.
- */
+const cache: Record<string, { data: any; timestamp: number }> = {};
+const CACHE_TTL = 15 * 60 * 1000; // 15 minutes
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const state = searchParams.get('state') || '';
+  const cacheKey = state.toLowerCase() || 'all';
+  const now = Date.now();
+
+  // Serve cache if it exists and is fresh
+  if (cache[cacheKey] && (now - cache[cacheKey].timestamp < CACHE_TTL)) {
+    return Response.json(cache[cacheKey].data, {
+      headers: { 'Access-Control-Allow-Origin': '*' },
+    });
+  }
 
   const API_KEY =
     process.env.EXPO_PUBLIC_DATA_GOV_IN_API_KEY ||
@@ -24,31 +29,37 @@ export async function GET(request: Request) {
     const response = await fetch(url);
 
     if (!response.ok) {
-      // Try without state filter as a fallback
-      if (state) {
-        const generalUrl = `${BASE_URL}?api-key=${API_KEY}&format=json&limit=150`;
-        const generalResponse = await fetch(generalUrl);
-        if (generalResponse.ok) {
-          const data = await generalResponse.json();
-          return Response.json(data, {
-            headers: { 'Access-Control-Allow-Origin': '*' },
-          });
-        }
+      // If we have an expired cache, serve it rather than failing
+      if (cache[cacheKey]) {
+        console.warn(`[Mandi API Route] Server returned error ${response.status}. Serving expired cache.`);
+        return Response.json(cache[cacheKey].data, {
+          headers: { 'Access-Control-Allow-Origin': '*' },
+        });
       }
       return Response.json(
-        { error: `API responded with status ${response.status}` },
+        { error: `Govt API responded with status ${response.status}` },
         { 
-          status: response.ok ? 200 : response.status,
+          status: response.status,
           headers: { 'Access-Control-Allow-Origin': '*' }
         }
       );
     }
 
     const data = await response.json();
+    cache[cacheKey] = {
+      data: data,
+      timestamp: now
+    };
     return Response.json(data, {
       headers: { 'Access-Control-Allow-Origin': '*' },
     });
   } catch (error: any) {
+    if (cache[cacheKey]) {
+      console.warn('[Mandi API Route] Fetch error. Serving expired cache.', error);
+      return Response.json(cache[cacheKey].data, {
+        headers: { 'Access-Control-Allow-Origin': '*' },
+      });
+    }
     return Response.json(
       { error: error.message || 'Internal server error' },
       { 
