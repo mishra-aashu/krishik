@@ -101,7 +101,7 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
     en: {
       appName: 'Krishik Mitra',
       welcome: 'Welcome, Farmer!',
-      subtitle: 'Your partner in smarter, modern agriculture.',
+      subtitle: 'AI for Agriculture',
       loginTab: 'Login',
       signupTab: 'Sign Up',
       nameLabel: 'Your Name',
@@ -253,11 +253,11 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
           <ThemedText type="title" style={[styles.brandName, { color: theme.primary }]}>
             {t.appName}
           </ThemedText>
-          <ThemedText type="subtitle" style={[styles.welcomeText, { color: theme.text }]}>
-            {t.welcome}
-          </ThemedText>
           <ThemedText type="small" style={[styles.subText, { color: theme.textSecondary }]}>
             {t.subtitle}
+          </ThemedText>
+          <ThemedText type="subtitle" style={[styles.welcomeText, { color: theme.text }]}>
+            {t.welcome}
           </ThemedText>
         </View>
 

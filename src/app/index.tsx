@@ -386,7 +386,7 @@ export default function HomeScreen() {
                   {language === 'hi' ? 'नमस्ते' : 'Welcome'}, {userName}
                 </ThemedText>
                 <ThemedText type="small" style={{ fontSize: 10, color: theme.textSecondary, fontWeight: '600' }}>
-                  Krishik Mitra
+                  Krishik Mitra • AI for Agriculture
                 </ThemedText>
               </View>
             </View>
@@ -837,7 +837,7 @@ export default function HomeScreen() {
           {/* Footer Branding */}
           <View style={styles.footerBranding}>
             <ThemedText type="code" style={{ color: theme.textSecondary, fontSize: 11 }}>
-              Designed for smart agriculture • Krishik Mitra AI v1.0
+              {language === 'hi' ? 'कृषि के लिए स्मार्ट AI • Krishik Mitra' : 'Smart AI for Agriculture • Krishik Mitra'}
             </ThemedText>
           </View>
         </ScrollView>
