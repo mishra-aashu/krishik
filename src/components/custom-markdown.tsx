@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { ThemedText } from './themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -76,58 +76,95 @@ export function CustomMarkdown({ text }: CustomMarkdownProps) {
     }
   };
 
-  const renderTableRow = (cells: string[], rowIndex: number, isHeader: boolean, tableKey: string) => {
-    return (
-      <View
-        key={`${tableKey}-row-${rowIndex}`}
-        style={[
-          styles.tableRow,
-          { borderBottomColor: theme.border },
-          isHeader
-            ? { backgroundColor: theme.primary }
-            : rowIndex % 2 === 0
-            ? { backgroundColor: theme.card }
-            : { backgroundColor: theme.backgroundElement },
-        ]}
-      >
-        {cells.map((cell, colIndex) => {
-          // Calculate individual column widths. Topic column is narrower, description columns are wider.
-          const colWidth = colIndex === 0 ? 130 : 180;
-          return (
-            <View
-              key={`${tableKey}-row-${rowIndex}-col-${colIndex}`}
-              style={[
-                styles.tableCell,
-                { width: colWidth, borderRightColor: theme.border },
-                colIndex === cells.length - 1 && { borderRightWidth: 0 },
-              ]}
-            >
-              {renderInlineStyles(
-                cell,
-                `${tableKey}-row-${rowIndex}-cell-${colIndex}`,
-                isHeader ? 'smallBold' : 'small',
-                isHeader ? { color: '#ffffff' } : undefined
-              )}
-            </View>
-          );
-        })}
-      </View>
-    );
-  };
-
+  /**
+   * Responsive table renderer — NO horizontal scroll.
+   *
+   * • 2-column table  → classic two-column layout (label left | value right),
+   *   each row wraps naturally so no overflow.
+   * • 3+ column table → each data row becomes a vertical card with labelled
+   *   field pills, completely responsive on any screen width.
+   */
   const renderTable = (rows: string[][], tIdx: number) => {
     const tableKey = `table-${tIdx}`;
-    const header = rows[0];
+    const headers = rows[0] ?? [];
     const body = rows.slice(1);
 
-    return (
-      <View key={tableKey} style={styles.tableContainer}>
-        <ScrollView horizontal={true} showsHorizontalScrollIndicator={true} style={styles.tableScrollView}>
-          <View style={[styles.tableBlock, { borderColor: theme.border }]}>
-            {renderTableRow(header, 0, true, tableKey)}
-            {body.map((row, rIdx) => renderTableRow(row, rIdx + 1, false, tableKey))}
+    // ── 2-column layout ───────────────────────────────────────────────────
+    if (headers.length <= 2) {
+      return (
+        <View key={tableKey} style={[styles.tableContainer, { borderColor: theme.border }]}>
+          {/* Header */}
+          <View style={[styles.twoColHeader, { backgroundColor: theme.primary }]}>
+            {headers.map((h, hi) => (
+              <View
+                key={`${tableKey}-h-${hi}`}
+                style={[
+                  styles.twoColHeaderCell,
+                  hi === 0 && styles.twoColLeftHeader,
+                  hi > 0 && { borderLeftColor: 'rgba(255,255,255,0.3)', borderLeftWidth: 1 },
+                ]}
+              >
+                {renderInlineStyles(h, `${tableKey}-htext-${hi}`, 'smallBold', { color: '#fff' })}
+              </View>
+            ))}
           </View>
-        </ScrollView>
+          {/* Body rows */}
+          {body.map((row, rIdx) => (
+            <View
+              key={`${tableKey}-r-${rIdx}`}
+              style={[
+                styles.twoColRow,
+                {
+                  borderTopColor: theme.border,
+                  backgroundColor: rIdx % 2 === 0 ? theme.card : theme.backgroundElement,
+                },
+              ]}
+            >
+              <View style={[styles.twoColLeft, { borderRightColor: theme.border }]}>
+                {renderInlineStyles(
+                  row[0] ?? '',
+                  `${tableKey}-r${rIdx}-c0`,
+                  'smallBold',
+                  { color: theme.primary }
+                )}
+              </View>
+              <View style={styles.twoColRight}>
+                {renderInlineStyles(row[1] ?? '', `${tableKey}-r${rIdx}-c1`, 'small')}
+              </View>
+            </View>
+          ))}
+        </View>
+      );
+    }
+
+    // ── 3+ column: card-per-row layout ───────────────────────────────────
+    return (
+      <View key={tableKey} style={styles.cardTableContainer}>
+        {body.map((row, rIdx) => (
+          <View
+            key={`${tableKey}-card-${rIdx}`}
+            style={[
+              styles.tableCard,
+              { borderColor: theme.border, backgroundColor: theme.card },
+            ]}
+          >
+            {headers.map((header, hi) => (
+              <View key={`${tableKey}-card-${rIdx}-f-${hi}`} style={styles.tableCardField}>
+                <View style={[styles.tableCardLabel, { backgroundColor: theme.primary + '22' }]}>
+                  {renderInlineStyles(
+                    header,
+                    `${tableKey}-cl-${rIdx}-${hi}`,
+                    'smallBold',
+                    { color: theme.primary, fontSize: 11 }
+                  )}
+                </View>
+                <View style={styles.tableCardValue}>
+                  {renderInlineStyles(row[hi] ?? '—', `${tableKey}-cv-${rIdx}-${hi}`, 'small')}
+                </View>
+              </View>
+            ))}
+          </View>
+        ))}
       </View>
     );
   };
@@ -300,29 +337,75 @@ const styles = StyleSheet.create({
   paragraph: {
     marginVertical: Spacing.half,
   },
-  // Table styles
+
+  // ── 2-column table ──────────────────────────────────────────────────────
   tableContainer: {
     marginVertical: Spacing.two,
-    width: '100%',
-  },
-  tableScrollView: {
-    width: '100%',
-  },
-  tableBlock: {
     borderWidth: 1,
-    borderRadius: Spacing.two,
+    borderRadius: 10,
     overflow: 'hidden',
+    width: '100%',
   },
-  tableRow: {
+  twoColHeader: {
     flexDirection: 'row',
-    borderBottomWidth: 1,
   },
-  tableCell: {
-    padding: Spacing.two,
+  twoColHeaderCell: {
+    flex: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  twoColLeftHeader: {
+    flex: 0.9,
+  },
+  twoColRow: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    minHeight: 40,
+  },
+  twoColLeft: {
+    flex: 0.9,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
     borderRightWidth: 1,
     justifyContent: 'center',
-    alignSelf: 'stretch',
   },
+  twoColRight: {
+    flex: 1.1,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    justifyContent: 'center',
+  },
+
+  // ── 3+ column card layout ───────────────────────────────────────────────
+  cardTableContainer: {
+    marginVertical: Spacing.two,
+    gap: 8,
+  },
+  tableCard: {
+    borderWidth: 1,
+    borderRadius: 10,
+    overflow: 'hidden',
+    padding: 10,
+    gap: 6,
+  },
+  tableCardField: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  tableCardLabel: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    flexShrink: 0,
+    maxWidth: '45%',
+  },
+  tableCardValue: {
+    flex: 1,
+    minWidth: 100,
+  },
+
   blockquote: {
     borderLeftWidth: 4,
     paddingVertical: Spacing.two,
