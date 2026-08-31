@@ -10,9 +10,12 @@ import {
   Platform,
   useWindowDimensions,
   AppState,
+  Image,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -44,6 +47,7 @@ interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: string;
+  image?: string;
   feedback?: 'like' | 'dislike';
 }
 
@@ -116,6 +120,18 @@ const MessageItem = React.memo(
                 : [styles.botBubble, { backgroundColor: theme.chatBot, borderColor: theme.border }]
             ]}
           >
+            {msg.image && (
+              <Image
+                source={{ uri: msg.image }}
+                style={{
+                  width: 220,
+                  height: 160,
+                  borderRadius: Spacing.two,
+                  marginBottom: Spacing.two,
+                  resizeMode: 'cover',
+                }}
+              />
+            )}
             {isUser ? (
               <ThemedText type="small" style={{ color: theme.text }}>
                 {msg.content}
@@ -245,6 +261,7 @@ const MessageItem = React.memo(
     return (
       prevProps.msg.id === nextProps.msg.id &&
       prevProps.msg.content === nextProps.msg.content &&
+      prevProps.msg.image === nextProps.msg.image &&
       prevProps.msg.feedback === nextProps.msg.feedback &&
       prevProps.language === nextProps.language &&
       prevProps.theme.primary === nextProps.theme.primary &&
@@ -300,6 +317,102 @@ export default function ChatScreen() {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+  const handleImageSelect = async () => {
+    try {
+      const options = [
+        language === 'hi' ? 'कैमरा से फोटो लें' : 'Take Photo (Camera)',
+        language === 'hi' ? 'गैलरी से चुनें' : 'Choose from Gallery',
+        language === 'hi' ? 'रद्द करें' : 'Cancel'
+      ];
+      
+      if (Platform.OS === 'web') {
+        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (permissionResult.status !== 'granted') {
+          Alert.alert(
+            language === 'hi' ? 'अनुमति आवश्यक' : 'Permission Required',
+            language === 'hi' ? 'फोटो चुनने के लिए गैलरी अनुमति की आवश्यकता है।' : 'Media library permission is required to select photos.'
+          );
+          return;
+        }
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ['images'],
+          allowsEditing: true,
+          aspect: [4, 3],
+          quality: 0.6,
+          base64: true,
+        });
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+          const asset = result.assets[0];
+          setSelectedImage(asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri);
+        }
+        return;
+      }
+
+      Alert.alert(
+        language === 'hi' ? 'फोटो जोड़ें' : 'Add Photo',
+        language === 'hi' ? 'चुनें कि आप फोटो कैसे जोड़ना चाहते हैं' : 'Select how you want to add a photo',
+        [
+          {
+            text: options[0],
+            onPress: () => pickImage(true)
+          },
+          {
+            text: options[1],
+            onPress: () => pickImage(false)
+          },
+          {
+            text: options[2],
+            style: 'cancel'
+          }
+        ]
+      );
+    } catch (err) {
+      console.error('Error in handleImageSelect:', err);
+    }
+  };
+
+  const pickImage = async (useCamera: boolean) => {
+    try {
+      const permissionResult = useCamera
+        ? await ImagePicker.requestCameraPermissionsAsync()
+        : await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (permissionResult.status !== 'granted') {
+        Alert.alert(
+          language === 'hi' ? 'अनुमति आवश्यक' : 'Permission Required',
+          language === 'hi'
+            ? (useCamera ? 'फोटो लेने के लिए कैमरा अनुमति की आवश्यकता है।' : 'फोटो चुनने के लिए गैलरी अनुमति की आवश्यकता है।')
+            : (useCamera ? 'Camera permission is required to capture photos.' : 'Media library permission is required to select photos.')
+        );
+        return;
+      }
+
+      const options: ImagePicker.ImagePickerOptions = {
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.6,
+        base64: true,
+      };
+
+      const result = useCamera
+        ? await ImagePicker.launchCameraAsync(options)
+        : await ImagePicker.launchImageLibraryAsync(options);
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        setSelectedImage(asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri);
+      }
+    } catch (err) {
+      console.error('Error selecting image:', err);
+      Alert.alert(
+        language === 'hi' ? 'त्रुटि' : 'Error',
+        language === 'hi' ? 'फोटो चुनने में समस्या आई।' : 'Failed to select image.'
+      );
+    }
+  };
 
   // Multi-session state
   const [sessions, setSessions] = useState<ChatSession[]>([]);
@@ -661,16 +774,21 @@ export default function ChatScreen() {
 
   const handleSendQuery = async (queryText: string) => {
     const trimmed = queryText.trim();
-    if (!trimmed || isLoading) return;
+    if (!trimmed && !selectedImage) return;
+    if (isLoading) return;
 
     setErrorMsg(null);
     setInputValue('');
 
+    const imageToSend = selectedImage;
+    setSelectedImage(null);
+
     const userMsg: ChatMessage = {
       id: Date.now().toString(),
       role: 'user',
-      content: trimmed,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      content: trimmed || (language === 'hi' ? 'कृपया इस चित्र का विश्लेषण करें।' : 'Please analyze this image.'),
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      image: imageToSend || undefined
     };
 
     const newMessages = [...messages, userMsg];
@@ -691,7 +809,8 @@ export default function ChatScreen() {
       const botReply = await sendMessageToGroq(
         historyPayload,
         { state: farmState, soilType: farmSoil, crop: farmCrop },
-        model
+        model,
+        imageToSend || undefined
       );
 
       const botMsg: ChatMessage = {
@@ -966,8 +1085,37 @@ export default function ChatScreen() {
             )}
           </ScrollView>
 
+          {/* Image Preview Container */}
+          {selectedImage && (
+            <View style={[styles.imagePreviewContainer, { borderColor: theme.border, backgroundColor: theme.backgroundElement }]}>
+              <Image source={{ uri: selectedImage }} style={styles.imagePreview} />
+              <Pressable
+                onPress={() => setSelectedImage(null)}
+                style={[styles.removeImageBtn, { backgroundColor: theme.error }]}
+              >
+                <ThemedText style={{ color: '#fff', fontSize: 10, fontWeight: 'bold' }}>✕</ThemedText>
+              </Pressable>
+            </View>
+          )}
+
           {/* Input Bar */}
           <View style={styles.inputBar}>
+            <Pressable
+              onPress={handleImageSelect}
+              disabled={isLoading || isRecording || isTranscribing}
+              style={({ pressed }) => [
+                styles.attachButton,
+                { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+                pressed && { opacity: 0.8 }
+              ]}
+            >
+              <SymbolView
+                name={{ ios: 'camera.fill', android: 'photo_camera', web: 'photo_camera' } as any}
+                size={20}
+                tintColor={theme.primary}
+              />
+            </Pressable>
+
             <TextInput
               style={[
                 styles.textInput,
@@ -987,7 +1135,7 @@ export default function ChatScreen() {
               editable={!isLoading && !isRecording && !isTranscribing}
             />
 
-            {inputValue.trim() ? (
+            {inputValue.trim() || selectedImage ? (
               <Pressable
                 onPress={() => handleSendQuery(inputValue)}
                 disabled={isLoading || isRecording || isTranscribing}
@@ -1559,5 +1707,44 @@ const styles = StyleSheet.create({
   actionText: {
     fontSize: 9,
     fontWeight: '800',
+  },
+  attachButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 1.5,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imagePreviewContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: Spacing.three,
+    marginBottom: Spacing.one,
+    padding: Spacing.one,
+    borderRadius: Spacing.two,
+    borderWidth: 1,
+    alignSelf: 'flex-start',
+    position: 'relative',
+  },
+  imagePreview: {
+    width: 60,
+    height: 60,
+    borderRadius: Spacing.one,
+  },
+  removeImageBtn: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1,
   },
 });

@@ -32,7 +32,8 @@ export type ModelMode = 'smart' | 'fast';
 export async function sendMessageToGroq(
   chatHistory: { role: 'user' | 'assistant'; content: string }[],
   farmProfile: FarmProfile,
-  mode: ModelMode = 'fast'
+  mode: ModelMode = 'fast',
+  imageBase64?: string
 ): Promise<string> {
   const systemMessage = `You are "Krishik Mitra" (कृषिक मित्र), an expert agricultural AI assistant designed to help Indian farmers.
 Your goal is to provide scientific, practical, and highly localized farming solutions.
@@ -48,6 +49,7 @@ Instructions:
 3. Offer organic/bio-fertilizer options alongside recommended chemical remedies.
 4. Keep the tone warm, respectful, and empowering.
 5. Respond in the exact same language and script (Devanagari, Roman/Latin, etc.) that the user used to ask their question. If the user writes in Hindi Devanagari (हिंदी), respond in Hindi. If they write in Hinglish (Hindi words written in English letters, e.g. 'fasal me pani kab dale'), respond in natural Hinglish. If they write in English, respond in English. If they write in any other regional Indian language (e.g. Punjabi, Marathi, Telugu, Bengali), respond in that same language and script.
+6. If the user provides a photo of their crop, analyze the image to identify symptoms, pests, or disease infestations and prescribe specific organic and chemical treatments.
 
 Strict Rule: Do not hallucinate. If you are unsure about a pest disease, crop behavior, or local weather conditions, advise the farmer to consult their local Krishi Vigyan Kendra (KVK) or Kisan Call Centre (1800-180-1551).`;
 
@@ -73,13 +75,32 @@ Strict Rule: Do not hallucinate. If you are unsure about a pest disease, crop be
     trimmedHistory = trimmedHistory.slice(1);
   }
 
-  const messagesPayload = [
+  const messagesPayload: any[] = [
     { role: 'system', content: systemMessage },
-    ...trimmedHistory,
+    ...trimmedHistory.map((msg, idx) => {
+      if (idx === trimmedHistory.length - 1 && msg.role === 'user' && imageBase64) {
+        return {
+          role: 'user',
+          content: [
+            { type: 'text', text: msg.content || 'Analyze this crop image.' },
+            {
+              type: 'image_url',
+              image_url: {
+                url: imageBase64.startsWith('data:') ? imageBase64 : `data:image/jpeg;base64,${imageBase64}`
+              }
+            }
+          ]
+        };
+      }
+      return msg;
+    })
   ];
 
-  // Try each model in the fallback chain
-  const modelsToTry = MODEL_CHAINS[mode];
+  // Try each model in the fallback chain (add vision model if image is present)
+  let modelsToTry: string[] = [...MODEL_CHAINS[mode]];
+  if (imageBase64) {
+    modelsToTry = ['llama-3.2-11b-vision-preview', ...modelsToTry];
+  }
   let lastError: Error | null = null;
 
   for (let i = 0; i < modelsToTry.length; i++) {
