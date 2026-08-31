@@ -678,12 +678,17 @@ export default function HomeScreen() {
               filteredMandiPrices.map((item) => {
                 const isPositive = item.change.startsWith('+');
                 const isZero = item.change === '0';
+
+                const cleanComm = item.commodity.split('(')[0].trim().toLowerCase();
+                const cleanVar = item.variety ? item.variety.trim().toLowerCase() : '';
+                const showVariety = cleanVar && cleanVar !== cleanComm;
+
                 return (
                   <View key={item.id} style={[styles.mandiItem, { borderBottomColor: theme.border }]}>
                     <View style={{ flex: 1, paddingRight: Spacing.two }}>
                       <ThemedText type="smallBold">{formatLabel(item.commodity)}</ThemedText>
                       <ThemedText type="code" style={{ fontSize: 10, color: theme.textSecondary }}>
-                        {formatState(item.state.replace(' Mandi', ''))} {language === 'hi' ? 'मंडी' : 'Mandi'}
+                        {formatState(item.state.replace(' Mandi', ''))} {language === 'hi' ? 'मंडी' : 'Mandi'}{showVariety ? ` • ${item.variety}` : ''}
                       </ThemedText>
                     </View>
                     <View style={{ alignItems: 'flex-end' }}>

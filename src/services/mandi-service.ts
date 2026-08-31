@@ -5,6 +5,7 @@ export interface MandiItem {
   unit: string;
   state: string;
   change: string;
+  variety?: string;
 }
 
 // The client calls the Vercel deployed API route to avoid CORS and local rate limits.
@@ -153,13 +154,16 @@ export async function fetchLiveMandiPrices(stateName: string): Promise<MandiItem
         }
       }
 
+      const variety = record.Variety || record.variety || '';
+
       return {
         id: `live-${index}-${arrivalDate || Date.now()}-${modalPrice}`,
         commodity: mappedCommodity,
         price: modalPrice,
         unit: 'Quintal',
         state: `${cleanMarketName} Mandi`,
-        change: changeStr
+        change: changeStr,
+        variety: variety
       };
     });
   } catch (error) {
