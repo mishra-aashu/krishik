@@ -23,6 +23,7 @@ import { useTheme } from '@/hooks/use-theme';
 import cropsData from '@/constants/crops.json';
 import { SelectionModal } from '@/components/selection-modal';
 import { AppLogo } from '@/components/app-logo';
+import { TermsModal } from '@/components/terms-modal';
 
 const STATES = [
   'Uttar Pradesh', 'Punjab', 'Haryana', 'Madhya Pradesh', 
@@ -124,9 +125,11 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
     setActiveModal(null);
   };
 
-  // Status states
+  // Status & Terms states
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [agreedToTerms, setAgreedToTerms] = useState(true);
+  const [termsModalVisible, setTermsModalVisible] = useState(false);
 
   // Translations
   const t = {
@@ -219,6 +222,16 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
 
   const handleAuthSubmit = async () => {
     setErrorMsg(null);
+
+    if (!agreedToTerms) {
+      setErrorMsg(
+        lang === 'hi'
+          ? 'आगे बढ़ने के लिए कृपया सेवा की शर्तों एवं गोपनीयता नीति को स्वीकार करें।'
+          : 'Please accept the Terms of Service & Privacy Policy to proceed.'
+      );
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -330,23 +343,23 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
             />
           </View>
 
-          {/* Form Container (Liquid Glassmorphism Card) */}
+          {/* Form Container (High-Contrast Solid Frosted Glass Card) */}
           <View style={[
             styles.authCard,
             {
-              backgroundColor: theme.dark ? 'rgba(10, 26, 15, 0.60)' : 'rgba(255, 255, 255, 0.42)',
-              borderColor: theme.dark ? 'rgba(255, 255, 255, 0.22)' : 'rgba(255, 255, 255, 0.70)'
+              backgroundColor: theme.dark ? 'rgba(10, 26, 15, 0.90)' : 'rgba(255, 255, 255, 0.94)',
+              borderColor: theme.dark ? 'rgba(255, 255, 255, 0.30)' : 'rgba(255, 255, 255, 0.95)'
             }
           ]}>
-            {/* Mode Selector Tabs (Glass Segmented Pill Bar with Spring Slide Animation) */}
-            <View style={[styles.modeTabs, { backgroundColor: theme.dark ? 'rgba(0, 0, 0, 0.35)' : 'rgba(0, 0, 0, 0.08)' }]}>
+            {/* Mode Selector Tabs */}
+            <View style={[styles.modeTabs, { backgroundColor: theme.dark ? 'rgba(0, 0, 0, 0.45)' : 'rgba(0, 0, 0, 0.08)' }]}>
               {/* Sliding Active Pill Background */}
               <Animated.View
                 style={[
                   styles.slidingPill,
                   {
                     left: pillLeft,
-                    backgroundColor: theme.dark ? 'rgba(255, 255, 255, 0.22)' : 'rgba(255, 255, 255, 0.92)',
+                    backgroundColor: theme.dark ? 'rgba(255, 255, 255, 0.22)' : theme.primary,
                   }
                 ]}
               />
@@ -359,7 +372,7 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                   type="smallBold"
                   style={[
                     styles.modeTabText,
-                    { color: isLoginMode ? theme.primary : (theme.dark ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.55)') }
+                    { color: isLoginMode ? '#ffffff' : (theme.dark ? 'rgba(255, 255, 255, 0.75)' : '#1B4D2E') }
                   ]}
                 >
                   {t.loginTab}
@@ -373,7 +386,7 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                   type="smallBold"
                   style={[
                     styles.modeTabText,
-                    { color: !isLoginMode ? theme.primary : (theme.dark ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.55)') }
+                    { color: !isLoginMode ? '#ffffff' : (theme.dark ? 'rgba(255, 255, 255, 0.75)' : '#1B4D2E') }
                   ]}
                 >
                   {t.signupTab}
@@ -402,11 +415,11 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                 // LOGIN FORM
                 <View style={styles.formFields}>
                   <View style={styles.inputGroup}>
-                    <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#E8F5E9' : '#0B2914' }]}>{t.phoneLabel}</ThemedText>
+                    <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#ffffff' : '#051C0C' }]}>{t.phoneLabel}</ThemedText>
                     <TextInput
-                      style={[styles.inputField, { color: theme.dark ? '#ffffff' : '#0a2312', borderColor: theme.dark ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.65)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.45)' }]}
+                      style={[styles.inputField, { color: theme.dark ? '#ffffff' : '#051C0C', borderColor: theme.dark ? 'rgba(255,255,255,0.3)' : 'rgba(11,41,20,0.25)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.45)' : '#FFFFFF' }]}
                       placeholder={t.phonePlace}
-                      placeholderTextColor={theme.dark ? 'rgba(255,255,255,0.5)' : 'rgba(10,35,18,0.5)'}
+                      placeholderTextColor={theme.dark ? 'rgba(255,255,255,0.55)' : 'rgba(10,35,18,0.55)'}
                       value={phone}
                       onChangeText={(val) => setPhone(val.replace(/[^0-9]/g, ''))}
                       keyboardType="phone-pad"
@@ -415,17 +428,49 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                   </View>
 
                   <View style={styles.inputGroup}>
-                    <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#E8F5E9' : '#0B2914' }]}>{t.pinLabel}</ThemedText>
+                    <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#ffffff' : '#051C0C' }]}>{t.pinLabel}</ThemedText>
                     <TextInput
-                      style={[styles.inputField, { color: theme.dark ? '#ffffff' : '#0a2312', borderColor: theme.dark ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.65)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.45)' }]}
+                      style={[styles.inputField, { color: theme.dark ? '#ffffff' : '#051C0C', borderColor: theme.dark ? 'rgba(255,255,255,0.3)' : 'rgba(11,41,20,0.25)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.45)' : '#FFFFFF' }]}
                       placeholder={t.pinPlace}
-                      placeholderTextColor={theme.dark ? 'rgba(255,255,255,0.5)' : 'rgba(10,35,18,0.5)'}
+                      placeholderTextColor={theme.dark ? 'rgba(255,255,255,0.55)' : 'rgba(10,35,18,0.55)'}
                       value={pin}
                       onChangeText={(val) => setPin(val.replace(/[^0-9]/g, ''))}
                       keyboardType="numeric"
                       secureTextEntry
                       maxLength={4}
                     />
+                  </View>
+
+                  {/* Terms & Conditions Checkbox Row */}
+                  <View style={styles.termsAgreementRow}>
+                    <Pressable
+                      onPress={() => setAgreedToTerms(!agreedToTerms)}
+                      style={[
+                        styles.checkboxSquare,
+                        agreedToTerms && { backgroundColor: theme.primary, borderColor: theme.primary }
+                      ]}
+                    >
+                      {agreedToTerms && (
+                        <SymbolView
+                          name={{ ios: 'checkmark', android: 'check', web: 'check' } as any}
+                          size={13}
+                          tintColor="#ffffff"
+                        />
+                      )}
+                    </Pressable>
+                    <View style={styles.termsTextWrap}>
+                      <ThemedText type="small" style={{ fontSize: 12, color: theme.dark ? '#ffffff' : '#051C0C', fontWeight: '600' }}>
+                        {lang === 'hi' ? 'मैं ' : 'I agree to '}
+                      </ThemedText>
+                      <Pressable onPress={() => setTermsModalVisible(true)}>
+                        <ThemedText type="smallBold" style={{ fontSize: 12, color: theme.dark ? '#A5D6A7' : '#1B5E20', textDecorationLine: 'underline', fontWeight: '700' }}>
+                          {lang === 'hi' ? 'सेवा की शर्तों एवं गोपनीयता नीति' : 'Terms & Privacy Policy'}
+                        </ThemedText>
+                      </Pressable>
+                      <ThemedText type="small" style={{ fontSize: 12, color: theme.dark ? '#ffffff' : '#051C0C', fontWeight: '600' }}>
+                        {lang === 'hi' ? ' से सहमत हूँ।' : '.'}
+                      </ThemedText>
+                    </View>
                   </View>
 
                   <Pressable
@@ -452,11 +497,11 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                     // Step 1: Account credentials
                     <View style={{ gap: Spacing.two }}>
                       <View style={styles.inputGroup}>
-                        <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#E8F5E9' : '#0B2914' }]}>{t.nameLabel}</ThemedText>
+                        <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#ffffff' : '#051C0C' }]}>{t.nameLabel}</ThemedText>
                         <TextInput
-                          style={[styles.inputField, { color: theme.dark ? '#ffffff' : '#0a2312', borderColor: theme.dark ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.65)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.45)' }]}
+                          style={[styles.inputField, { color: theme.dark ? '#ffffff' : '#051C0C', borderColor: theme.dark ? 'rgba(255,255,255,0.3)' : 'rgba(11,41,20,0.25)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.45)' : '#FFFFFF' }]}
                           placeholder={t.namePlace}
-                          placeholderTextColor={theme.dark ? 'rgba(255,255,255,0.5)' : 'rgba(10,35,18,0.5)'}
+                          placeholderTextColor={theme.dark ? 'rgba(255,255,255,0.55)' : 'rgba(10,35,18,0.55)'}
                           value={name}
                           onChangeText={setName}
                           autoCapitalize="words"
@@ -464,11 +509,11 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                       </View>
 
                       <View style={styles.inputGroup}>
-                        <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#E8F5E9' : '#0B2914' }]}>{t.phoneLabel}</ThemedText>
+                        <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#ffffff' : '#051C0C' }]}>{t.phoneLabel}</ThemedText>
                         <TextInput
-                          style={[styles.inputField, { color: theme.dark ? '#ffffff' : '#0a2312', borderColor: theme.dark ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.65)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.45)' }]}
+                          style={[styles.inputField, { color: theme.dark ? '#ffffff' : '#051C0C', borderColor: theme.dark ? 'rgba(255,255,255,0.3)' : 'rgba(11,41,20,0.25)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.45)' : '#FFFFFF' }]}
                           placeholder={t.phonePlace}
-                          placeholderTextColor={theme.dark ? 'rgba(255,255,255,0.5)' : 'rgba(10,35,18,0.5)'}
+                          placeholderTextColor={theme.dark ? 'rgba(255,255,255,0.55)' : 'rgba(10,35,18,0.55)'}
                           value={phone}
                           onChangeText={(val) => setPhone(val.replace(/[^0-9]/g, ''))}
                           keyboardType="phone-pad"
@@ -477,11 +522,11 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                       </View>
 
                       <View style={styles.inputGroup}>
-                        <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#E8F5E9' : '#0B2914' }]}>{t.pinLabel}</ThemedText>
+                        <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#ffffff' : '#051C0C' }]}>{t.pinLabel}</ThemedText>
                         <TextInput
-                          style={[styles.inputField, { color: theme.dark ? '#ffffff' : '#0a2312', borderColor: theme.dark ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.65)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.45)' }]}
+                          style={[styles.inputField, { color: theme.dark ? '#ffffff' : '#051C0C', borderColor: theme.dark ? 'rgba(255,255,255,0.3)' : 'rgba(11,41,20,0.25)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.45)' : '#FFFFFF' }]}
                           placeholder={t.pinPlace}
-                          placeholderTextColor={theme.dark ? 'rgba(255,255,255,0.5)' : 'rgba(10,35,18,0.5)'}
+                          placeholderTextColor={theme.dark ? 'rgba(255,255,255,0.55)' : 'rgba(10,35,18,0.55)'}
                           value={pin}
                           onChangeText={(val) => setPin(val.replace(/[^0-9]/g, ''))}
                           keyboardType="numeric"
@@ -505,39 +550,71 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                     // Step 2: Farm Profile Details
                     <View style={{ gap: Spacing.two }}>
                       <View style={styles.inputGroup}>
-                        <ThemedText type="smallBold" style={styles.inputLabel}>{t.stateLabel}</ThemedText>
+                        <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#ffffff' : '#051C0C' }]}>{t.stateLabel}</ThemedText>
                         <Pressable
                           onPress={() => openModal('state')}
-                          style={[styles.selectorInputBtn, { borderColor: theme.border, backgroundColor: theme.dark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.7)' }]}
+                          style={[styles.selectorInputBtn, { borderColor: theme.dark ? 'rgba(255,255,255,0.3)' : 'rgba(11,41,20,0.25)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.45)' : '#FFFFFF' }]}
                         >
-                          <ThemedText type="small" style={{ color: selectedState ? theme.text : theme.textSecondary }}>
+                          <ThemedText type="small" style={{ color: selectedState ? (theme.dark ? '#ffffff' : '#051C0C') : (theme.dark ? 'rgba(255,255,255,0.55)' : 'rgba(10,35,18,0.55)') }}>
                             {selectedState || t.selectPlace}
                           </ThemedText>
                         </Pressable>
                       </View>
 
                       <View style={styles.inputGroup}>
-                        <ThemedText type="smallBold" style={styles.inputLabel}>{t.soilLabel}</ThemedText>
+                        <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#ffffff' : '#051C0C' }]}>{t.soilLabel}</ThemedText>
                         <Pressable
                           onPress={() => openModal('soil')}
-                          style={[styles.selectorInputBtn, { borderColor: theme.border, backgroundColor: theme.dark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.7)' }]}
+                          style={[styles.selectorInputBtn, { borderColor: theme.dark ? 'rgba(255,255,255,0.3)' : 'rgba(11,41,20,0.25)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.45)' : '#FFFFFF' }]}
                         >
-                          <ThemedText type="small" style={{ color: selectedSoil ? theme.text : theme.textSecondary }}>
+                          <ThemedText type="small" style={{ color: selectedSoil ? (theme.dark ? '#ffffff' : '#051C0C') : (theme.dark ? 'rgba(255,255,255,0.55)' : 'rgba(10,35,18,0.55)') }}>
                             {selectedSoil || t.selectPlace}
                           </ThemedText>
                         </Pressable>
                       </View>
 
                       <View style={styles.inputGroup}>
-                        <ThemedText type="smallBold" style={styles.inputLabel}>{t.cropLabel}</ThemedText>
+                        <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#ffffff' : '#051C0C' }]}>{t.cropLabel}</ThemedText>
                         <Pressable
                           onPress={() => openModal('crop')}
-                          style={[styles.selectorInputBtn, { borderColor: theme.border, backgroundColor: theme.dark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.7)' }]}
+                          style={[styles.selectorInputBtn, { borderColor: theme.dark ? 'rgba(255,255,255,0.3)' : 'rgba(11,41,20,0.25)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.45)' : '#FFFFFF' }]}
                         >
-                          <ThemedText type="small" style={{ color: selectedCrop ? theme.text : theme.textSecondary }}>
+                          <ThemedText type="small" style={{ color: selectedCrop ? (theme.dark ? '#ffffff' : '#051C0C') : (theme.dark ? 'rgba(255,255,255,0.55)' : 'rgba(10,35,18,0.55)') }}>
                             {selectedCrop || t.selectPlace}
                           </ThemedText>
                         </Pressable>
+                      </View>
+
+                      {/* Terms & Conditions Checkbox Row */}
+                      <View style={styles.termsAgreementRow}>
+                        <Pressable
+                          onPress={() => setAgreedToTerms(!agreedToTerms)}
+                          style={[
+                            styles.checkboxSquare,
+                            agreedToTerms && { backgroundColor: theme.primary, borderColor: theme.primary }
+                          ]}
+                        >
+                          {agreedToTerms && (
+                            <SymbolView
+                              name={{ ios: 'checkmark', android: 'check', web: 'check' } as any}
+                              size={13}
+                              tintColor="#ffffff"
+                            />
+                          )}
+                        </Pressable>
+                        <View style={styles.termsTextWrap}>
+                          <ThemedText type="small" style={{ fontSize: 12, color: theme.dark ? '#E8F5E9' : '#0B2914' }}>
+                            {lang === 'hi' ? 'मैं ' : 'I agree to '}
+                          </ThemedText>
+                          <Pressable onPress={() => setTermsModalVisible(true)}>
+                            <ThemedText type="smallBold" style={{ fontSize: 12, color: theme.dark ? '#A5D6A7' : '#1B5E20', textDecorationLine: 'underline' }}>
+                              {lang === 'hi' ? 'सेवा की शर्तों एवं गोपनीयता नीति' : 'Terms & Privacy Policy'}
+                            </ThemedText>
+                          </Pressable>
+                          <ThemedText type="small" style={{ fontSize: 12, color: theme.dark ? '#E8F5E9' : '#0B2914' }}>
+                            {lang === 'hi' ? ' से सहमत हूँ।' : '.'}
+                          </ThemedText>
+                        </View>
                       </View>
 
                       <View style={styles.signupNavBtns}>
@@ -626,6 +703,14 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
           closeModal();
         }}
         onClose={closeModal}
+      />
+
+      {/* Terms & Privacy Policies Modal */}
+      <TermsModal
+        visible={termsModalVisible}
+        onClose={() => setTermsModalVisible(false)}
+        onAccept={() => setAgreedToTerms(true)}
+        language={lang}
       />
     </SafeAreaView>
   );
@@ -969,5 +1054,28 @@ const styles = StyleSheet.create({
       web: { outlineStyle: 'none' } as any,
       default: {}
     })
+  },
+  termsAgreementRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginVertical: Spacing.one,
+    paddingHorizontal: 4,
+  },
+  checkboxSquare: {
+    width: 20,
+    height: 20,
+    borderRadius: 5,
+    borderWidth: 1.8,
+    borderColor: 'rgba(255, 255, 255, 0.85)',
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  termsTextWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    flex: 1,
   },
 });
