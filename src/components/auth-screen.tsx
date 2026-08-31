@@ -71,6 +71,39 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
   const [step, setStep] = useState(1); // 1: Personal Info, 2: Farm Profile (For signup)
   const [lang, setLang] = useState<'hi' | 'en'>('hi');
 
+  // Tab sliding spring animation value: 0 for Login, 1 for Signup
+  const tabAnim = useRef(new Animated.Value(0)).current;
+  // Form transition animation value
+  const formAnim = useRef(new Animated.Value(1)).current;
+
+  const handleTabSwitch = (toLogin: boolean) => {
+    if (isLoginMode === toLogin) return;
+    setErrorMsg(null);
+    setStep(1);
+
+    // Animate tab pill slide with smooth spring physics
+    Animated.spring(tabAnim, {
+      toValue: toLogin ? 0 : 1,
+      tension: 68,
+      friction: 10,
+      useNativeDriver: false,
+    }).start();
+
+    // Animate form crossfade and subtle zoom effect
+    formAnim.setValue(0.88);
+    setIsLoginMode(toLogin);
+    Animated.timing(formAnim, {
+      toValue: 1,
+      duration: 240,
+      useNativeDriver: false,
+    }).start();
+  };
+
+  const pillLeft = tabAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['1.5%', '50.5%'],
+  });
+
   // Input states
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -316,46 +349,43 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
               borderColor: theme.dark ? 'rgba(255, 255, 255, 0.22)' : 'rgba(255, 255, 255, 0.70)'
             }
           ]}>
-            {/* Mode Selector Tabs (Glass Segmented Pill Bar) */}
-            <View style={[styles.modeTabs, { backgroundColor: theme.dark ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.06)' }]}>
-              <Pressable
-                onPress={() => {
-                  setIsLoginMode(true);
-                  setErrorMsg(null);
-                  setStep(1);
-                }}
+            {/* Mode Selector Tabs (Glass Segmented Pill Bar with Spring Slide Animation) */}
+            <View style={[styles.modeTabs, { backgroundColor: theme.dark ? 'rgba(0, 0, 0, 0.35)' : 'rgba(0, 0, 0, 0.08)' }]}>
+              {/* Sliding Active Pill Background */}
+              <Animated.View
                 style={[
-                  styles.modeTabBtn,
-                  isLoginMode && [
-                    styles.activeModeTab,
-                    { backgroundColor: theme.dark ? 'rgba(255, 255, 255, 0.20)' : 'rgba(255, 255, 255, 0.88)' }
-                  ]
+                  styles.slidingPill,
+                  {
+                    left: pillLeft,
+                    backgroundColor: theme.dark ? 'rgba(255, 255, 255, 0.22)' : 'rgba(255, 255, 255, 0.92)',
+                  }
                 ]}
+              />
+
+              <Pressable
+                onPress={() => handleTabSwitch(true)}
+                style={styles.modeTabBtn}
               >
                 <ThemedText
                   type="smallBold"
-                  style={[styles.modeTabText, { color: isLoginMode ? theme.primary : theme.textSecondary }]}
+                  style={[
+                    styles.modeTabText,
+                    { color: isLoginMode ? theme.primary : (theme.dark ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.55)') }
+                  ]}
                 >
                   {t.loginTab}
                 </ThemedText>
               </Pressable>
               <Pressable
-                onPress={() => {
-                  setIsLoginMode(false);
-                  setErrorMsg(null);
-                  setStep(1);
-                }}
-                style={[
-                  styles.modeTabBtn,
-                  !isLoginMode && [
-                    styles.activeModeTab,
-                    { backgroundColor: theme.dark ? 'rgba(255, 255, 255, 0.20)' : 'rgba(255, 255, 255, 0.88)' }
-                  ]
-                ]}
+                onPress={() => handleTabSwitch(false)}
+                style={styles.modeTabBtn}
               >
                 <ThemedText
                   type="smallBold"
-                  style={[styles.modeTabText, { color: !isLoginMode ? theme.primary : theme.textSecondary }]}
+                  style={[
+                    styles.modeTabText,
+                    { color: !isLoginMode ? theme.primary : (theme.dark ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.55)') }
+                  ]}
                 >
                   {t.signupTab}
                 </ThemedText>
@@ -377,7 +407,8 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
               </View>
             )}
 
-            {/* Form Content */}
+            {/* Form Content with Smooth Animated Crossfade & Scale */}
+            <Animated.View style={{ opacity: formAnim, transform: [{ scale: formAnim }] }}>
             {isLoginMode ? (
               // LOGIN FORM
               <View style={styles.formFields}>
@@ -553,6 +584,7 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                 )}
               </View>
             )}
+            </Animated.View>
           </View>
 
           {/* Demo Bypass / Skip for now Button */}
@@ -746,9 +778,11 @@ const styles = StyleSheet.create({
   },
   modeTabs: {
     flexDirection: 'row',
+    position: 'relative',
     borderRadius: 16,
     padding: 4,
     marginBottom: Spacing.three,
+    overflow: 'hidden',
     ...Platform.select({
       web: {
         backdropFilter: 'blur(10px)',
@@ -757,11 +791,27 @@ const styles = StyleSheet.create({
       default: {}
     })
   },
+  slidingPill: {
+    position: 'absolute',
+    top: 4,
+    bottom: 4,
+    width: '48%',
+    borderRadius: 12,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.16), inset 0 1px 1px rgba(255, 255, 255, 0.95)',
+      } as any,
+      default: {
+        elevation: 4,
+      }
+    })
+  },
   modeTabBtn: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderRadius: 12,
+    zIndex: 2,
   },
   activeModeTab: {
     ...Platform.select({
