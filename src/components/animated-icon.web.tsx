@@ -66,7 +66,7 @@ export function AnimatedIcon() {
       </Animated.View>
 
       <Animated.View style={styles.imageContainer} entering={logoKeyframe.duration(DURATION)}>
-        <Image style={styles.image} source={require('@/assets/images/android-icon-foreground.png')} />
+        <Image style={styles.image} source={require('@/assets/images/app_logo.png')} />
       </Animated.View>
     </View>
   );

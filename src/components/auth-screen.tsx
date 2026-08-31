@@ -22,6 +22,7 @@ import { useTheme } from '@/hooks/use-theme';
 
 import cropsData from '@/constants/crops.json';
 import { SelectionModal } from '@/components/selection-modal';
+import { AppLogo } from '@/components/app-logo';
 
 const STATES = [
   'Uttar Pradesh', 'Punjab', 'Haryana', 'Madhya Pradesh', 
@@ -321,24 +322,12 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
 
           {/* Brand Header */}
           <View style={styles.brandContainer}>
-            <View style={[styles.brandLogo, { backgroundColor: theme.primary }]}>
-              <SymbolView
-                name={{ ios: 'laurel.leading', android: 'spa', web: 'spa' } as any}
-                size={34}
-                tintColor={theme.onPrimary}
-              />
-            </View>
-            <ThemedText type="title" style={[styles.brandName, { color: '#ffffff' }]}>
-              {t.appName}
-            </ThemedText>
-            <View style={styles.taglineBadge}>
-              <ThemedText type="smallBold" style={{ color: '#E8F5E9', fontSize: 13, textTransform: 'uppercase', letterSpacing: 1 }}>
-                {t.subtitle}
-              </ThemedText>
-            </View>
-            <ThemedText type="subtitle" style={[styles.welcomeText, { color: '#F1F8E9' }]}>
-              {t.welcome}
-            </ThemedText>
+            <AppLogo
+              size="hero"
+              language={lang}
+              welcomeText={t.welcome}
+              textColor="#ffffff"
+            />
           </View>
 
           {/* Form Container (Liquid Glassmorphism Card) */}
@@ -407,183 +396,183 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
               </View>
             )}
 
-            {/* Form Content with Smooth Animated Crossfade & Scale */}
-            <Animated.View style={{ opacity: formAnim, transform: [{ scale: formAnim }] }}>
-            {isLoginMode ? (
-              // LOGIN FORM
-              <View style={styles.formFields}>
-                <View style={styles.inputGroup}>
-                  <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#E8F5E9' : '#0B2914' }]}>{t.phoneLabel}</ThemedText>
-                  <TextInput
-                    style={[styles.inputField, { color: theme.dark ? '#ffffff' : '#0a2312', borderColor: theme.dark ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.65)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.45)' }]}
-                    placeholder={t.phonePlace}
-                    placeholderTextColor={theme.dark ? 'rgba(255,255,255,0.5)' : 'rgba(10,35,18,0.5)'}
-                    value={phone}
-                    onChangeText={(val) => setPhone(val.replace(/[^0-9]/g, ''))}
-                    keyboardType="phone-pad"
-                    maxLength={10}
-                  />
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#E8F5E9' : '#0B2914' }]}>{t.pinLabel}</ThemedText>
-                  <TextInput
-                    style={[styles.inputField, { color: theme.dark ? '#ffffff' : '#0a2312', borderColor: theme.dark ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.65)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.45)' }]}
-                    placeholder={t.pinPlace}
-                    placeholderTextColor={theme.dark ? 'rgba(255,255,255,0.5)' : 'rgba(10,35,18,0.5)'}
-                    value={pin}
-                    onChangeText={(val) => setPin(val.replace(/[^0-9]/g, ''))}
-                    keyboardType="numeric"
-                    secureTextEntry
-                    maxLength={4}
-                  />
-                </View>
-
-                <Pressable
-                  onPress={handleAuthSubmit}
-                  disabled={isLoading}
-                  style={({ pressed }) => [
-                    styles.submitBtn,
-                    { backgroundColor: theme.primary },
-                    pressed && { opacity: 0.9 },
-                    isLoading && { opacity: 0.7 }
-                  ]}
-                >
-                  {isLoading ? (
-                    <ActivityIndicator size="small" color={theme.onPrimary} />
-                  ) : (
-                    <ThemedText type="smallBold" style={[styles.submitBtnText, { color: theme.onPrimary }]}>{t.btnSubmitLogin}</ThemedText>
-                  )}
-                </Pressable>
-              </View>
-            ) : (
-              // SIGNUP FORM (MULTI-STEP)
-              <View style={styles.formFields}>
-                {step === 1 ? (
-                  // Step 1: Account credentials
-                  <View style={{ gap: Spacing.two }}>
-                    <View style={styles.inputGroup}>
-                      <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#E8F5E9' : '#0B2914' }]}>{t.nameLabel}</ThemedText>
-                      <TextInput
-                        style={[styles.inputField, { color: theme.dark ? '#ffffff' : '#0a2312', borderColor: theme.dark ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.65)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.45)' }]}
-                        placeholder={t.namePlace}
-                        placeholderTextColor={theme.dark ? 'rgba(255,255,255,0.5)' : 'rgba(10,35,18,0.5)'}
-                        value={name}
-                        onChangeText={setName}
-                        autoCapitalize="words"
-                      />
-                    </View>
-
-                    <View style={styles.inputGroup}>
-                      <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#E8F5E9' : '#0B2914' }]}>{t.phoneLabel}</ThemedText>
-                      <TextInput
-                        style={[styles.inputField, { color: theme.dark ? '#ffffff' : '#0a2312', borderColor: theme.dark ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.65)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.45)' }]}
-                        placeholder={t.phonePlace}
-                        placeholderTextColor={theme.dark ? 'rgba(255,255,255,0.5)' : 'rgba(10,35,18,0.5)'}
-                        value={phone}
-                        onChangeText={(val) => setPhone(val.replace(/[^0-9]/g, ''))}
-                        keyboardType="phone-pad"
-                        maxLength={10}
-                      />
-                    </View>
-
-                    <View style={styles.inputGroup}>
-                      <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#E8F5E9' : '#0B2914' }]}>{t.pinLabel}</ThemedText>
-                      <TextInput
-                        style={[styles.inputField, { color: theme.dark ? '#ffffff' : '#0a2312', borderColor: theme.dark ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.65)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.45)' }]}
-                        placeholder={t.pinPlace}
-                        placeholderTextColor={theme.dark ? 'rgba(255,255,255,0.5)' : 'rgba(10,35,18,0.5)'}
-                        value={pin}
-                        onChangeText={(val) => setPin(val.replace(/[^0-9]/g, ''))}
-                        keyboardType="numeric"
-                        secureTextEntry
-                        maxLength={4}
-                      />
-                    </View>
-
-                    <Pressable
-                      onPress={handleNextStep}
-                      style={({ pressed }) => [
-                        styles.submitBtn,
-                        { backgroundColor: theme.primary },
-                        pressed && { opacity: 0.9 }
-                      ]}
-                    >
-                      <ThemedText type="smallBold" style={[styles.submitBtnText, { color: theme.onPrimary }]}>{t.btnNext}</ThemedText>
-                    </Pressable>
+            {/* Form Content with Smooth Animated Crossfade */}
+            <Animated.View style={{ opacity: formAnim }}>
+              {isLoginMode ? (
+                // LOGIN FORM
+                <View style={styles.formFields}>
+                  <View style={styles.inputGroup}>
+                    <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#E8F5E9' : '#0B2914' }]}>{t.phoneLabel}</ThemedText>
+                    <TextInput
+                      style={[styles.inputField, { color: theme.dark ? '#ffffff' : '#0a2312', borderColor: theme.dark ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.65)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.45)' }]}
+                      placeholder={t.phonePlace}
+                      placeholderTextColor={theme.dark ? 'rgba(255,255,255,0.5)' : 'rgba(10,35,18,0.5)'}
+                      value={phone}
+                      onChangeText={(val) => setPhone(val.replace(/[^0-9]/g, ''))}
+                      keyboardType="phone-pad"
+                      maxLength={10}
+                    />
                   </View>
-                ) : (
-                  // Step 2: Farm Profile Details
-                  <View style={{ gap: Spacing.two }}>
-                    <View style={styles.inputGroup}>
-                      <ThemedText type="smallBold" style={styles.inputLabel}>{t.stateLabel}</ThemedText>
-                      <Pressable
-                        onPress={() => openModal('state')}
-                        style={[styles.selectorInputBtn, { borderColor: theme.border, backgroundColor: theme.dark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.7)' }]}
-                      >
-                        <ThemedText type="small" style={{ color: selectedState ? theme.text : theme.textSecondary }}>
-                          {selectedState || t.selectPlace}
-                        </ThemedText>
-                      </Pressable>
-                    </View>
 
-                    <View style={styles.inputGroup}>
-                      <ThemedText type="smallBold" style={styles.inputLabel}>{t.soilLabel}</ThemedText>
-                      <Pressable
-                        onPress={() => openModal('soil')}
-                        style={[styles.selectorInputBtn, { borderColor: theme.border, backgroundColor: theme.dark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.7)' }]}
-                      >
-                        <ThemedText type="small" style={{ color: selectedSoil ? theme.text : theme.textSecondary }}>
-                          {selectedSoil || t.selectPlace}
-                        </ThemedText>
-                      </Pressable>
-                    </View>
+                  <View style={styles.inputGroup}>
+                    <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#E8F5E9' : '#0B2914' }]}>{t.pinLabel}</ThemedText>
+                    <TextInput
+                      style={[styles.inputField, { color: theme.dark ? '#ffffff' : '#0a2312', borderColor: theme.dark ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.65)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.45)' }]}
+                      placeholder={t.pinPlace}
+                      placeholderTextColor={theme.dark ? 'rgba(255,255,255,0.5)' : 'rgba(10,35,18,0.5)'}
+                      value={pin}
+                      onChangeText={(val) => setPin(val.replace(/[^0-9]/g, ''))}
+                      keyboardType="numeric"
+                      secureTextEntry
+                      maxLength={4}
+                    />
+                  </View>
 
-                    <View style={styles.inputGroup}>
-                      <ThemedText type="smallBold" style={styles.inputLabel}>{t.cropLabel}</ThemedText>
-                      <Pressable
-                        onPress={() => openModal('crop')}
-                        style={[styles.selectorInputBtn, { borderColor: theme.border, backgroundColor: theme.dark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.7)' }]}
-                      >
-                        <ThemedText type="small" style={{ color: selectedCrop ? theme.text : theme.textSecondary }}>
-                          {selectedCrop || t.selectPlace}
-                        </ThemedText>
-                      </Pressable>
-                    </View>
+                  <Pressable
+                    onPress={handleAuthSubmit}
+                    disabled={isLoading}
+                    style={({ pressed }) => [
+                      styles.submitBtn,
+                      { backgroundColor: theme.primary },
+                      pressed && { opacity: 0.9 },
+                      isLoading && { opacity: 0.7 }
+                    ]}
+                  >
+                    {isLoading ? (
+                      <ActivityIndicator size="small" color={theme.onPrimary} />
+                    ) : (
+                      <ThemedText type="smallBold" style={[styles.submitBtnText, { color: theme.onPrimary }]}>{t.btnSubmitLogin}</ThemedText>
+                    )}
+                  </Pressable>
+                </View>
+              ) : (
+                // SIGNUP FORM (MULTI-STEP)
+                <View style={styles.formFields}>
+                  {step === 1 ? (
+                    // Step 1: Account credentials
+                    <View style={{ gap: Spacing.two }}>
+                      <View style={styles.inputGroup}>
+                        <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#E8F5E9' : '#0B2914' }]}>{t.nameLabel}</ThemedText>
+                        <TextInput
+                          style={[styles.inputField, { color: theme.dark ? '#ffffff' : '#0a2312', borderColor: theme.dark ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.65)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.45)' }]}
+                          placeholder={t.namePlace}
+                          placeholderTextColor={theme.dark ? 'rgba(255,255,255,0.5)' : 'rgba(10,35,18,0.5)'}
+                          value={name}
+                          onChangeText={setName}
+                          autoCapitalize="words"
+                        />
+                      </View>
 
-                    <View style={styles.signupNavBtns}>
+                      <View style={styles.inputGroup}>
+                        <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#E8F5E9' : '#0B2914' }]}>{t.phoneLabel}</ThemedText>
+                        <TextInput
+                          style={[styles.inputField, { color: theme.dark ? '#ffffff' : '#0a2312', borderColor: theme.dark ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.65)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.45)' }]}
+                          placeholder={t.phonePlace}
+                          placeholderTextColor={theme.dark ? 'rgba(255,255,255,0.5)' : 'rgba(10,35,18,0.5)'}
+                          value={phone}
+                          onChangeText={(val) => setPhone(val.replace(/[^0-9]/g, ''))}
+                          keyboardType="phone-pad"
+                          maxLength={10}
+                        />
+                      </View>
+
+                      <View style={styles.inputGroup}>
+                        <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#E8F5E9' : '#0B2914' }]}>{t.pinLabel}</ThemedText>
+                        <TextInput
+                          style={[styles.inputField, { color: theme.dark ? '#ffffff' : '#0a2312', borderColor: theme.dark ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.65)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.45)' }]}
+                          placeholder={t.pinPlace}
+                          placeholderTextColor={theme.dark ? 'rgba(255,255,255,0.5)' : 'rgba(10,35,18,0.5)'}
+                          value={pin}
+                          onChangeText={(val) => setPin(val.replace(/[^0-9]/g, ''))}
+                          keyboardType="numeric"
+                          secureTextEntry
+                          maxLength={4}
+                        />
+                      </View>
+
                       <Pressable
-                        onPress={() => setStep(1)}
+                        onPress={handleNextStep}
                         style={({ pressed }) => [
-                          styles.backBtn,
-                          { borderColor: theme.border },
-                          pressed && { backgroundColor: theme.backgroundSelected }
-                        ]}
-                      >
-                        <ThemedText type="smallBold" style={{ color: theme.textSecondary }}>{t.btnBack}</ThemedText>
-                      </Pressable>
-
-                      <Pressable
-                        onPress={handleAuthSubmit}
-                        disabled={isLoading}
-                        style={({ pressed }) => [
-                          styles.signupSubmitBtn,
+                          styles.submitBtn,
                           { backgroundColor: theme.primary },
-                          pressed && { opacity: 0.9 },
-                          isLoading && { opacity: 0.7 }
+                          pressed && { opacity: 0.9 }
                         ]}
                       >
-                        {isLoading ? (
-                          <ActivityIndicator size="small" color={theme.onPrimary} />
-                        ) : (
-                          <ThemedText type="smallBold" style={[styles.submitBtnText, { color: theme.onPrimary }]}>{t.btnSubmitSignup}</ThemedText>
-                        )}
+                        <ThemedText type="smallBold" style={[styles.submitBtnText, { color: theme.onPrimary }]}>{t.btnNext}</ThemedText>
                       </Pressable>
                     </View>
-                  </View>
-                )}
-              </View>
-            )}
+                  ) : (
+                    // Step 2: Farm Profile Details
+                    <View style={{ gap: Spacing.two }}>
+                      <View style={styles.inputGroup}>
+                        <ThemedText type="smallBold" style={styles.inputLabel}>{t.stateLabel}</ThemedText>
+                        <Pressable
+                          onPress={() => openModal('state')}
+                          style={[styles.selectorInputBtn, { borderColor: theme.border, backgroundColor: theme.dark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.7)' }]}
+                        >
+                          <ThemedText type="small" style={{ color: selectedState ? theme.text : theme.textSecondary }}>
+                            {selectedState || t.selectPlace}
+                          </ThemedText>
+                        </Pressable>
+                      </View>
+
+                      <View style={styles.inputGroup}>
+                        <ThemedText type="smallBold" style={styles.inputLabel}>{t.soilLabel}</ThemedText>
+                        <Pressable
+                          onPress={() => openModal('soil')}
+                          style={[styles.selectorInputBtn, { borderColor: theme.border, backgroundColor: theme.dark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.7)' }]}
+                        >
+                          <ThemedText type="small" style={{ color: selectedSoil ? theme.text : theme.textSecondary }}>
+                            {selectedSoil || t.selectPlace}
+                          </ThemedText>
+                        </Pressable>
+                      </View>
+
+                      <View style={styles.inputGroup}>
+                        <ThemedText type="smallBold" style={styles.inputLabel}>{t.cropLabel}</ThemedText>
+                        <Pressable
+                          onPress={() => openModal('crop')}
+                          style={[styles.selectorInputBtn, { borderColor: theme.border, backgroundColor: theme.dark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.7)' }]}
+                        >
+                          <ThemedText type="small" style={{ color: selectedCrop ? theme.text : theme.textSecondary }}>
+                            {selectedCrop || t.selectPlace}
+                          </ThemedText>
+                        </Pressable>
+                      </View>
+
+                      <View style={styles.signupNavBtns}>
+                        <Pressable
+                          onPress={() => setStep(1)}
+                          style={({ pressed }) => [
+                            styles.backBtn,
+                            { borderColor: theme.border },
+                            pressed && { backgroundColor: theme.backgroundSelected }
+                          ]}
+                        >
+                          <ThemedText type="smallBold" style={{ color: theme.textSecondary }}>{t.btnBack}</ThemedText>
+                        </Pressable>
+
+                        <Pressable
+                          onPress={handleAuthSubmit}
+                          disabled={isLoading}
+                          style={({ pressed }) => [
+                            styles.signupSubmitBtn,
+                            { backgroundColor: theme.primary },
+                            pressed && { opacity: 0.9 },
+                            isLoading && { opacity: 0.7 }
+                          ]}
+                        >
+                          {isLoading ? (
+                            <ActivityIndicator size="small" color={theme.onPrimary} />
+                          ) : (
+                            <ThemedText type="smallBold" style={[styles.submitBtnText, { color: theme.onPrimary }]}>{t.btnSubmitSignup}</ThemedText>
+                          )}
+                        </Pressable>
+                      </View>
+                    </View>
+                  )}
+                </View>
+              )}
             </Animated.View>
           </View>
 
@@ -690,26 +679,32 @@ const styles = StyleSheet.create({
   },
   brandContainer: {
     alignItems: 'center',
-    marginBottom: Spacing.three,
-    gap: Spacing.one,
+    marginBottom: Spacing.two,
+    gap: Spacing.half,
   },
   brandLogo: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: Spacing.half,
-    borderWidth: 2,
-    borderColor: '#C8E6C9',
+    marginBottom: 8,
+    borderWidth: 3,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
+    backgroundColor: '#ffffff',
     ...Platform.select({
       web: {
-        boxShadow: '0 8px 24px rgba(46, 125, 50, 0.65)',
+        boxShadow: '0 12px 36px rgba(0, 0, 0, 0.4), 0 0 24px rgba(74, 222, 128, 0.55)',
       } as any,
       default: {
-        elevation: 8,
+        elevation: 12,
       }
     })
+  },
+  brandLogoImg: {
+    width: '100%',
+    height: '100%',
   },
   brandIcon: {
     fontSize: 36,

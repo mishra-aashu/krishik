@@ -9,6 +9,7 @@ import {
   FlatList,
   Platform,
   ActivityIndicator,
+  Image,
   useWindowDimensions
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -25,6 +26,7 @@ import { LocalStorage } from '@/utils/storage';
 import { fetchWeatherData, getWeatherCondition, generateWeatherAdvisory, type RawWeatherData } from '@/services/weather-service';
 import { fetchLiveMandiPrices, type MandiItem } from '@/services/mandi-service';
 import OfflineNotice from '@/components/offline-notice';
+import { AppLogo } from '@/components/app-logo';
 
 import cropsData from '@/constants/crops.json';
 import { SelectionModal } from '@/components/selection-modal';
@@ -374,13 +376,7 @@ export default function HomeScreen() {
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.logoContainer}>
-              <View style={[styles.logoIcon, { backgroundColor: theme.primary, borderColor: theme.border }]}>
-                <SymbolView
-                  name={{ ios: 'laurel.leading', android: 'spa', web: 'spa' } as any}
-                  size={22}
-                  tintColor={theme.onPrimary}
-                />
-              </View>
+              <AppLogo size="small" showText={false} />
               <View>
                 <ThemedText type="smallBold" style={{ color: theme.primary, fontSize: 16 }}>
                   {language === 'hi' ? 'नमस्ते' : 'Welcome'}, {userName}
@@ -913,12 +909,13 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   logoIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
+    borderWidth: 1.5,
+    overflow: 'hidden',
   },
   logoIconText: {
     fontSize: 20,
