@@ -70,8 +70,20 @@ export function AppLogo({
 
           {/* AI Tagline Badge */}
           {showTagline && (
-            <View style={styles.taglineBadge}>
-              <ThemedText type="smallBold" style={styles.taglineText}>
+            <View style={[
+              styles.taglineBadge,
+              textColor !== '#ffffff' && {
+                backgroundColor: 'rgba(46, 125, 50, 0.12)',
+                borderColor: 'rgba(46, 125, 50, 0.35)',
+              }
+            ]}>
+              <ThemedText
+                type="smallBold"
+                style={[
+                  styles.taglineText,
+                  { color: textColor === '#ffffff' ? '#ffffff' : '#1B5E20' }
+                ]}
+              >
                 AI FOR AGRICULTURE
               </ThemedText>
             </View>

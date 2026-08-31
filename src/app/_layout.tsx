@@ -5,7 +5,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import AppTabs from '@/components/app-tabs';
 import { AuthProvider, useAuth } from '@/context/auth-context';
-import { AuthScreen } from '@/components/auth-screen';
+import { HomeScreen } from '@/components/home-screen';
 import { ThemeProvider } from '@/context/theme-context';
 
 import { useFonts } from 'expo-font';
@@ -24,12 +24,24 @@ export default function TabLayout() {
 
 function AppContent() {
   const colorScheme = useColorScheme();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, register } = useAuth();
 
   const [fontsLoaded, fontError] = useFonts({
     'Pravah-Regular': require('../../assets/fonts/Mukta-Regular.ttf'),
     'Pravah-Bold': require('../../assets/fonts/Mukta-Bold.ttf'),
   });
+
+  // Handle Demo mode login
+  const handleExploreDemo = async () => {
+    await register(
+      'Kisan Guest',
+      '9999999999',
+      'Punjab',
+      'Alluvial Soil (जलोढ़)',
+      'Wheat (गेहूं)',
+      '1234'
+    );
+  };
 
   // If still loading authentication status or fonts, keep showing splash
   if (isLoading || (!fontsLoaded && !fontError)) {
@@ -42,7 +54,10 @@ function AppContent() {
       {isAuthenticated ? (
         <AppTabs />
       ) : (
-        <AuthScreen onLoginSuccess={() => {}} />
+        <HomeScreen
+          onExploreDemo={handleExploreDemo}
+          onLoginSuccess={() => {}}
+        />
       )}
     </NavThemeProvider>
   );

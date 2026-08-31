@@ -667,6 +667,105 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
               {t.btnSkip}
             </ThemedText>
           </Pressable>
+
+          {/* App Key Features Showcase Grid */}
+          <View style={styles.featuresContainer}>
+            <ThemedText type="subtitle" style={styles.featuresHeadline}>
+              {lang === 'hi' ? '✨ कृषिक मित्र की मुख्य सुविधाएं' : '✨ Key Platform Features'}
+            </ThemedText>
+
+            <View style={styles.featuresGrid}>
+              {/* Feature 1 */}
+              <View style={styles.featureCard}>
+                <View style={styles.featureIconBadge}>
+                  <ThemedText style={{ fontSize: 22 }}>🤖</ThemedText>
+                </View>
+                <ThemedText type="smallBold" style={styles.featureTitle}>
+                  {lang === 'hi' ? 'AI कृषि सलाहकार' : 'AI Agronomy Bot'}
+                </ThemedText>
+                <ThemedText type="small" style={styles.featureDesc}>
+                  {lang === 'hi'
+                    ? 'अपनी भाषा में बोलकर फसल कीट, बीमारी और खेती की सलाह पाएँ।'
+                    : 'Ask farming & crop questions via native Voice or Text.'}
+                </ThemedText>
+              </View>
+
+              {/* Feature 2 */}
+              <View style={styles.featureCard}>
+                <View style={styles.featureIconBadge}>
+                  <ThemedText style={{ fontSize: 22 }}>📷</ThemedText>
+                </View>
+                <ThemedText type="smallBold" style={styles.featureTitle}>
+                  {lang === 'hi' ? 'कीट पहचान (AI Scan)' : 'Pest Scan Diagnosis'}
+                </ThemedText>
+                <ThemedText type="small" style={styles.featureDesc}>
+                  {lang === 'hi'
+                    ? 'पत्ती की फोटो खींचें और तुरंत सटीक बीमारी व इलाज जानें।'
+                    : 'Instant leaf disease diagnosis and treatment plan with camera.'}
+                </ThemedText>
+              </View>
+
+              {/* Feature 3 */}
+              <View style={styles.featureCard}>
+                <View style={styles.featureIconBadge}>
+                  <ThemedText style={{ fontSize: 22 }}>📈</ThemedText>
+                </View>
+                <ThemedText type="smallBold" style={styles.featureTitle}>
+                  {lang === 'hi' ? 'लाइव मंडी भाव' : 'Live Mandi Prices'}
+                </ThemedText>
+                <ThemedText type="small" style={styles.featureDesc}>
+                  {lang === 'hi'
+                    ? 'देश भर की एपीएमसी मंडियों के ताजा जिंस रेट देखें।'
+                    : 'Real-time APMC commodity rates from mandis across India.'}
+                </ThemedText>
+              </View>
+
+              {/* Feature 4 */}
+              <View style={styles.featureCard}>
+                <View style={styles.featureIconBadge}>
+                  <ThemedText style={{ fontSize: 22 }}>☀️</ThemedText>
+                </View>
+                <ThemedText type="smallBold" style={styles.featureTitle}>
+                  {lang === 'hi' ? 'मौसम एडवाइजरी' : 'Weather & Advisory'}
+                </ThemedText>
+                <ThemedText type="small" style={styles.featureDesc}>
+                  {lang === 'hi'
+                    ? 'स्थानीय बारिश, तापमान और साप्ताहिक कृषि सलाह।'
+                    : 'Hyper-local weather alerts, rain forecast, and crop advisory.'}
+                </ThemedText>
+              </View>
+
+              {/* Feature 5 */}
+              <View style={styles.featureCard}>
+                <View style={styles.featureIconBadge}>
+                  <ThemedText style={{ fontSize: 22 }}>🧪</ThemedText>
+                </View>
+                <ThemedText type="smallBold" style={styles.featureTitle}>
+                  {lang === 'hi' ? 'मृदा व खाद कैलकुलेटर' : 'Fertilizer Calculator'}
+                </ThemedText>
+                <ThemedText type="small" style={styles.featureDesc}>
+                  {lang === 'hi'
+                    ? 'जमीन के क्षेत्रफल के अनुसार यूरिया, डीएपी की सही मात्रा।'
+                    : 'Precise crop fertilizer dosage calculator scaled for your land.'}
+                </ThemedText>
+              </View>
+
+              {/* Feature 6 */}
+              <View style={styles.featureCard}>
+                <View style={styles.featureIconBadge}>
+                  <ThemedText style={{ fontSize: 22 }}>👥</ThemedText>
+                </View>
+                <ThemedText type="smallBold" style={styles.featureTitle}>
+                  {lang === 'hi' ? 'किसान चौपाल' : 'Farmer Community'}
+                </ThemedText>
+                <ThemedText type="small" style={styles.featureDesc}>
+                  {lang === 'hi'
+                    ? 'अन्य किसान भाइयों से अनुभव शेयर करें और सुझाव पाएँ।'
+                    : 'Connect with fellow farmers and share crop advice.'}
+                </ThemedText>
+              </View>
+            </View>
+          </View>
         </ScrollView>
 
       {/* Selector Modals */}
@@ -731,12 +830,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(5, 20, 10, 0.45)',
   },
   scrollContent: {
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.four,
     alignItems: 'center',
     justifyContent: 'center',
     flexGrow: 1,
-    maxWidth: 480,
+    maxWidth: 580,
     width: '100%',
     alignSelf: 'center',
   },
@@ -1077,5 +1176,70 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     alignItems: 'center',
     flex: 1,
+  },
+  featuresContainer: {
+    width: '100%',
+    marginTop: Spacing.four,
+    gap: Spacing.two,
+  },
+  featuresHeadline: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#ffffff',
+    textAlign: 'center',
+    marginBottom: Spacing.one,
+    ...Platform.select({
+      web: {
+        textShadow: '0 2px 8px rgba(0, 0, 0, 0.6)',
+      } as any,
+      default: {}
+    })
+  },
+  featuresGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    justifyContent: 'space-between',
+  },
+  featureCard: {
+    width: '48%',
+    minWidth: 150,
+    flexGrow: 1,
+    borderRadius: 18,
+    padding: Spacing.two,
+    backgroundColor: 'rgba(10, 32, 18, 0.86)',
+    borderWidth: 1.2,
+    borderColor: 'rgba(255, 255, 255, 0.28)',
+    gap: 6,
+    ...Platform.select({
+      web: {
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)',
+      } as any,
+      default: {
+        elevation: 6,
+      }
+    })
+  },
+  featureIconBadge: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.35)',
+  },
+  featureTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#ffffff',
+  },
+  featureDesc: {
+    fontSize: 11.5,
+    color: '#E8F5E9',
+    lineHeight: 16,
   },
 });
