@@ -34,6 +34,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import * as Speech from 'expo-speech';
+import * as Clipboard from 'expo-clipboard';
 import { startRecording, stopRecording, transcribeAudio } from '@/services/transcription-service';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -43,6 +44,7 @@ interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: string;
+  feedback?: 'like' | 'dislike';
 }
 
 interface ChatSession {
@@ -59,12 +61,26 @@ interface MessageItemProps {
   speakingMessageId: string | null;
   language: 'hi' | 'en' | 'hinglish';
   onToggleSpeech: (msg: ChatMessage) => void;
+  onFeedback: (msgId: string, type: 'like' | 'dislike') => void;
 }
 
 const MessageItem = React.memo(
-  ({ msg, theme, speakingMessageId, language, onToggleSpeech }: MessageItemProps) => {
+  ({ msg, theme, speakingMessageId, language, onToggleSpeech, onFeedback }: MessageItemProps) => {
     const isUser = msg.role === 'user';
     const isSpeaking = speakingMessageId === msg.id;
+    const [isCopied, setIsCopied] = React.useState(false);
+
+    const handleCopy = async () => {
+      try {
+        await Clipboard.setStringAsync(msg.content);
+        setIsCopied(true);
+        setTimeout(() => {
+          setIsCopied(false);
+        }, 2000);
+      } catch (err) {
+        console.warn('Failed to copy text:', err);
+      }
+    };
 
     return (
       <Animated.View
@@ -118,34 +134,107 @@ const MessageItem = React.memo(
                 {msg.timestamp}
               </ThemedText>
 
-              {!isUser && (
+              <View style={styles.bubbleActions}>
+                {/* Copy Button */}
                 <Pressable
-                  onPress={() => onToggleSpeech(msg)}
+                  onPress={handleCopy}
                   style={({ pressed }) => [
-                    styles.listenButton,
+                    styles.actionButton,
                     pressed && { opacity: 0.7 }
                   ]}
                 >
                   <SymbolView
                     name={{
-                      ios: isSpeaking ? 'stop.fill' : 'speaker.wave.2.fill',
-                      android: isSpeaking ? 'stop' : 'volume_up',
-                      web: isSpeaking ? 'stop' : 'volume_up',
+                      ios: isCopied ? 'checkmark.circle.fill' : 'doc.on.doc',
+                      android: isCopied ? 'check_circle' : 'content_copy',
+                      web: isCopied ? 'check_circle' : 'content_copy',
                     } as any}
-                    size={14}
-                    tintColor={isSpeaking ? theme.error : theme.primary}
+                    size={13}
+                    tintColor={isCopied ? theme.success : theme.primary}
                   />
                   <ThemedText
                     type="code"
                     style={[
-                      styles.listenText,
-                      { color: isSpeaking ? theme.error : theme.primary }
+                      styles.actionText,
+                      { color: isCopied ? theme.success : theme.primary }
                     ]}
                   >
-                    {isSpeaking ? (language === 'hi' ? 'रोकें' : 'Stop') : (language === 'hi' ? 'सुनें' : 'Listen')}
+                    {isCopied ? (language === 'hi' ? 'कॉपी किया' : 'Copied') : (language === 'hi' ? 'कॉपी' : 'Copy')}
                   </ThemedText>
                 </Pressable>
-              )}
+
+                {/* Speak Button (AI only) */}
+                {!isUser && (
+                  <Pressable
+                    onPress={() => onToggleSpeech(msg)}
+                    style={({ pressed }) => [
+                      styles.actionButton,
+                      pressed && { opacity: 0.7 }
+                    ]}
+                  >
+                    <SymbolView
+                      name={{
+                        ios: isSpeaking ? 'stop.fill' : 'speaker.wave.2.fill',
+                        android: isSpeaking ? 'stop' : 'volume_up',
+                        web: isSpeaking ? 'stop' : 'volume_up',
+                      } as any}
+                      size={13}
+                      tintColor={isSpeaking ? theme.error : theme.primary}
+                    />
+                    <ThemedText
+                      type="code"
+                      style={[
+                        styles.actionText,
+                        { color: isSpeaking ? theme.error : theme.primary }
+                      ]}
+                    >
+                      {isSpeaking ? (language === 'hi' ? 'रोकें' : 'Stop') : (language === 'hi' ? 'सुनें' : 'Listen')}
+                    </ThemedText>
+                  </Pressable>
+                )}
+
+                {/* Like Button (AI only) */}
+                {!isUser && (
+                  <Pressable
+                    onPress={() => onFeedback(msg.id, 'like')}
+                    style={({ pressed }) => [
+                      styles.actionButton,
+                      pressed && { opacity: 0.7 }
+                    ]}
+                  >
+                    <SymbolView
+                      name={{
+                        ios: msg.feedback === 'like' ? 'hand.thumbsup.fill' : 'hand.thumbsup',
+                        android: 'thumb_up',
+                        web: 'thumb_up',
+                      } as any}
+                      size={13}
+                      tintColor={msg.feedback === 'like' ? theme.success : theme.textSecondary}
+                    />
+                  </Pressable>
+                )}
+
+                {/* Dislike Button (AI only) */}
+                {!isUser && (
+                  <Pressable
+                    onPress={() => onFeedback(msg.id, 'dislike')}
+                    style={({ pressed }) => [
+                      styles.actionButton,
+                      pressed && { opacity: 0.7 }
+                    ]}
+                  >
+                    <SymbolView
+                      name={{
+                        ios: msg.feedback === 'dislike' ? 'hand.thumbsdown.fill' : 'hand.thumbsdown',
+                        android: 'thumb_down',
+                        web: 'thumb_down',
+                      } as any}
+                      size={13}
+                      tintColor={msg.feedback === 'dislike' ? theme.error : theme.textSecondary}
+                    />
+                  </Pressable>
+                )}
+              </View>
             </View>
           </View>
         </View>
@@ -156,6 +245,7 @@ const MessageItem = React.memo(
     return (
       prevProps.msg.id === nextProps.msg.id &&
       prevProps.msg.content === nextProps.msg.content &&
+      prevProps.msg.feedback === nextProps.msg.feedback &&
       prevProps.language === nextProps.language &&
       prevProps.theme.primary === nextProps.theme.primary &&
       (prevProps.speakingMessageId === prevProps.msg.id) === (nextProps.speakingMessageId === nextProps.msg.id)
@@ -316,6 +406,33 @@ export default function ChatScreen() {
       });
     }
   }, [speakingMessageId, language]);
+
+  const handleFeedback = React.useCallback((msgId: string, type: 'like' | 'dislike') => {
+    setMessages(prev => {
+      const updated = prev.map(m => {
+        if (m.id === msgId) {
+          return { ...m, feedback: m.feedback === type ? undefined : type };
+        }
+        return m;
+      });
+
+      if (activeSessionId) {
+        setSessions(prevSessions => {
+          const updatedSessions = prevSessions.map(s => {
+            if (s.id === activeSessionId) {
+              return { ...s, messages: updated };
+            }
+            return s;
+          });
+          LocalStorage.setItem('chat_sessions', JSON.stringify(updatedSessions)).catch(err => {
+            console.error('Error saving feedback:', err);
+          });
+          return updatedSessions;
+        });
+      }
+      return updated;
+    });
+  }, [activeSessionId]);
 
   // Load profile and settings
   useEffect(() => {
@@ -755,6 +872,7 @@ export default function ChatScreen() {
                   speakingMessageId={speakingMessageId}
                   language={language}
                   onToggleSpeech={toggleSpeech}
+                  onFeedback={handleFeedback}
                 />
               ))
             )}
@@ -1086,11 +1204,18 @@ const styles = StyleSheet.create({
     width: 200,
     borderRadius: Spacing.two,
     borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 5,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 4px 5px rgba(0, 0, 0, 0.2)',
+      },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 5,
+        elevation: 5,
+      }
+    }),
     paddingVertical: Spacing.one,
   },
   menuOption: {
@@ -1304,9 +1429,7 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 2,
   },
   timestamp: {
-    fontSize: 8,
-    alignSelf: 'flex-end',
-    marginTop: Spacing.one,
+    fontSize: 9,
   },
   loadingRow: {
     flexDirection: 'row',
@@ -1373,15 +1496,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: Spacing.two,
   },
-  listenButton: {
+  bubbleActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 8,
   },
-  listenText: {
+  actionText: {
     fontSize: 9,
     fontWeight: '800',
   },
