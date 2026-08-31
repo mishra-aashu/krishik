@@ -11,6 +11,7 @@ import {
   Alert,
 } from 'react-native';
 import { Image } from 'expo-image';
+import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { SymbolView } from 'expo-symbols';
@@ -530,7 +531,8 @@ export default function SoilCalculator({ language, theme, formatLabel }: SoilCal
 
       {/* 3. Soil Parameters Grid Inputs */}
       {showParameters && (
-        <ThemedView type="card" style={[styles.card, { borderColor: theme.border, backgroundColor: theme.card }]}>
+        <Animated.View entering={FadeInDown.springify().damping(15)}>
+          <ThemedView type="card" style={[styles.card, { borderColor: theme.border, backgroundColor: theme.card }]}>
           <ThemedText type="smallBold" style={styles.cardTitle}>
             {language === 'hi' ? 'मृदा स्वास्थ्य मापदंड दर्ज करें' : 'Enter Soil Parameters'}
           </ThemedText>
@@ -875,7 +877,8 @@ export default function SoilCalculator({ language, theme, formatLabel }: SoilCal
             </View>
           )}
         </ThemedView>
-      )}
+      </Animated.View>
+    )}
 
       {/* 4. Fertilizer Combination Selector */}
       {(soilCardImage !== null || showParameters) && (
@@ -906,7 +909,7 @@ export default function SoilCalculator({ language, theme, formatLabel }: SoilCal
 
       {/* 5. Results Section */}
       {dosage && (soilCardImage !== null || showParameters) && (
-        <View style={styles.resultContainer}>
+        <Animated.View style={styles.resultContainer} entering={FadeInDown.springify().damping(15)}>
           {/* Fertilizer Prescription Card */}
           <ThemedView type="card" style={[styles.card, { borderColor: theme.border, backgroundColor: theme.card, gap: Spacing.two }]}>
             <ThemedText type="smallBold" style={{ fontSize: 15 }}>
@@ -1121,7 +1124,7 @@ export default function SoilCalculator({ language, theme, formatLabel }: SoilCal
               </ThemedView>
             </View>
           ) : null}
-        </View>
+        </Animated.View>
       )}
     </View>
   );

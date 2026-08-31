@@ -30,6 +30,10 @@ import Animated, {
   FadeInRight,
   FadeInLeft,
   FadeInDown,
+  FadeIn,
+  FadeOut,
+  SlideInRight,
+  SlideOutRight,
   useSharedValue,
   useAnimatedStyle,
   withRepeat,
@@ -1280,9 +1284,13 @@ export default function ChatScreen() {
 
       {/* Sidebar Drawer Overlay */}
       {isDrawerOpen && (
-        <View style={styles.drawerBackdrop}>
+        <Animated.View style={styles.drawerBackdrop} entering={FadeIn.duration(250)} exiting={FadeOut.duration(250)}>
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setIsDrawerOpen(false)} />
-          <ThemedView type="card" style={[styles.drawerContainer, { backgroundColor: theme.chatBot, borderColor: theme.border }]}>
+          <Animated.View
+            style={[styles.drawerContainer, { backgroundColor: theme.chatBot, borderColor: theme.border }]}
+            entering={SlideInRight.springify().damping(18).mass(0.9)}
+            exiting={SlideOutRight.springify().damping(18).mass(0.9)}
+          >
             <View style={styles.drawerHeader}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
                 <SymbolView
@@ -1378,8 +1386,8 @@ export default function ChatScreen() {
               })}
             </ScrollView>
 
-          </ThemedView>
-        </View>
+          </Animated.View>
+        </Animated.View>
       )}
 
       {/* Dropdown Menu Overlay */}

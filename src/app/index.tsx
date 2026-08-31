@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
 import { ThemedText } from '@/components/themed-text';
+import Animated, { FadeInDown, FadeInLeft, FadeInRight, Layout, useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { ThemedView } from '@/components/themed-view';
 import { SymbolView } from 'expo-symbols';
 import { Colors, Spacing, BottomTabInset, MaxContentWidth } from '@/constants/theme';
@@ -26,6 +27,7 @@ import { fetchLiveMandiPrices, type MandiItem } from '@/services/mandi-service';
 
 import cropsData from '@/constants/crops.json';
 import { SelectionModal } from '@/components/selection-modal';
+import { PressableScale } from '@/components/pressable-scale';
 
 // Constants for Profile
 const STATES = [
@@ -307,7 +309,7 @@ export default function HomeScreen() {
                 </ThemedText>
               </View>
             </View>
-            <Pressable
+            <PressableScale
               onPress={toggleLanguage}
               style={({ pressed }) => [
                 styles.langToggle,
@@ -323,11 +325,12 @@ export default function HomeScreen() {
               <ThemedText style={{ color: theme.text, fontSize: 11, fontWeight: '700' }}>
                 {language === 'hi' ? 'Hindi' : 'English'}
               </ThemedText>
-            </Pressable>
+            </PressableScale>
           </View>
 
           {/* Weather Widget */}
-          <ThemedView type="backgroundElement" style={styles.weatherCard}>
+          <Animated.View entering={FadeInDown.duration(300).delay(50)}>
+            <ThemedView type="backgroundElement" style={styles.weatherCard}>
             {isLoadingWeather ? (
               <View style={[styles.weatherCenter, { height: 110 }]}>
                 <ActivityIndicator size="small" color={theme.primary} />
@@ -414,10 +417,12 @@ export default function HomeScreen() {
                 </View>
               </>
             )}
-          </ThemedView>
+            </ThemedView>
+          </Animated.View>
 
           {/* Farm Profile Card */}
-          <ThemedView type="card" style={[styles.profileCard, { borderColor: theme.border }]}>
+          <Animated.View entering={FadeInDown.duration(300).delay(150)}>
+            <ThemedView type="card" style={[styles.profileCard, { borderColor: theme.border }]}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.two }}>
               <ThemedText type="smallBold" style={styles.sectionTitle}>
                 {language === 'hi' ? 'मेरा खेत प्रोफ़ाइल' : 'My Farm Profile'}
@@ -445,7 +450,7 @@ export default function HomeScreen() {
 
             <View style={styles.profileSelectors}>
               {/* State Picker Button */}
-              <Pressable
+              <PressableScale
                 onPress={() => openModal('state')}
                 style={({ pressed }) => [
                   styles.selectorButton,
@@ -473,10 +478,10 @@ export default function HomeScreen() {
                   size={16}
                   tintColor={theme.textSecondary}
                 />
-              </Pressable>
+              </PressableScale>
 
               {/* Soil Picker Button */}
-              <Pressable
+              <PressableScale
                 onPress={() => openModal('soil')}
                 style={({ pressed }) => [
                   styles.selectorButton,
@@ -504,10 +509,10 @@ export default function HomeScreen() {
                   size={16}
                   tintColor={theme.textSecondary}
                 />
-              </Pressable>
+              </PressableScale>
 
               {/* Crop Picker Button */}
-              <Pressable
+              <PressableScale
                 onPress={() => openModal('crop')}
                 style={({ pressed }) => [
                   styles.selectorButton,
@@ -535,16 +540,18 @@ export default function HomeScreen() {
                   size={16}
                   tintColor={theme.textSecondary}
                 />
-              </Pressable>
+              </PressableScale>
             </View>
-          </ThemedView>
+            </ThemedView>
+          </Animated.View>
 
           {/* Quick Actions / Shortcuts */}
-          <ThemedText type="smallBold" style={styles.sectionTitle}>
+          <Animated.View entering={FadeInDown.duration(300).delay(250)}>
+            <ThemedText type="smallBold" style={styles.sectionTitle}>
             {language === 'hi' ? 'त्वरित परामर्श' : 'Quick Advisories'}
           </ThemedText>
           <View style={styles.advisoryGrid}>
-            <Pressable
+            <PressableScale
               onPress={() => handleQuickAdvice(
                 'Pest',
                 language === 'hi' 
@@ -565,9 +572,9 @@ export default function HomeScreen() {
               <ThemedText type="smallBold" style={styles.advisoryTitle}>
                 {language === 'hi' ? 'कीट नियंत्रण' : 'Pest Control'}
               </ThemedText>
-            </Pressable>
+            </PressableScale>
 
-            <Pressable
+            <PressableScale
               onPress={() => handleQuickAdvice(
                 'Watering',
                 language === 'hi'
@@ -588,9 +595,9 @@ export default function HomeScreen() {
               <ThemedText type="smallBold" style={styles.advisoryTitle}>
                 {language === 'hi' ? 'सिंचाई व उर्वरक' : 'Water & Fertilizer'}
               </ThemedText>
-            </Pressable>
+            </PressableScale>
 
-            <Pressable
+            <PressableScale
               onPress={() => handleQuickAdvice(
                 'Organic',
                 language === 'hi'
@@ -611,9 +618,9 @@ export default function HomeScreen() {
               <ThemedText type="smallBold" style={styles.advisoryTitle}>
                 {language === 'hi' ? 'जैविक खेती' : 'Organic Farming'}
               </ThemedText>
-            </Pressable>
+            </PressableScale>
 
-            <Pressable
+            <PressableScale
               onPress={() => handleQuickAdvice(
                 'Schemes',
                 language === 'hi'
@@ -634,8 +641,9 @@ export default function HomeScreen() {
               <ThemedText type="smallBold" style={styles.advisoryTitle}>
                 {language === 'hi' ? 'सरकारी योजनाएं' : 'Govt Schemes'}
               </ThemedText>
-            </Pressable>
+            </PressableScale>
           </View>
+          </Animated.View>
 
           {/* Mandi Prices Tracker */}
           <View style={styles.mandiHeaderRow}>
@@ -649,7 +657,7 @@ export default function HomeScreen() {
                 </ThemedText>
               )}
             </View>
-            <Pressable
+            <PressableScale
               onPress={refreshMandiPrices}
               disabled={isRefreshingPrices}
               style={({ pressed }) => [
@@ -672,7 +680,7 @@ export default function HomeScreen() {
                   </ThemedText>
                 </View>
               )}
-            </Pressable>
+            </PressableScale>
           </View>
 
           <ThemedView type="card" style={[styles.mandiCard, { borderColor: theme.border }]}>
@@ -705,7 +713,12 @@ export default function HomeScreen() {
                 const showVariety = cleanVar && cleanVar !== cleanComm;
 
                 return (
-                  <View key={item.id} style={[styles.mandiItem, { borderBottomColor: theme.border }]}>
+                  <Animated.View
+                    key={item.id}
+                    layout={Layout.springify().damping(15)}
+                    entering={FadeInDown.duration(200)}
+                    style={[styles.mandiItem, { borderBottomColor: theme.border }]}
+                  >
                     <View style={{ flex: 1, paddingRight: Spacing.two }}>
                       <ThemedText type="smallBold">{formatLabel(item.commodity)}</ThemedText>
                       <ThemedText type="code" style={{ fontSize: 10, color: theme.textSecondary }}>
@@ -729,7 +742,7 @@ export default function HomeScreen() {
                         </ThemedText>
                       )}
                     </View>
-                  </View>
+                  </Animated.View>
                 );
               })
             )}

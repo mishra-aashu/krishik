@@ -11,6 +11,12 @@ import {
   Alert,
   Animated,
 } from 'react-native';
+import AnimatedReanimated, {
+  FadeInRight,
+  FadeInLeft,
+  FadeInDown,
+  FadeIn,
+} from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -21,6 +27,7 @@ import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { LocalStorage } from '@/utils/storage';
 import { useAuth } from '@/context/auth-context';
+import { PressableScale } from '@/components/pressable-scale';
 import { fetchDynamicSchemes, diagnoseCropDisease, extractSoilHealthCardData, type Scheme, type DiagnosisResult, type SoilAnalysisResult } from '@/services/ai-service';
 import * as ImagePicker from 'expo-image-picker';
 import cropsData from '@/constants/crops.json';
@@ -535,138 +542,140 @@ export default function ExploreScreen() {
         )}
 
         {activeView === 'main' ? (
-          <ScrollView
-            contentContainerStyle={[styles.scrollContent, contentPlatformStyle]}
-            showsVerticalScrollIndicator={false}
-          >
-            <Pressable
-              onPress={() => setActiveView('calc')}
-              style={({ pressed }) => [
-                styles.optionCard,
-                { borderColor: theme.border, backgroundColor: theme.card },
-                pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] }
-              ]}
+          <AnimatedReanimated.View style={{ flex: 1 }} entering={FadeInLeft.duration(300)}>
+            <ScrollView
+              contentContainerStyle={[styles.scrollContent, contentPlatformStyle]}
+              showsVerticalScrollIndicator={false}
             >
-              <View style={[styles.optionIconContainer, { backgroundColor: 'rgba(76, 175, 80, 0.12)' }]}>
+              <PressableScale
+                onPress={() => setActiveView('calc')}
+                style={({ pressed }) => [
+                  styles.optionCard,
+                  { borderColor: theme.border, backgroundColor: theme.card },
+                  pressed && { opacity: 0.9 }
+                ]}
+              >
+                <View style={[styles.optionIconContainer, { backgroundColor: 'rgba(76, 175, 80, 0.12)' }]}>
+                  <SymbolView
+                    name={{ ios: 'plus.minus.and.percent', android: 'calculate', web: 'calculate' } as any}
+                    size={24}
+                    tintColor={theme.primary}
+                  />
+                </View>
+                <View style={styles.optionContent}>
+                  <ThemedText type="smallBold" style={[styles.optionTitle, { color: theme.text }]}>
+                    {language === 'hi' ? 'खुराक कैलकुलेटर' : 'Crop Input Calculator'}
+                  </ThemedText>
+                  <ThemedText type="small" style={[styles.optionDescription, { color: theme.textSecondary }]}>
+                    {language === 'hi'
+                      ? 'अपनी भूमि के क्षेत्रफल के अनुसार बीज दर, सिंचाई चक्र और उर्वरक आवश्यकताओं की गणना करें।'
+                      : 'Calculate seed rates, irrigation counts, and fertilizer requirements (NPK) according to your acreage.'}
+                  </ThemedText>
+                </View>
                 <SymbolView
-                  name={{ ios: 'plus.minus.and.percent', android: 'calculate', web: 'calculate' } as any}
-                  size={24}
-                  tintColor={theme.primary}
+                  name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any}
+                  size={18}
+                  tintColor={theme.textSecondary}
                 />
-              </View>
-              <View style={styles.optionContent}>
-                <ThemedText type="smallBold" style={[styles.optionTitle, { color: theme.text }]}>
-                  {language === 'hi' ? 'खुराक कैलकुलेटर' : 'Crop Input Calculator'}
-                </ThemedText>
-                <ThemedText type="small" style={[styles.optionDescription, { color: theme.textSecondary }]}>
-                  {language === 'hi'
-                    ? 'अपनी भूमि के क्षेत्रफल के अनुसार बीज दर, सिंचाई चक्र और उर्वरक आवश्यकताओं की गणना करें।'
-                    : 'Calculate seed rates, irrigation counts, and fertilizer requirements (NPK) according to your acreage.'}
-                </ThemedText>
-              </View>
-              <SymbolView
-                name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any}
-                size={18}
-                tintColor={theme.textSecondary}
-              />
-            </Pressable>
+              </PressableScale>
 
-            <Pressable
-              onPress={() => setActiveView('soil')}
-              style={({ pressed }) => [
-                styles.optionCard,
-                { borderColor: theme.border, backgroundColor: theme.card },
-                pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] }
-              ]}
-            >
-              <View style={[styles.optionIconContainer, { backgroundColor: 'rgba(255, 152, 0, 0.12)' }]}>
+              <PressableScale
+                onPress={() => setActiveView('soil')}
+                style={({ pressed }) => [
+                  styles.optionCard,
+                  { borderColor: theme.border, backgroundColor: theme.card },
+                  pressed && { opacity: 0.9 }
+                ]}
+              >
+                <View style={[styles.optionIconContainer, { backgroundColor: 'rgba(255, 152, 0, 0.12)' }]}>
+                  <SymbolView
+                    name={{ ios: 'doc.text.image.fill', android: 'document_scanner', web: 'document_scanner' } as any}
+                    size={24}
+                    tintColor="#FF9800"
+                  />
+                </View>
+                <View style={styles.optionContent}>
+                  <ThemedText type="smallBold" style={[styles.optionTitle, { color: theme.text }]}>
+                    {language === 'hi' ? 'मृदा स्वास्थ्य कैलकुलेटर' : 'Soil Health Calculator'}
+                  </ThemedText>
+                  <ThemedText type="small" style={[styles.optionDescription, { color: theme.textSecondary }]}>
+                    {language === 'hi'
+                      ? 'मिट्टी रिपोर्ट/कार्ड अपलोड करें या मान दर्ज करें और वैज्ञानिक उर्वरक सिफारिशें पाएं।'
+                      : 'Upload your soil test report/card or enter parameters to get tailored fertilizer prescriptions.'}
+                  </ThemedText>
+                </View>
                 <SymbolView
-                  name={{ ios: 'doc.text.image.fill', android: 'document_scanner', web: 'document_scanner' } as any}
-                  size={24}
-                  tintColor="#FF9800"
+                  name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any}
+                  size={18}
+                  tintColor={theme.textSecondary}
                 />
-              </View>
-              <View style={styles.optionContent}>
-                <ThemedText type="smallBold" style={[styles.optionTitle, { color: theme.text }]}>
-                  {language === 'hi' ? 'मृदा स्वास्थ्य कैलकुलेटर' : 'Soil Health Calculator'}
-                </ThemedText>
-                <ThemedText type="small" style={[styles.optionDescription, { color: theme.textSecondary }]}>
-                  {language === 'hi'
-                    ? 'मिट्टी रिपोर्ट/कार्ड अपलोड करें या मान दर्ज करें और वैज्ञानिक उर्वरक सिफारिशें पाएं।'
-                    : 'Upload your soil test report/card or enter parameters to get tailored fertilizer prescriptions.'}
-                </ThemedText>
-              </View>
-              <SymbolView
-                name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any}
-                size={18}
-                tintColor={theme.textSecondary}
-              />
-            </Pressable>
+              </PressableScale>
 
-            <Pressable
-              onPress={() => setActiveView('pest')}
-              style={({ pressed }) => [
-                styles.optionCard,
-                { borderColor: theme.border, backgroundColor: theme.card },
-                pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] }
-              ]}
-            >
-              <View style={[styles.optionIconContainer, { backgroundColor: 'rgba(244, 67, 54, 0.12)' }]}>
+              <PressableScale
+                onPress={() => setActiveView('pest')}
+                style={({ pressed }) => [
+                  styles.optionCard,
+                  { borderColor: theme.border, backgroundColor: theme.card },
+                  pressed && { opacity: 0.9 }
+                ]}
+              >
+                <View style={[styles.optionIconContainer, { backgroundColor: 'rgba(244, 67, 54, 0.12)' }]}>
+                  <SymbolView
+                    name={{ ios: 'ladybug.fill', android: 'bug_report', web: 'bug_report' } as any}
+                    size={24}
+                    tintColor="#EF5350"
+                  />
+                </View>
+                <View style={styles.optionContent}>
+                  <ThemedText type="smallBold" style={[styles.optionTitle, { color: theme.text }]}>
+                    {language === 'hi' ? 'एआई फसल रोग निदान' : 'AI Crop Disease Diagnosis'}
+                  </ThemedText>
+                  <ThemedText type="small" style={[styles.optionDescription, { color: theme.textSecondary }]}>
+                    {language === 'hi'
+                      ? 'फसल की बीमारी का निदान करने के लिए पत्ती की फोटो लें और जैविक व रासायनिक उपचार तुरंत पाएं।'
+                      : 'Describe symptoms or take a photo of the infected crop to diagnose the disease and get treatments.'}
+                  </ThemedText>
+                </View>
                 <SymbolView
-                  name={{ ios: 'ladybug.fill', android: 'bug_report', web: 'bug_report' } as any}
-                  size={24}
-                  tintColor="#EF5350"
+                  name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any}
+                  size={18}
+                  tintColor={theme.textSecondary}
                 />
-              </View>
-              <View style={styles.optionContent}>
-                <ThemedText type="smallBold" style={[styles.optionTitle, { color: theme.text }]}>
-                  {language === 'hi' ? 'एआई फसल रोग निदान' : 'AI Crop Disease Diagnosis'}
-                </ThemedText>
-                <ThemedText type="small" style={[styles.optionDescription, { color: theme.textSecondary }]}>
-                  {language === 'hi'
-                    ? 'फसल की बीमारी का निदान करने के लिए पत्ती की फोटो लें और जैविक व रासायनिक उपचार तुरंत पाएं।'
-                    : 'Describe symptoms or take a photo of the infected crop to diagnose the disease and get treatments.'}
-                </ThemedText>
-              </View>
-              <SymbolView
-                name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any}
-                size={18}
-                tintColor={theme.textSecondary}
-              />
-            </Pressable>
+              </PressableScale>
 
-            <Pressable
-              onPress={() => setActiveView('scheme')}
-              style={({ pressed }) => [
-                styles.optionCard,
-                { borderColor: theme.border, backgroundColor: theme.card },
-                pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] }
-              ]}
-            >
-              <View style={[styles.optionIconContainer, { backgroundColor: 'rgba(33, 150, 243, 0.12)' }]}>
+              <PressableScale
+                onPress={() => setActiveView('scheme')}
+                style={({ pressed }) => [
+                  styles.optionCard,
+                  { borderColor: theme.border, backgroundColor: theme.card },
+                  pressed && { opacity: 0.9 }
+                ]}
+              >
+                <View style={[styles.optionIconContainer, { backgroundColor: 'rgba(33, 150, 243, 0.12)' }]}>
+                  <SymbolView
+                    name={{ ios: 'scroll.fill', android: 'description', web: 'description' } as any}
+                    size={24}
+                    tintColor="#2196F3"
+                  />
+                </View>
+                <View style={styles.optionContent}>
+                  <ThemedText type="smallBold" style={[styles.optionTitle, { color: theme.text }]}>
+                    {language === 'hi' ? 'सरकारी योजनाएं' : 'Government Schemes'}
+                  </ThemedText>
+                  <ThemedText type="small" style={[styles.optionDescription, { color: theme.textSecondary }]}>
+                    {language === 'hi'
+                      ? 'कृषि लोन, पीएम किसान सम्मान निधि और राज्य कृषि सब्सिडी व योजनाओं का विवरण देखें।'
+                      : 'View government agricultural loans, PM Kisan Nidhi, state subsidies and schemes details.'}
+                  </ThemedText>
+                </View>
                 <SymbolView
-                  name={{ ios: 'scroll.fill', android: 'description', web: 'description' } as any}
-                  size={24}
-                  tintColor="#2196F3"
+                  name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any}
+                  size={18}
+                  tintColor={theme.textSecondary}
                 />
-              </View>
-              <View style={styles.optionContent}>
-                <ThemedText type="smallBold" style={[styles.optionTitle, { color: theme.text }]}>
-                  {language === 'hi' ? 'सरकारी योजनाएं' : 'Government Schemes'}
-                </ThemedText>
-                <ThemedText type="small" style={[styles.optionDescription, { color: theme.textSecondary }]}>
-                  {language === 'hi'
-                    ? 'कृषि लोन, पीएम किसान सम्मान निधि और राज्य कृषि सब्सिडी व योजनाओं का विवरण देखें।'
-                    : 'View government agricultural loans, PM Kisan Nidhi, state subsidies and schemes details.'}
-                </ThemedText>
-              </View>
-              <SymbolView
-                name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any}
-                size={18}
-                tintColor={theme.textSecondary}
-              />
-            </Pressable>
-          </ScrollView>
+              </PressableScale>
+            </ScrollView>
+          </AnimatedReanimated.View>
         ) : (
           <ScrollView
             contentContainerStyle={[
@@ -677,15 +686,20 @@ export default function ExploreScreen() {
             showsVerticalScrollIndicator={false}
           >
             {activeView === 'calc' && (
-              <CropCalculator language={language} theme={theme} formatLabel={formatLabel} />
+              <AnimatedReanimated.View style={{ flex: 1 }} entering={FadeInRight.duration(300)}>
+                <CropCalculator language={language} theme={theme} formatLabel={formatLabel} />
+              </AnimatedReanimated.View>
             )}
 
             {activeView === 'soil' && (
-              <SoilCalculator language={language} theme={theme} formatLabel={formatLabel} />
+              <AnimatedReanimated.View style={{ flex: 1 }} entering={FadeInRight.duration(300)}>
+                <SoilCalculator language={language} theme={theme} formatLabel={formatLabel} />
+              </AnimatedReanimated.View>
             )}
 
           {activeView === 'pest' && (
-            <View style={styles.sectionContainer}>
+            <AnimatedReanimated.View style={{ flex: 1 }} entering={FadeInRight.duration(300)}>
+              <View style={styles.sectionContainer}>
               {/* AI Diagnostic Center Card */}
               <ThemedView type="card" style={[styles.card, { borderColor: theme.border }]}>
                 <ThemedText type="smallBold" style={styles.cardTitle}>
@@ -1239,11 +1253,13 @@ export default function ExploreScreen() {
                   </Pressable>
                 </ThemedView>
               ))}
-            </View>
+              </View>
+            </AnimatedReanimated.View>
           )}
 
           {activeView === 'scheme' && (
-            <View style={styles.sectionContainer}>
+            <AnimatedReanimated.View style={{ flex: 1 }} entering={FadeInRight.duration(300)}>
+              <View style={styles.sectionContainer}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <ThemedText type="smallBold" style={styles.sectionHeading}>
                   {language === 'hi' ? 'कृषि कल्याणकारी योजनाएं' : 'Agricultural Welfare Schemes'}
@@ -1360,7 +1376,8 @@ export default function ExploreScreen() {
                   );
                 })
               )}
-            </View>
+              </View>
+            </AnimatedReanimated.View>
           )}
           </ScrollView>
         )}

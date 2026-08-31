@@ -9,6 +9,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { ThemedView } from '@/components/themed-view';
 import { SymbolView } from 'expo-symbols';
 import { Spacing } from '@/constants/theme';
@@ -150,7 +151,7 @@ export default function CropCalculator({ language, theme, formatLabel }: CropCal
       </ThemedView>
 
       {dosage && (
-        <View style={styles.resultContainer}>
+        <Animated.View style={styles.resultContainer} entering={FadeInDown.springify().damping(15)}>
           <ThemedText type="smallBold" style={styles.sectionHeading}>
             {language === 'hi' ? 'अनुशंसित आवश्यकताएं' : 'Recommended Requirements'}
           </ThemedText>
@@ -223,7 +224,7 @@ export default function CropCalculator({ language, theme, formatLabel }: CropCal
               </View>
             </View>
           </ThemedView>
-        </View>
+        </Animated.View>
       )}
     </View>
   );

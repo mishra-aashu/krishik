@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 import { ThemedText } from './themed-text';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 import { ThemedView } from './themed-view';
 import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
@@ -55,7 +56,10 @@ export function SelectionModal({
       onRequestClose={onClose}
     >
       <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
-        <ThemedView type="backgroundElement" style={[styles.modalCard, { borderColor: theme.border }]}>
+        <Animated.View
+          entering={FadeInUp.springify().damping(15)}
+          style={[styles.modalCard, { borderColor: theme.border, backgroundColor: theme.backgroundElement }]}
+        >
           {/* Header */}
           <View style={styles.modalHeader}>
             <ThemedText type="smallBold" style={styles.titleText}>{title}</ThemedText>
@@ -131,7 +135,7 @@ export function SelectionModal({
             }}
             style={styles.modalList}
           />
-        </ThemedView>
+        </Animated.View>
       </View>
     </Modal>
   );
