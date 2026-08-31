@@ -19,7 +19,7 @@ export const Colors = {
     primary: '#166534',               // Rich Deep Emerald
     accent: '#D97706',                // Warm Amber (not gold)
     // Chrome
-    border: '#D1E4D4',                // Soft sage border
+    border: '#A2C2A9',                // Soft sage border
     // Chat
     chatUser: '#DCFCE7',              // Clean mint-green user bubble
     chatBot: '#F4F7F4',               // Neutral white-sage bot bubble
@@ -40,7 +40,7 @@ export const Colors = {
     primary: '#4ADE80',               // Green-400, vivid but not neon
     accent: '#FBB024',                // Rich warm gold
     // Chrome
-    border: '#1E3527',                // Dark sage border
+    border: '#2D4F39',                // Dark sage border
     // Chat
     chatUser: '#14392A',              // Dark forest-green user bubble
     chatBot: '#151D17',               // Near-surface bot bubble

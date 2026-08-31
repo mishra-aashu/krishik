@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   useWindowDimensions,
+  AppState,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -52,6 +53,116 @@ interface ChatSession {
   messages: ChatMessage[];
 }
 
+interface MessageItemProps {
+  msg: ChatMessage;
+  theme: any;
+  speakingMessageId: string | null;
+  language: 'hi' | 'en' | 'hinglish';
+  onToggleSpeech: (msg: ChatMessage) => void;
+}
+
+const MessageItem = React.memo(
+  ({ msg, theme, speakingMessageId, language, onToggleSpeech }: MessageItemProps) => {
+    const isUser = msg.role === 'user';
+    const isSpeaking = speakingMessageId === msg.id;
+
+    return (
+      <Animated.View
+        entering={isUser ? FadeInRight.duration(350).springify() : FadeInLeft.duration(350).springify()}
+        style={styles.messageRowContainer}
+      >
+        {!isUser && (
+          <View style={styles.botHeaderRow}>
+            <View style={[styles.avatarBubble, { backgroundColor: theme.primary }]}>
+              <SymbolView
+                name={{ ios: 'laurel.leading', android: 'spa', web: 'spa' } as any}
+                size={12}
+                tintColor={theme.onPrimary}
+              />
+            </View>
+            <ThemedText type="smallBold" style={[styles.botSenderName, { color: theme.textSecondary }]}>
+              Krishik Mitra AI
+            </ThemedText>
+          </View>
+        )}
+
+        <View
+          style={[
+            styles.messageRow,
+            isUser ? styles.userRow : styles.botRow
+          ]}
+        >
+          <View
+            style={[
+              styles.messageBubble,
+              isUser
+                ? [styles.userBubble, { backgroundColor: theme.chatUser }]
+                : [styles.botBubble, { backgroundColor: theme.chatBot, borderColor: theme.border }]
+            ]}
+          >
+            {isUser ? (
+              <ThemedText type="small" style={{ color: theme.text }}>
+                {msg.content}
+              </ThemedText>
+            ) : (
+              <CustomMarkdown text={msg.content} />
+            )}
+            <View style={styles.bubbleFooter}>
+              <ThemedText
+                type="code"
+                style={[
+                  styles.timestamp,
+                  { color: theme.textSecondary }
+                ]}
+              >
+                {msg.timestamp}
+              </ThemedText>
+
+              {!isUser && (
+                <Pressable
+                  onPress={() => onToggleSpeech(msg)}
+                  style={({ pressed }) => [
+                    styles.listenButton,
+                    pressed && { opacity: 0.7 }
+                  ]}
+                >
+                  <SymbolView
+                    name={{
+                      ios: isSpeaking ? 'stop.fill' : 'speaker.wave.2.fill',
+                      android: isSpeaking ? 'stop' : 'volume_up',
+                      web: isSpeaking ? 'stop' : 'volume_up',
+                    } as any}
+                    size={14}
+                    tintColor={isSpeaking ? theme.error : theme.primary}
+                  />
+                  <ThemedText
+                    type="code"
+                    style={[
+                      styles.listenText,
+                      { color: isSpeaking ? theme.error : theme.primary }
+                    ]}
+                  >
+                    {isSpeaking ? (language === 'hi' ? 'रोकें' : 'Stop') : (language === 'hi' ? 'सुनें' : 'Listen')}
+                  </ThemedText>
+                </Pressable>
+              )}
+            </View>
+          </View>
+        </View>
+      </Animated.View>
+    );
+  },
+  (prevProps, nextProps) => {
+    return (
+      prevProps.msg.id === nextProps.msg.id &&
+      prevProps.msg.content === nextProps.msg.content &&
+      prevProps.language === nextProps.language &&
+      prevProps.theme.primary === nextProps.theme.primary &&
+      (prevProps.speakingMessageId === prevProps.msg.id) === (nextProps.speakingMessageId === nextProps.msg.id)
+    );
+  }
+);
+
 export default function ChatScreen() {
   const router = useRouter();
   const theme = useTheme();
@@ -83,6 +194,12 @@ export default function ChatScreen() {
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
+
+  // Keep track of recording state in a ref to avoid stale closures in AppState/cleanup effects
+  const isRecordingRef = useRef(isRecording);
+  useEffect(() => {
+    isRecordingRef.current = isRecording;
+  }, [isRecording]);
 
   // Animated mic scaling for flashing/pulsing effect when recording
   const micScale = useSharedValue(1);
@@ -119,10 +236,30 @@ export default function ChatScreen() {
     };
   });
 
-  // Stop reading aloud when leaving the chat
+  // Stop reading aloud and recording when leaving the chat or if the app goes to the background
   useEffect(() => {
+    const handleAppStateChange = (nextAppState: string) => {
+      if (nextAppState === 'inactive' || nextAppState === 'background') {
+        Speech.stop();
+        if (isRecordingRef.current) {
+          stopRecording().catch((err) => {
+            console.warn('[Chat] Failed to stop recording on app state change:', err);
+          });
+          setIsRecording(false);
+        }
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
     return () => {
+      subscription.remove();
       Speech.stop();
+      if (isRecordingRef.current) {
+        stopRecording().catch((err) => {
+          console.warn('[Chat] Failed to stop recording on unmount:', err);
+        });
+      }
     };
   }, []);
 
@@ -158,7 +295,7 @@ export default function ChatScreen() {
     }
   };
 
-  const toggleSpeech = async (msg: ChatMessage) => {
+  const toggleSpeech = React.useCallback(async (msg: ChatMessage) => {
     if (speakingMessageId === msg.id) {
       Speech.stop();
       setSpeakingMessageId(null);
@@ -178,7 +315,7 @@ export default function ChatScreen() {
         onError: () => setSpeakingMessageId(null),
       });
     }
-  };
+  }, [speakingMessageId, language]);
 
   // Load profile and settings
   useEffect(() => {
@@ -610,91 +747,16 @@ export default function ChatScreen() {
                 </View>
               </Animated.View>
             ) : (
-              messages.map((msg) => {
-                const isUser = msg.role === 'user';
-                return (
-                  <Animated.View
-                    key={msg.id}
-                    entering={isUser ? FadeInRight.duration(350).springify() : FadeInLeft.duration(350).springify()}
-                    style={styles.messageRowContainer}
-                  >
-                    {!isUser && (
-                      <View style={styles.botHeaderRow}>
-                        <View style={[styles.avatarBubble, { backgroundColor: theme.primary }]}>
-                          <SymbolView
-                            name={{ ios: 'laurel.leading', android: 'spa', web: 'spa' } as any}
-                            size={12}
-                            tintColor={theme.onPrimary}
-                          />
-                        </View>
-                        <ThemedText type="smallBold" style={[styles.botSenderName, { color: theme.textSecondary }]}>
-                          Krishik Mitra AI
-                        </ThemedText>
-                      </View>
-                    )}
-
-                    <View
-                      style={[
-                        styles.messageRow,
-                        isUser ? styles.userRow : styles.botRow
-                      ]}
-                    >
-                      <View
-                        style={[
-                          styles.messageBubble,
-                          isUser
-                            ? [styles.userBubble, { backgroundColor: theme.chatUser }]
-                            : [styles.botBubble, { backgroundColor: theme.chatBot, borderColor: theme.border }]
-                        ]}
-                      >
-                        {isUser ? (
-                          <ThemedText type="small" style={{ color: theme.text }}>
-                            {msg.content}
-                          </ThemedText>
-                        ) : (
-                          <CustomMarkdown text={msg.content} />
-                        )}
-                        <View style={styles.bubbleFooter}>
-                          <ThemedText
-                            type="code"
-                            style={[
-                              styles.timestamp,
-                              { color: theme.textSecondary }
-                            ]}
-                          >
-                            {msg.timestamp}
-                          </ThemedText>
-
-                          {!isUser && (
-                            <Pressable
-                              onPress={() => toggleSpeech(msg)}
-                              style={({ pressed }) => [
-                                styles.listenButton,
-                                pressed && { opacity: 0.7 }
-                              ]}
-                            >
-                              <SymbolView
-                                name={speakingMessageId === msg.id ? "stop.fill" : "speaker.wave.2.fill" as any}
-                                size={14}
-                                tintColor={speakingMessageId === msg.id ? theme.error : theme.primary}
-                              />
-                              <ThemedText
-                                type="code"
-                                style={[
-                                  styles.listenText,
-                                  { color: speakingMessageId === msg.id ? theme.error : theme.primary }
-                                ]}
-                              >
-                                {speakingMessageId === msg.id ? (language === 'hi' ? 'रोकें' : 'Stop') : (language === 'hi' ? 'सुनें' : 'Listen')}
-                              </ThemedText>
-                            </Pressable>
-                          )}
-                        </View>
-                      </View>
-                    </View>
-                  </Animated.View>
-                );
-              })
+              messages.map((msg) => (
+                <MessageItem
+                  key={msg.id}
+                  msg={msg}
+                  theme={theme}
+                  speakingMessageId={speakingMessageId}
+                  language={language}
+                  onToggleSpeech={toggleSpeech}
+                />
+              ))
             )}
 
             {/* Loading Indicator / Bot Typing */}
@@ -760,28 +822,7 @@ export default function ChatScreen() {
           </ScrollView>
 
           {/* Input Bar */}
-          <View style={[styles.inputBar, { borderTopColor: theme.border }]}>
-            <AnimatedPressable
-              onPress={handleVoiceInput}
-              disabled={isLoading || isTranscribing}
-              style={[
-                styles.micButton,
-                { backgroundColor: isRecording ? theme.error : theme.primary + '18' },
-                (isLoading || isTranscribing) && { opacity: 0.5 },
-                animatedMicStyle
-              ]}
-            >
-              {isTranscribing ? (
-                <ActivityIndicator size="small" color={theme.primary} />
-              ) : (
-                <SymbolView
-                  name={isRecording ? "stop.fill" : "mic.fill" as any}
-                  size={18}
-                  tintColor={isRecording ? theme.onPrimary : theme.primary}
-                />
-              )}
-            </AnimatedPressable>
-
+          <View style={styles.inputBar}>
             <TextInput
               style={[
                 styles.textInput,
@@ -801,18 +842,41 @@ export default function ChatScreen() {
               editable={!isLoading && !isRecording && !isTranscribing}
             />
 
-            <Pressable
-              onPress={() => handleSendQuery(inputValue)}
-              disabled={isLoading || !inputValue.trim() || isRecording || isTranscribing}
-              style={({ pressed }) => [
-                styles.sendButton,
-                { backgroundColor: theme.primary },
-                (isLoading || !inputValue.trim() || isRecording || isTranscribing) && { opacity: 0.5 },
-                pressed && { opacity: 0.8 }
-              ]}
-            >
-              <ThemedText style={[styles.sendIcon, { color: theme.onPrimary }]}>➔</ThemedText>
-            </Pressable>
+            {inputValue.trim() ? (
+              <Pressable
+                onPress={() => handleSendQuery(inputValue)}
+                disabled={isLoading || isRecording || isTranscribing}
+                style={({ pressed }) => [
+                  styles.sendButton,
+                  { backgroundColor: theme.primary },
+                  (isLoading || isRecording || isTranscribing) && { opacity: 0.5 },
+                  pressed && { opacity: 0.8 }
+                ]}
+              >
+                <ThemedText style={[styles.sendIcon, { color: theme.onPrimary }]}>➔</ThemedText>
+              </Pressable>
+            ) : (
+              <AnimatedPressable
+                onPress={handleVoiceInput}
+                disabled={isLoading || isTranscribing}
+                style={[
+                  styles.micButton,
+                  { backgroundColor: isRecording ? theme.error : theme.primary },
+                  (isLoading || isTranscribing) && { opacity: 0.5 },
+                  animatedMicStyle
+                ]}
+              >
+                {isTranscribing ? (
+                  <ActivityIndicator size="small" color={theme.onPrimary} />
+                ) : (
+                  <SymbolView
+                    name={{ ios: isRecording ? 'stop.fill' : 'mic.fill', android: isRecording ? 'stop' : 'mic', web: isRecording ? 'stop' : 'mic' } as any}
+                    size={18}
+                    tintColor={theme.onPrimary}
+                  />
+                )}
+              </AnimatedPressable>
+            )}
           </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -978,11 +1042,13 @@ const styles = StyleSheet.create({
   },
   keyboardView: {
     flex: 1,
+    width: '100%',
   },
   headerPanel: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    width: '100%',
     paddingTop: Spacing.three,
     paddingBottom: Spacing.two,
     paddingHorizontal: Spacing.three,
@@ -1143,6 +1209,7 @@ const styles = StyleSheet.create({
   },
   messagesContainer: {
     flex: 1,
+    width: '100%',
   },
   scrollContent: {
     paddingHorizontal: Spacing.three,
@@ -1266,16 +1333,17 @@ const styles = StyleSheet.create({
   inputBar: {
     flexDirection: 'row',
     alignItems: 'center',
+    width: '100%',
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
-    borderTopWidth: 1,
     gap: Spacing.two,
     paddingBottom: Platform.OS === 'ios' ? Spacing.two : Spacing.three,
   },
   textInput: {
     flex: 1,
+    minWidth: 0,
     height: 44,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderRadius: 22,
     paddingHorizontal: Spacing.four,
     fontSize: 15,

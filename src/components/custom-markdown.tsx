@@ -8,7 +8,7 @@ interface CustomMarkdownProps {
   text: string;
 }
 
-export function CustomMarkdown({ text }: CustomMarkdownProps) {
+export const CustomMarkdown = React.memo(function CustomMarkdown({ text }: CustomMarkdownProps) {
   if (!text) return null;
   const theme = useTheme();
 
@@ -292,7 +292,7 @@ export function CustomMarkdown({ text }: CustomMarkdownProps) {
   flushTable();
 
   return <View style={styles.container}>{renderedElements}</View>;
-}
+});
 
 const styles = StyleSheet.create({
   container: {
