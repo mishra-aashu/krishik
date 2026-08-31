@@ -1,10 +1,19 @@
 import { Platform } from 'react-native';
-import { Audio } from 'expo-av';
 
 const GROQ_API_KEY = process.env.EXPO_PUBLIC_GROQ_API_KEY || '';
 const GROQ_TRANSCRIPTION_URL = 'https://api.groq.com/openai/v1/audio/transcriptions';
 
-let nativeRecording: Audio.Recording | null = null;
+// Lazy-load Audio from expo-av only on native platforms (iOS / Android)
+// to prevent the deprecation warning on Web builds.
+let AudioModule: typeof import('expo-av').Audio | null = null;
+function getAudioModule() {
+  if (Platform.OS !== 'web' && !AudioModule) {
+    AudioModule = require('expo-av').Audio;
+  }
+  return AudioModule;
+}
+
+let nativeRecording: any = null;
 let webMediaRecorder: any = null; // Use any to prevent Web-only MediaRecorder TypeScript issues on native builds
 let webAudioChunks: Blob[] = [];
 
@@ -30,6 +39,11 @@ export async function startRecording(): Promise<void> {
     mediaRecorder.start();
     webMediaRecorder = mediaRecorder;
   } else {
+    const Audio = getAudioModule();
+    if (!Audio) {
+      throw new Error('Native audio recording is not available.');
+    }
+
     // Request Native Permissions
     const permission = await Audio.requestPermissionsAsync();
     if (permission.status !== 'granted') {
@@ -79,15 +93,19 @@ export async function stopRecording(): Promise<string> {
       throw new Error('No recording session in progress.');
     }
 
+    const Audio = getAudioModule();
+
     await nativeRecording.stopAndUnloadAsync();
     const uri = nativeRecording.getURI();
     nativeRecording = null;
 
     // Reset Audio Mode to default playback mode
-    await Audio.setAudioModeAsync({
-      allowsRecordingIOS: false,
-      playsInSilentModeIOS: true,
-    });
+    if (Audio) {
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: false,
+        playsInSilentModeIOS: true,
+      });
+    }
 
     if (!uri) {
       throw new Error('Failed to retrieve recording file URI.');

@@ -171,7 +171,8 @@ export async function fetchLiveMandiPrices(stateName: string): Promise<MandiItem
     const url = `${MANDI_API_ROUTE}?state=${encodeURIComponent(stateName)}`;
     const response = await fetch(url);
     if (!response.ok) {
-      throw new Error(`Mandi API route failed with status: ${response.status}`);
+      console.info(`[Mandi Service] Route returned ${response.status}. Using cached/fallback data.`);
+      return [];
     }
     const data = await response.json();
     let records = data.records || [];
@@ -237,7 +238,7 @@ export async function fetchLiveMandiPrices(stateName: string): Promise<MandiItem
       };
     });
   } catch (error) {
-    console.warn('[Mandi API] Error fetching live prices:', error);
-    throw error;
+    console.info('[Mandi API] Using fallback data due to network error/rate limit');
+    return [];
   }
 }

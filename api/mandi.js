@@ -28,14 +28,18 @@ module.exports = async function handler(req, res) {
 
     const apiResponse = await fetch(url);
     if (!apiResponse.ok) {
-      return res.status(apiResponse.status).json({ 
-        error: `Govt API responded with status ${apiResponse.status}` 
+      // If Government API rate limits (429) or returns error, return empty records cleanly with HTTP 200
+      // so client app smoothly falls back to local cache without throwing console network errors.
+      return res.status(200).json({ 
+        records: [],
+        warning: `Govt API status ${apiResponse.status}`,
+        rateLimited: apiResponse.status === 429 
       });
     }
 
     const data = await apiResponse.json();
     return res.status(200).json(data);
   } catch (error) {
-    return res.status(500).json({ error: error.message || 'Internal server error' });
+    return res.status(200).json({ records: [], error: error.message || 'Internal server error' });
   }
 };
