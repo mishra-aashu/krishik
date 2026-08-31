@@ -1,5 +1,3 @@
-import { Platform } from 'react-native';
-
 export interface MandiItem {
   id: string;
   commodity: string;
@@ -9,15 +7,9 @@ export interface MandiItem {
   change: string;
 }
 
-const API_KEY = process.env.EXPO_PUBLIC_DATA_GOV_IN_API_KEY || ''; // Read from environment variables
-const BASE_URL = 'https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070';
-
-const getProxyUrl = (url: string) => {
-  if (Platform.OS === 'web') {
-    return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-  }
-  return url;
-};
+// Read from environment — used server-side in the API route, not here.
+// The client calls our own /api/mandi route to avoid CORS.
+const MANDI_API_ROUTE = '/api/mandi';
 
 export const COMMODITY_MAP: Record<string, string> = {
   // Grains & Cereals
@@ -105,22 +97,18 @@ export const COMMODITY_MAP: Record<string, string> = {
 
 export async function fetchLiveMandiPrices(stateName: string): Promise<MandiItem[]> {
   try {
-    if (!API_KEY) {
-      throw new Error('EXPO_PUBLIC_DATA_GOV_IN_API_KEY is not defined in environment variables');
-    }
-    // 1. Attempt to fetch filtered by the user's state
-    const url = `${BASE_URL}?api-key=${API_KEY}&format=json&filters[state]=${encodeURIComponent(stateName)}&limit=15`;
-    const response = await fetch(getProxyUrl(url));
+    // Call our own server-side API route — no CORS, API key stays on server
+    const url = `${MANDI_API_ROUTE}?state=${encodeURIComponent(stateName)}`;
+    const response = await fetch(url);
     if (!response.ok) {
-      throw new Error(`State fetch failed with status: ${response.status}`);
+      throw new Error(`Mandi API route failed with status: ${response.status}`);
     }
     const data = await response.json();
     let records = data.records || [];
-    
-    // 2. If no records for this state, fetch general latest records
+
+    // If no records for this state, try without filter
     if (records.length === 0) {
-      const generalUrl = `${BASE_URL}?api-key=${API_KEY}&format=json&limit=15`;
-      const generalResponse = await fetch(getProxyUrl(generalUrl));
+      const generalResponse = await fetch(MANDI_API_ROUTE);
       if (generalResponse.ok) {
         const generalData = await generalResponse.json();
         records = generalData.records || [];
