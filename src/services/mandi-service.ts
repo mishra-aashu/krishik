@@ -1,3 +1,6 @@
+import { supabase } from '@/lib/supabase';
+import { LocalStorage } from '@/utils/storage';
+
 export interface MandiItem {
   id: string;
   commodity: string;
@@ -8,7 +11,7 @@ export interface MandiItem {
   variety?: string;
 }
 
-// The client calls the Vercel deployed API route to avoid CORS and local rate limits.
+// Kept as fallback — used only if Supabase is unavailable and no local cache exists
 const MANDI_API_ROUTE = 'https://krishik-psi.vercel.app/api/mandi';
 
 export const COMMODITY_MAP: Record<string, string> = {
@@ -166,79 +169,90 @@ function mapCommodityName(rawName: string): string {
 }
 
 export async function fetchLiveMandiPrices(stateName: string): Promise<MandiItem[]> {
+  const cacheKey = `mandi_cache_${stateName}`;
+
   try {
-    // Call our own server-side API route — no CORS, API key stays on server
+    // ── 1. Try Supabase mandi_prices table first ─────────────────────────────
+    const { data, error } = await supabase
+      .from('mandi_prices')
+      .select('*')
+      .ilike('state', `%${stateName}%`)
+      .order('fetched_at', { ascending: false })
+      .limit(200);
+
+    if (!error && data && data.length > 0) {
+      const items: MandiItem[] = data.map((row: any, index: number) => ({
+        id: `sb-${row.id}-${index}`,
+        commodity: mapCommodityName(row.commodity),
+        price: Number(row.price) || 0,
+        unit: row.unit || 'Quintal',
+        state: `${row.market} Mandi`,
+        change: row.change || '0',
+        variety: row.variety || '',
+      }));
+
+      // Update local cache as offline fallback
+      try {
+        await LocalStorage.setItem(cacheKey, JSON.stringify({ data: items, timestamp: Date.now() }));
+      } catch (_) {}
+
+      return items;
+    }
+
+    // ── 2. Supabase returned empty — try local cache ──────────────────────────
+    const cachedStr = await LocalStorage.getItem(cacheKey);
+    if (cachedStr) {
+      const cached = JSON.parse(cachedStr);
+      return cached.data || [];
+    }
+
+    // ── 3. No cache — fall back to the Vercel proxy as last resort ────────────
+    console.info('[Mandi Service] Supabase empty, falling back to Vercel proxy');
     const url = `${MANDI_API_ROUTE}?state=${encodeURIComponent(stateName)}`;
     const response = await fetch(url);
-    if (!response.ok) {
-      console.info(`[Mandi Service] Route returned ${response.status}. Using cached/fallback data.`);
-      return [];
-    }
-    const data = await response.json();
-    let records = data.records || [];
+    if (!response.ok) return [];
 
-    // If no records for this state, try without filter
-    if (records.length === 0) {
-      const generalResponse = await fetch(MANDI_API_ROUTE);
-      if (generalResponse.ok) {
-        const generalData = await generalResponse.json();
-        records = generalData.records || [];
-      }
-    }
+    const json = await response.json();
+    const records: any[] = json.records || [];
+    if (records.length === 0) return [];
 
-    if (records.length === 0) {
-      return [];
-    }
-
-    // Map records to MandiItem format
     return records.map((record: any, index: number) => {
       const rawComm = record.Commodity || record.commodity || '';
       const mappedCommodity = mapCommodityName(rawComm);
-      const marketName = record.Market || record.market || record.District || record.district || record.State || record.state || 'Mandi';
-
-      // Clean market name from redundant suffix keywords
-      const cleanMarketName = marketName.replace(/\s*(APMC|Mandi|Market)\s*/gi, '').trim();
-
+      const marketName = (record.Market || record.market || record.District || stateName)
+        .replace(/\s*(APMC|Mandi|Market)\s*/gi, '').trim();
       const modalPrice = Number(record.Modal_Price || record.modal_price) || 0;
-      const minPrice = Number(record.Min_Price || record.min_price) || 0;
-      const maxPrice = Number(record.Max_Price || record.max_price) || 0;
+      const minPrice  = Number(record.Min_Price  || record.min_price)  || 0;
+      const maxPrice  = Number(record.Max_Price  || record.max_price)  || 0;
       const arrivalDate = record.Arrival_Date || record.arrival_date || '';
 
-      // Generate a realistic small percentage difference indicator based on range
       let changeStr = '0';
-      if (maxPrice > minPrice) {
+      if (maxPrice > minPrice && minPrice > 0) {
         const pctDiff = ((modalPrice - minPrice) / minPrice) * 100;
-        const valueDiff = Math.round(modalPrice * 0.012); // ~1.2% change mock
-        if (pctDiff > 4) {
-          changeStr = `+₹${valueDiff}`;
-        } else if (pctDiff < 2) {
-          changeStr = `-₹${valueDiff}`;
-        }
-      } else {
-        // If min and max are the same, randomize a tiny +/- change
-        const rand = Math.random();
-        const valueDiff = Math.round(modalPrice * 0.008);
-        if (rand > 0.6) {
-          changeStr = `+₹${valueDiff}`;
-        } else if (rand < 0.3) {
-          changeStr = `-₹${valueDiff}`;
-        }
+        const valueDiff = Math.round(modalPrice * 0.012);
+        if (pctDiff > 4) changeStr = `+₹${valueDiff}`;
+        else if (pctDiff < 2) changeStr = `-₹${valueDiff}`;
       }
-
-      const variety = record.Variety || record.variety || '';
 
       return {
         id: `live-${index}-${arrivalDate || Date.now()}-${modalPrice}`,
         commodity: mappedCommodity,
         price: modalPrice,
         unit: 'Quintal',
-        state: `${cleanMarketName} Mandi`,
+        state: `${marketName} Mandi`,
         change: changeStr,
-        variety: variety
+        variety: record.Variety || record.variety || '',
       };
     });
   } catch (error) {
-    console.info('[Mandi API] Using fallback data due to network error/rate limit');
+    console.info('[Mandi Service] Error, trying local cache');
+    try {
+      const cachedStr = await LocalStorage.getItem(cacheKey);
+      if (cachedStr) {
+        const cached = JSON.parse(cachedStr);
+        return cached.data || [];
+      }
+    } catch (_) {}
     return [];
   }
 }
