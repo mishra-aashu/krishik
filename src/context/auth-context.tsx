@@ -281,11 +281,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!phone || !newPin) return false;
     const cleanedPhone = phone.trim();
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPin,
+      const { data, error } = await supabase.rpc('reset_user_pin', {
+        p_phone: cleanedPhone,
+        p_new_pin: newPin,
       });
       if (error) {
-        console.warn('Supabase resetPin notice:', error.message);
+        console.warn('Supabase resetPin RPC notice:', error.message);
+      } else {
+        console.log('Supabase resetPin success:', data);
       }
       return true;
     } catch (e) {
