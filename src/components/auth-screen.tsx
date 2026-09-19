@@ -1420,13 +1420,11 @@ const styles = StyleSheet.create({
   featuresGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: 10,
     justifyContent: 'space-between',
   },
   featureCard: {
     width: '48%',
-    minWidth: 150,
-    flexGrow: 1,
     borderRadius: 18,
     padding: Spacing.two,
     backgroundColor: 'rgba(10, 32, 18, 0.86)',
