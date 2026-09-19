@@ -672,15 +672,26 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
 
           {/* App Key Features Showcase Grid */}
           <View style={styles.featuresContainer}>
-            <ThemedText type="subtitle" style={styles.featuresHeadline}>
-              {lang === 'hi' ? '✨ कृषिक मित्र की मुख्य सुविधाएं' : '✨ Key Platform Features'}
-            </ThemedText>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 12 }}>
+              <SymbolView
+                name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' } as any}
+                size={20}
+                tintColor="#22C55E"
+              />
+              <ThemedText type="subtitle" style={styles.featuresHeadline}>
+                {lang === 'hi' ? 'कृषिक मित्र की मुख्य सुविधाएं' : 'Key Platform Features'}
+              </ThemedText>
+            </View>
 
             <View style={styles.featuresGrid}>
               {/* Feature 1 */}
               <View style={styles.featureCard}>
                 <View style={styles.featureIconBadge}>
-                  <ThemedText style={{ fontSize: 22 }}>🤖</ThemedText>
+                  <SymbolView
+                    name={{ ios: 'cpu.fill', android: 'smart_toy', web: 'smart_toy' } as any}
+                    size={24}
+                    tintColor="#22C55E"
+                  />
                 </View>
                 <ThemedText type="smallBold" style={styles.featureTitle}>
                   {lang === 'hi' ? 'AI कृषि सलाहकार' : 'AI Agronomy Bot'}
@@ -695,7 +706,11 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
               {/* Feature 2 */}
               <View style={styles.featureCard}>
                 <View style={styles.featureIconBadge}>
-                  <ThemedText style={{ fontSize: 22 }}>📷</ThemedText>
+                  <SymbolView
+                    name={{ ios: 'camera.fill', android: 'photo_camera', web: 'photo_camera' } as any}
+                    size={24}
+                    tintColor="#22C55E"
+                  />
                 </View>
                 <ThemedText type="smallBold" style={styles.featureTitle}>
                   {lang === 'hi' ? 'कीट पहचान (AI Scan)' : 'Pest Scan Diagnosis'}
@@ -710,7 +725,11 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
               {/* Feature 3 */}
               <View style={styles.featureCard}>
                 <View style={styles.featureIconBadge}>
-                  <ThemedText style={{ fontSize: 22 }}>📈</ThemedText>
+                  <SymbolView
+                    name={{ ios: 'chart.line.uptrend.xyaxis', android: 'trending_up', web: 'trending_up' } as any}
+                    size={24}
+                    tintColor="#22C55E"
+                  />
                 </View>
                 <ThemedText type="smallBold" style={styles.featureTitle}>
                   {lang === 'hi' ? 'लाइव मंडी भाव' : 'Live Mandi Prices'}
@@ -725,7 +744,11 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
               {/* Feature 4 */}
               <View style={styles.featureCard}>
                 <View style={styles.featureIconBadge}>
-                  <ThemedText style={{ fontSize: 22 }}>☀️</ThemedText>
+                  <SymbolView
+                    name={{ ios: 'sun.max.fill', android: 'wb_sunny', web: 'wb_sunny' } as any}
+                    size={24}
+                    tintColor="#FBB024"
+                  />
                 </View>
                 <ThemedText type="smallBold" style={styles.featureTitle}>
                   {lang === 'hi' ? 'मौसम एडवाइजरी' : 'Weather & Advisory'}
@@ -740,7 +763,11 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
               {/* Feature 5 */}
               <View style={styles.featureCard}>
                 <View style={styles.featureIconBadge}>
-                  <ThemedText style={{ fontSize: 22 }}>🧪</ThemedText>
+                  <SymbolView
+                    name={{ ios: 'flask.fill', android: 'science', web: 'science' } as any}
+                    size={24}
+                    tintColor="#22C55E"
+                  />
                 </View>
                 <ThemedText type="smallBold" style={styles.featureTitle}>
                   {lang === 'hi' ? 'मृदा व खाद कैलकुलेटर' : 'Fertilizer Calculator'}
@@ -755,7 +782,11 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
               {/* Feature 6 */}
               <View style={styles.featureCard}>
                 <View style={styles.featureIconBadge}>
-                  <ThemedText style={{ fontSize: 22 }}>👥</ThemedText>
+                  <SymbolView
+                    name={{ ios: 'person.2.fill', android: 'group', web: 'group' } as any}
+                    size={24}
+                    tintColor="#3B82F6"
+                  />
                 </View>
                 <ThemedText type="smallBold" style={styles.featureTitle}>
                   {lang === 'hi' ? 'किसान चौपाल' : 'Farmer Community'}

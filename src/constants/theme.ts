@@ -32,25 +32,25 @@ export const Colors = {
   },
   dark: {
     dark: true,
-    // Surfaces — warm dark, NOT grey/blue/neon
-    text: '#E8F0EA',
-    background: '#0C1410',            // Very deep warm dark-green black
-    backgroundElement: '#131F17',     // Elevated card surface
-    backgroundSelected: '#1C3224',    // Pressed/selected state
-    textSecondary: '#7A9E83',         // Warm sage secondary
-    // Brand — rich, balanced, natural
-    primary: '#166534',               // Rich Deep Emerald
+    // Surfaces — sleek pure black & obsidian
+    text: '#F3F4F6',
+    background: '#09090B',            // Pure sleek obsidian black
+    backgroundElement: '#141417',     // Elevated dark card surface
+    backgroundSelected: '#242429',    // Pressed/selected state
+    textSecondary: '#9CA3AF',         // Soft neutral gray secondary
+    // Brand
+    primary: '#22C55E',               // Vibrant Emerald Accent
     accent: '#FBB024',                // Rich warm gold
     // Chrome
-    border: '#2D4F39',                // Dark sage border
+    border: '#27272A',                // Dark neutral border
     // Chat
-    chatUser: '#14392A',              // Dark forest-green user bubble
-    chatBot: '#151D17',               // Near-surface bot bubble
+    chatUser: '#1E293B',              // Slate dark user bubble
+    chatBot: '#141417',               // Obsidian bot bubble
     onPrimary: '#FFFFFF',
     // States
     success: '#22C55E',               // Green
     error: '#F87171',                 // Soft coral red
-    card: '#101810',
+    card: '#141417',
   },
 } as const;
 
