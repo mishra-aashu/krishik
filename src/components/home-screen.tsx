@@ -895,6 +895,7 @@ const styles = StyleSheet.create({
         backdropFilter: 'blur(10px)',
         WebkitBackdropFilter: 'blur(10px)',
         outlineStyle: 'none',
+        cursor: 'pointer',
       } as any,
       default: {
         elevation: 4,

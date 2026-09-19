@@ -327,11 +327,16 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
             onPress={() => setLang(lang === 'hi' ? 'en' : 'hi')}
             style={[styles.langToggleBtn, { backgroundColor: theme.dark ? 'rgba(20,40,25,0.85)' : 'rgba(255,255,255,0.92)', borderColor: theme.dark ? 'rgba(255,255,255,0.35)' : '#166534' }]}
           >
+            <SymbolView
+              name={{ ios: 'globe', android: 'language', web: 'language' } as any}
+              size={14}
+              tintColor={theme.dark ? '#ffffff' : '#166534'}
+            />
             <ThemedText
               type="smallBold"
               style={{ color: theme.dark ? '#ffffff' : '#166534' }}
             >
-              🇮 {lang === 'hi' ? 'Switch to English' : 'हिंदी में बदलें'}
+              {lang === 'hi' ? 'Switch to English' : 'हिंदी में बदलें'}
             </ThemedText>
           </Pressable>
         </View>
@@ -1064,19 +1069,23 @@ const styles = StyleSheet.create({
   langToggleContainer: {
     position: 'absolute',
     top: Spacing.three,
-    right: Spacing.four,
+    right: Spacing.three,
     zIndex: 10,
   },
   langToggleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     borderWidth: 1,
     borderRadius: 20,
-    paddingVertical: Spacing.one,
-    paddingHorizontal: Spacing.two,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
     ...Platform.select({
       web: {
         backdropFilter: 'blur(10px)',
         WebkitBackdropFilter: 'blur(10px)',
         boxShadow: '0 4px 14px rgba(0,0,0,0.2)',
+        cursor: 'pointer',
       } as any,
       default: {
         elevation: 4,
