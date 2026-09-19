@@ -2,6 +2,12 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "outputDirectory": "dist",
+  "crons": [
+    {
+      "path": "/api/cron/sync-mandi",
+      "schedule": "0 1 * * *"
+    }
+  ],
   "rewrites": [
     {
       "source": "/((?!api|_expo|assets|static|favicon.ico).*)",

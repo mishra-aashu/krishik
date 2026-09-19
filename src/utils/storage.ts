@@ -5,6 +5,7 @@ export const LocalStorage = {
   async getItem(key: string): Promise<string | null> {
     try {
       if (Platform.OS === 'web') {
+        if (typeof window === 'undefined') return null;
         return window.localStorage.getItem(key);
       }
       return await AsyncStorage.getItem(key);
@@ -17,6 +18,7 @@ export const LocalStorage = {
   async setItem(key: string, value: string): Promise<void> {
     try {
       if (Platform.OS === 'web') {
+        if (typeof window === 'undefined') return;
         window.localStorage.setItem(key, value);
         return;
       }
@@ -29,6 +31,7 @@ export const LocalStorage = {
   async removeItem(key: string): Promise<void> {
     try {
       if (Platform.OS === 'web') {
+        if (typeof window === 'undefined') return;
         window.localStorage.removeItem(key);
         return;
       }

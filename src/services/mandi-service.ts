@@ -173,12 +173,26 @@ export async function fetchLiveMandiPrices(stateName: string): Promise<MandiItem
 
   try {
     // ── 1. Try Supabase mandi_prices table first ─────────────────────────────
-    const { data, error } = await supabase
-      .from('mandi_prices')
-      .select('*')
-      .ilike('state', `%${stateName}%`)
+    let query = supabase.from('mandi_prices').select('*');
+    if (stateName && stateName.trim() !== '' && stateName !== 'All') {
+      query = query.ilike('state', `%${stateName.trim()}%`);
+    }
+
+    let { data, error } = await query
       .order('fetched_at', { ascending: false })
       .limit(200);
+
+    // If state filter yielded 0 results, fall back to general latest Supabase records
+    if (!error && (!data || data.length === 0)) {
+      const fallbackQuery = await supabase
+        .from('mandi_prices')
+        .select('*')
+        .order('fetched_at', { ascending: false })
+        .limit(150);
+      if (!fallbackQuery.error && fallbackQuery.data) {
+        data = fallbackQuery.data;
+      }
+    }
 
     if (!error && data && data.length > 0) {
       const items: MandiItem[] = data.map((row: any, index: number) => ({
@@ -186,7 +200,7 @@ export async function fetchLiveMandiPrices(stateName: string): Promise<MandiItem
         commodity: mapCommodityName(row.commodity),
         price: Number(row.price) || 0,
         unit: row.unit || 'Quintal',
-        state: `${row.market} Mandi`,
+        state: `${row.market} Mandi (${row.state})`,
         change: row.change || '0',
         variety: row.variety || '',
       }));
