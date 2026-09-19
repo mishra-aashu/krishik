@@ -8,6 +8,8 @@ import {
   Platform,
   Alert,
   Dimensions,
+  Modal,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/auth-context';
@@ -91,7 +93,7 @@ export default function ProfileScreen() {
   const [selectedCrop, setSelectedCrop] = useState(farmCrop);
   
   // Modal & feedback state
-  const [activeModal, setActiveModal] = useState<'state' | 'soil' | 'crop' | null>(null);
+  const [activeModal, setActiveModal] = useState<'state' | 'soil' | 'crop' | 'logout' | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   // Load language preference
@@ -133,21 +135,7 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = () => {
-    if (Platform.OS === 'web') {
-      const confirmLogout = window.confirm(t.logoutConfirm);
-      if (confirmLogout) {
-        logout();
-      }
-    } else {
-      Alert.alert(
-        t.btnLogout,
-        t.logoutConfirm,
-        [
-          { text: t.cancel, style: 'cancel' },
-          { text: t.btnLogout, style: 'destructive', onPress: logout }
-        ]
-      );
-    }
+    setActiveModal('logout');
   };
 
   return (
@@ -484,6 +472,108 @@ export default function ProfileScreen() {
         }}
         onClose={() => setActiveModal(null)}
       />
+
+      {/* Logout Confirmation Modal */}
+      <Modal
+        visible={activeModal === 'logout'}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setActiveModal(null)}
+      >
+        <TouchableOpacity
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0, 0, 0, 0.65)',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: 20,
+          }}
+          activeOpacity={1}
+          onPress={() => setActiveModal(null)}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            style={{
+              width: '100%',
+              maxWidth: 380,
+              backgroundColor: theme.card,
+              borderRadius: 24,
+              padding: 24,
+              alignItems: 'center',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: 0.35,
+              shadowRadius: 10,
+              elevation: 10,
+              borderWidth: 1,
+              borderColor: theme.border,
+            }}
+          >
+            <View
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: 28,
+                backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 16,
+              }}
+            >
+              <SymbolView
+                name={{ ios: 'arrow.left.square.fill', android: 'logout', web: 'logout' } as any}
+                size={26}
+                tintColor={theme.error}
+              />
+            </View>
+
+            <ThemedText style={{ fontSize: 20, fontWeight: '700', marginBottom: 8, color: theme.text }}>
+              {t.btnLogout}
+            </ThemedText>
+
+            <ThemedText style={{ fontSize: 14, textAlign: 'center', color: theme.textSecondary, marginBottom: 24, lineHeight: 20 }}>
+              {t.logoutConfirm}
+            </ThemedText>
+
+            <View style={{ flexDirection: 'row', gap: 12, width: '100%' }}>
+              <TouchableOpacity
+                style={{
+                  flex: 1,
+                  paddingVertical: 14,
+                  borderRadius: 14,
+                  borderWidth: 1,
+                  borderColor: theme.border,
+                  alignItems: 'center',
+                  backgroundColor: theme.background,
+                }}
+                onPress={() => setActiveModal(null)}
+              >
+                <ThemedText style={{ fontSize: 15, fontWeight: '600', color: theme.text }}>
+                  {t.cancel}
+                </ThemedText>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={{
+                  flex: 1,
+                  paddingVertical: 14,
+                  borderRadius: 14,
+                  backgroundColor: theme.error,
+                  alignItems: 'center',
+                }}
+                onPress={() => {
+                  setActiveModal(null);
+                  logout();
+                }}
+              >
+                <ThemedText style={{ fontSize: 15, fontWeight: '700', color: '#FFFFFF' }}>
+                  {t.btnLogout}
+                </ThemedText>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   </ThemedView>
   );
