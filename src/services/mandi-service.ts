@@ -223,7 +223,16 @@ export async function fetchLiveMandiPrices(stateName: string): Promise<MandiItem
     // ── 3. No cache — fall back to the Vercel proxy as last resort ────────────
     console.info('[Mandi Service] Supabase empty, falling back to Vercel proxy');
     const url = `${MANDI_API_ROUTE}?state=${encodeURIComponent(stateName)}`;
-    const response = await fetch(url);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
+    let response: Response;
+    try {
+      response = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeoutId);
+    } catch (fetchErr) {
+      clearTimeout(timeoutId);
+      return [];
+    }
     if (!response.ok) return [];
 
     const json = await response.json();

@@ -365,6 +365,16 @@ export default function ChatScreen() {
     }
   }, [globalLang]);
 
+  useEffect(() => {
+    return () => {
+      try {
+        Speech.stop();
+      } catch (e) {
+        // ignore speech stop errors
+      }
+    };
+  }, []);
+
   const setLanguage = (newLang: 'hi' | 'en' | 'hinglish') => {
     setLanguageState(newLang);
     if (newLang === 'hi' || newLang === 'en') {
@@ -1607,13 +1617,17 @@ const styles = StyleSheet.create({
     marginRight: Spacing.one,
     paddingVertical: Spacing.one,
     paddingHorizontal: Spacing.two,
+    minWidth: 44,
+    minHeight: 44,
     justifyContent: 'center',
     alignItems: 'center',
   },
   controlIconBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    minWidth: 44,
+    minHeight: 44,
+    borderRadius: 20,
     backgroundColor: 'rgba(46,111,64,0.1)',
     justifyContent: 'center',
     alignItems: 'center',
@@ -1931,8 +1945,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    minHeight: 32,
     borderRadius: 8,
   },
   actionText: {
@@ -1965,11 +1980,11 @@ const styles = StyleSheet.create({
   },
   removeImageBtn: {
     position: 'absolute',
-    top: -6,
-    right: -6,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    top: -8,
+    right: -8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     ...Platform.select({

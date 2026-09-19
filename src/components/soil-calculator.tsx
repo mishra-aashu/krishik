@@ -240,7 +240,8 @@ export default function SoilCalculator({ language, theme, formatLabel }: SoilCal
                   backgroundColor: theme.backgroundElement
                 }
               ]}
-              keyboardType="numeric"
+              keyboardType="decimal-pad"
+              inputMode="decimal"
               value={landArea}
               onChangeText={setLandArea}
               placeholder={language === 'hi' ? 'क्षेत्रफल दर्ज करें' : 'Enter land area'}

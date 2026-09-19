@@ -40,6 +40,7 @@ export function ForgotPinModal({
 
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [showNewPin, setShowNewPin] = useState(false);
 
   const isHi = language === 'hi';
 
@@ -287,48 +288,76 @@ export function ForgotPinModal({
                   <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.text }]}>
                     {isHi ? 'नया 4-अंकों का गुप्त पिन (New PIN)' : 'New 4-digit Passcode/PIN'}
                   </ThemedText>
-                  <TextInput
-                    style={[
-                      styles.inputField,
-                      {
-                        color: theme.text,
-                        borderColor: theme.border,
-                        backgroundColor: theme.dark ? 'rgba(0,0,0,0.4)' : '#F9FDF9'
-                      }
-                    ]}
-                    placeholder="••••"
-                    placeholderTextColor={theme.textSecondary}
-                    value={newPin}
-                    onChangeText={(val) => setNewPin(val.replace(/[^0-9]/g, ''))}
-                    keyboardType="number-pad"
-                    inputMode="numeric"
-                    secureTextEntry
-                    maxLength={4}
-                  />
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <TextInput
+                      style={[
+                        styles.inputField,
+                        {
+                          flex: 1,
+                          color: theme.text,
+                          borderColor: theme.border,
+                          backgroundColor: theme.dark ? 'rgba(0,0,0,0.4)' : '#F9FDF9'
+                        }
+                      ]}
+                      placeholder="••••"
+                      placeholderTextColor={theme.textSecondary}
+                      value={newPin}
+                      onChangeText={(val) => setNewPin(val.replace(/[^0-9]/g, ''))}
+                      keyboardType="number-pad"
+                      inputMode="numeric"
+                      secureTextEntry={!showNewPin}
+                      maxLength={4}
+                    />
+                    <Pressable
+                      onPress={() => setShowNewPin(!showNewPin)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      style={{ position: 'absolute', right: 12, padding: 4 }}
+                    >
+                      <SymbolView
+                        name={{ ios: showNewPin ? 'eye.slash.fill' : 'eye.fill', android: showNewPin ? 'visibility_off' : 'visibility', web: showNewPin ? 'visibility_off' : 'visibility' } as any}
+                        size={18}
+                        tintColor={theme.textSecondary}
+                      />
+                    </Pressable>
+                  </View>
                 </View>
 
                 <View style={styles.inputGroup}>
                   <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.text }]}>
                     {isHi ? 'नए पिन की पुष्टि करें (Confirm PIN)' : 'Confirm New PIN'}
                   </ThemedText>
-                  <TextInput
-                    style={[
-                      styles.inputField,
-                      {
-                        color: theme.text,
-                        borderColor: theme.border,
-                        backgroundColor: theme.dark ? 'rgba(0,0,0,0.4)' : '#F9FDF9'
-                      }
-                    ]}
-                    placeholder="••••"
-                    placeholderTextColor={theme.textSecondary}
-                    value={confirmPin}
-                    onChangeText={(val) => setConfirmPin(val.replace(/[^0-9]/g, ''))}
-                    keyboardType="number-pad"
-                    inputMode="numeric"
-                    secureTextEntry
-                    maxLength={4}
-                  />
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <TextInput
+                      style={[
+                        styles.inputField,
+                        {
+                          flex: 1,
+                          color: theme.text,
+                          borderColor: theme.border,
+                          backgroundColor: theme.dark ? 'rgba(0,0,0,0.4)' : '#F9FDF9'
+                        }
+                      ]}
+                      placeholder="••••"
+                      placeholderTextColor={theme.textSecondary}
+                      value={confirmPin}
+                      onChangeText={(val) => setConfirmPin(val.replace(/[^0-9]/g, ''))}
+                      keyboardType="number-pad"
+                      inputMode="numeric"
+                      secureTextEntry={!showNewPin}
+                      maxLength={4}
+                    />
+                    <Pressable
+                      onPress={() => setShowNewPin(!showNewPin)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      style={{ position: 'absolute', right: 12, padding: 4 }}
+                    >
+                      <SymbolView
+                        name={{ ios: showNewPin ? 'eye.slash.fill' : 'eye.fill', android: showNewPin ? 'visibility_off' : 'visibility', web: showNewPin ? 'visibility_off' : 'visibility' } as any}
+                        size={18}
+                        tintColor={theme.textSecondary}
+                      />
+                    </Pressable>
+                  </View>
                 </View>
 
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12 }}>
@@ -408,7 +437,11 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(128,128,128,0.2)',
   },
   closeBtn: {
-    padding: 4,
+    padding: 8,
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   stepContainer: {
     gap: 12,

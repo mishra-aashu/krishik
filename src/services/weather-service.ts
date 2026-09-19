@@ -87,25 +87,34 @@ export function getWeatherCondition(code: number): WeatherCondition {
 export async function fetchWeatherData(stateName: string): Promise<RawWeatherData> {
   const coords = STATE_COORDINATES[stateName] || { latitude: 20.5937, longitude: 78.9629 }; // Fallback to center of India
   
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${coords.latitude}&longitude=${coords.longitude}&current=temperature_2m,relative_humidity_2m,weather_code`;
-  const response = await fetch(url);
-  
-  if (!response.ok) {
-    throw new Error('Failed to fetch weather data');
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${coords.latitude}&longitude=${coords.longitude}&current=temperature_2m,relative_humidity_2m,weather_code`;
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch weather data');
+    }
+    
+    const data = await response.json();
+    const current = data.current;
+    
+    if (!current) {
+      throw new Error('Weather response is missing current data');
+    }
+    
+    return {
+      temp: Math.round(current.temperature_2m),
+      humidity: current.relative_humidity_2m,
+      weatherCode: current.weather_code
+    };
+  } catch (err) {
+    clearTimeout(timeoutId);
+    throw err;
   }
-  
-  const data = await response.json();
-  const current = data.current;
-  
-  if (!current) {
-    throw new Error('Weather response is missing current data');
-  }
-  
-  return {
-    temp: Math.round(current.temperature_2m),
-    humidity: current.relative_humidity_2m,
-    weatherCode: current.weather_code
-  };
 }
 
 export function generateWeatherAdvisory(
