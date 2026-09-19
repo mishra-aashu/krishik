@@ -468,8 +468,8 @@ export default function ProfileScreen() {
 
         <ThemedView type="backgroundElement" style={[styles.card, { borderColor: theme.border }]}>
           {/* Language Toggle */}
-          <View style={styles.preferenceRow}>
-            <View style={styles.prefLeft}>
+          <View style={styles.prefColRow}>
+            <View style={styles.prefColTop}>
               <View style={[styles.rowIconContainer, { backgroundColor: theme.primary + '10' }]}>
                 <SymbolView name={{ ios: 'globe', android: 'language', web: 'language' } as any} size={16} tintColor={theme.primary} />
               </View>
@@ -519,8 +519,8 @@ export default function ProfileScreen() {
           <View style={[styles.divider, { backgroundColor: theme.border, marginVertical: Spacing.one }]} />
 
           {/* Theme Mode Toggle */}
-          <View style={styles.preferenceRow}>
-            <View style={styles.prefLeft}>
+          <View style={styles.prefColRow}>
+            <View style={styles.prefColTop}>
               <View style={[styles.rowIconContainer, { backgroundColor: theme.primary + '10' }]}>
                 <SymbolView name={{ ios: 'sun.max.fill', android: 'light_mode', web: 'light_mode' } as any} size={16} tintColor={theme.primary} />
               </View>
@@ -1133,6 +1133,18 @@ const styles = StyleSheet.create({
     width: '100%',
     gap: Spacing.two,
   },
+  prefColRow: {
+    flexDirection: 'column',
+    paddingVertical: Spacing.two,
+    width: '100%',
+    gap: Spacing.two,
+  },
+  prefColTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    gap: Spacing.two,
+  },
   prefLeft: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1140,14 +1152,12 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     minWidth: 0,
     paddingRight: Spacing.two,
-    overflow: 'hidden',
   },
   prefTextContainer: {
     flex: 1,
     flexShrink: 1,
     minWidth: 0,
     justifyContent: 'center',
-    overflow: 'hidden',
   },
   prefLabel: {
     fontSize: 14,
