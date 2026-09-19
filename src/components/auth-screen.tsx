@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Image,
   Animated,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/auth-context';
@@ -49,6 +50,8 @@ interface AuthScreenProps {
 export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
   const { login, register } = useAuth();
   const theme = useTheme();
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 820;
 
   // Background slideshow crossfade animation
   const [bgIndex, setBgIndex] = useState(0);
@@ -345,171 +348,150 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
             />
           </View>
 
-          {/* Form Container (High-Contrast Solid Frosted Glass Card) */}
-          <View style={[
-            styles.authCard,
-            {
-              backgroundColor: theme.dark ? 'rgba(10, 26, 15, 0.90)' : 'rgba(255, 255, 255, 0.94)',
-              borderColor: theme.dark ? 'rgba(255, 255, 255, 0.30)' : 'rgba(255, 255, 255, 0.95)'
-            }
-          ]}>
-            {/* Mode Selector Tabs */}
-            <View style={[styles.modeTabs, { backgroundColor: theme.dark ? 'rgba(0, 0, 0, 0.45)' : 'rgba(0, 0, 0, 0.08)' }]}>
-              {/* Sliding Active Pill Background */}
-              <Animated.View
-                style={[
-                  styles.slidingPill,
-                  {
-                    left: pillLeft,
-                    backgroundColor: '#166534',
-                  }
-                ]}
-              />
+          {/* Main Responsive Split Layout Container */}
+          <View style={[styles.mainLayoutWrap, isDesktop && styles.desktop3ColWrap]}>
 
-              <Pressable
-                onPress={() => handleTabSwitch(true)}
-                style={styles.modeTabBtn}
-              >
-                <ThemedText
-                  type="smallBold"
-                  style={[
-                    styles.modeTabText,
-                    { color: isLoginMode ? '#ffffff' : (theme.dark ? 'rgba(255, 255, 255, 0.70)' : '#1B4D2E') }
-                  ]}
-                >
-                  {t.loginTab}
-                </ThemedText>
-              </Pressable>
-              <Pressable
-                onPress={() => handleTabSwitch(false)}
-                style={styles.modeTabBtn}
-              >
-                <ThemedText
-                  type="smallBold"
-                  style={[
-                    styles.modeTabText,
-                    { color: !isLoginMode ? '#ffffff' : (theme.dark ? 'rgba(255, 255, 255, 0.70)' : '#1B4D2E') }
-                  ]}
-                >
-                  {t.signupTab}
-                </ThemedText>
-              </Pressable>
-            </View>
+            {/* DESKTOP ONLY: Left 3 Features Column */}
+            {isDesktop && (
+              <View style={styles.sideFeaturesCol}>
+                {/* Feature 1 */}
+                <View style={styles.featureCardStacked}>
+                  <View style={styles.featureIconBadge}>
+                    <SymbolView
+                      name={{ ios: 'cpu.fill', android: 'smart_toy', web: 'smart_toy' } as any}
+                      size={24}
+                      tintColor="#22C55E"
+                    />
+                  </View>
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <ThemedText type="smallBold" style={styles.featureTitle}>
+                      {lang === 'hi' ? 'AI कृषि सलाहकार' : 'AI Agronomy Bot'}
+                    </ThemedText>
+                    <ThemedText type="small" style={styles.featureDesc}>
+                      {lang === 'hi'
+                        ? 'अपनी भाषा में बोलकर फसल कीट व सलाह पाएँ।'
+                        : 'Ask farming & crop questions via Voice or Text.'}
+                    </ThemedText>
+                  </View>
+                </View>
 
-            {errorMsg && (
-              <View style={[styles.errorBox, { backgroundColor: theme.error + '1A', borderColor: theme.error }]}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.one }}>
-                  <SymbolView
-                    name={{ ios: 'exclamationmark.triangle.fill', android: 'warning', web: 'warning' } as any}
-                    size={14}
-                    tintColor={theme.error}
-                  />
-                  <ThemedText type="small" style={{ color: theme.error, fontWeight: '600' }}>
-                    {errorMsg}
-                  </ThemedText>
+                {/* Feature 2 */}
+                <View style={styles.featureCardStacked}>
+                  <View style={styles.featureIconBadge}>
+                    <SymbolView
+                      name={{ ios: 'camera.fill', android: 'photo_camera', web: 'photo_camera' } as any}
+                      size={24}
+                      tintColor="#22C55E"
+                    />
+                  </View>
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <ThemedText type="smallBold" style={styles.featureTitle}>
+                      {lang === 'hi' ? 'कीट पहचान (AI Scan)' : 'Pest Scan Diagnosis'}
+                    </ThemedText>
+                    <ThemedText type="small" style={styles.featureDesc}>
+                      {lang === 'hi'
+                        ? 'पत्ती की फोटो खींचकर बीमारी का इलाज जानें।'
+                        : 'Instant leaf disease diagnosis with camera.'}
+                    </ThemedText>
+                  </View>
+                </View>
+
+                {/* Feature 3 */}
+                <View style={styles.featureCardStacked}>
+                  <View style={styles.featureIconBadge}>
+                    <SymbolView
+                      name={{ ios: 'chart.line.uptrend.xyaxis', android: 'trending_up', web: 'trending_up' } as any}
+                      size={24}
+                      tintColor="#22C55E"
+                    />
+                  </View>
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <ThemedText type="smallBold" style={styles.featureTitle}>
+                      {lang === 'hi' ? 'लाइव मंडी भाव' : 'Live Mandi Prices'}
+                    </ThemedText>
+                    <ThemedText type="small" style={styles.featureDesc}>
+                      {lang === 'hi'
+                        ? 'देश भर की मंडियों के ताजा जिंस रेट देखें।'
+                        : 'Real-time APMC commodity rates.'}
+                    </ThemedText>
+                  </View>
                 </View>
               </View>
             )}
 
-            {/* Form Content with Smooth Animated Crossfade */}
-            <Animated.View style={{ opacity: formAnim }}>
-              {isLoginMode ? (
-                // LOGIN FORM
-                <View style={styles.formFields}>
-                  <View style={styles.inputGroup}>
-                    <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#ffffff' : '#051C0C' }]}>{t.phoneLabel}</ThemedText>
-                    <TextInput
-                      style={[styles.inputField, { color: theme.dark ? '#ffffff' : '#051C0C', borderColor: theme.dark ? 'rgba(255,255,255,0.3)' : 'rgba(11,41,20,0.25)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.45)' : '#FFFFFF' }]}
-                      placeholder={t.phonePlace}
-                      placeholderTextColor={theme.dark ? 'rgba(255,255,255,0.55)' : 'rgba(10,35,18,0.55)'}
-                      value={phone}
-                      onChangeText={(val) => setPhone(val.replace(/[^0-9]/g, ''))}
-                      keyboardType="phone-pad"
-                      maxLength={10}
-                    />
-                  </View>
+            {/* CENTER COLUMN: Auth Form Card & Skip Button */}
+            <View style={[styles.centerAuthCol, isDesktop && { flex: 1.2, maxWidth: 460 }]}>
+              {/* Form Container (High-Contrast Solid Frosted Glass Card) */}
+              <View style={[
+                styles.authCard,
+                {
+                  backgroundColor: theme.dark ? 'rgba(10, 26, 15, 0.90)' : 'rgba(255, 255, 255, 0.94)',
+                  borderColor: theme.dark ? 'rgba(255, 255, 255, 0.30)' : 'rgba(255, 255, 255, 0.95)'
+                }
+              ]}>
+                {/* Mode Selector Tabs */}
+                <View style={[styles.modeTabs, { backgroundColor: theme.dark ? 'rgba(0, 0, 0, 0.45)' : 'rgba(0, 0, 0, 0.08)' }]}>
+                  {/* Sliding Active Pill Background */}
+                  <Animated.View
+                    style={[
+                      styles.slidingPill,
+                      {
+                        left: pillLeft,
+                        backgroundColor: '#166534',
+                      }
+                    ]}
+                  />
 
-                  <View style={styles.inputGroup}>
-                    <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#ffffff' : '#051C0C' }]}>{t.pinLabel}</ThemedText>
-                    <TextInput
-                      style={[styles.inputField, { color: theme.dark ? '#ffffff' : '#051C0C', borderColor: theme.dark ? 'rgba(255,255,255,0.3)' : 'rgba(11,41,20,0.25)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.45)' : '#FFFFFF' }]}
-                      placeholder={t.pinPlace}
-                      placeholderTextColor={theme.dark ? 'rgba(255,255,255,0.55)' : 'rgba(10,35,18,0.55)'}
-                      value={pin}
-                      onChangeText={(val) => setPin(val.replace(/[^0-9]/g, ''))}
-                      keyboardType="numeric"
-                      secureTextEntry
-                      maxLength={4}
-                    />
-                  </View>
-
-                  {/* Terms & Conditions Checkbox Row */}
-                  <View style={styles.termsAgreementRow}>
-                    <Pressable
-                      onPress={() => setAgreedToTerms(!agreedToTerms)}
+                  <Pressable
+                    onPress={() => handleTabSwitch(true)}
+                    style={styles.modeTabBtn}
+                  >
+                    <ThemedText
+                      type="smallBold"
                       style={[
-                        styles.checkboxSquare,
-                        agreedToTerms && { backgroundColor: '#166534', borderColor: '#166534' }
+                        styles.modeTabText,
+                        { color: isLoginMode ? '#ffffff' : (theme.dark ? 'rgba(255, 255, 255, 0.70)' : '#1B4D2E') }
                       ]}
                     >
-                      {agreedToTerms && (
-                        <SymbolView
-                          name={{ ios: 'checkmark', android: 'check', web: 'check' } as any}
-                          size={13}
-                          tintColor="#ffffff"
-                        />
-                      )}
-                    </Pressable>
-                    <View style={styles.termsTextWrap}>
-                      <ThemedText type="small" style={{ fontSize: 12, color: theme.dark ? '#ffffff' : '#051C0C', fontWeight: '600' }}>
-                        {lang === 'hi' ? 'मैं ' : 'I agree to '}
-                      </ThemedText>
-                      <Pressable onPress={() => setTermsModalVisible(true)}>
-                        <ThemedText type="smallBold" style={{ fontSize: 12, color: theme.dark ? '#86efac' : '#166534', textDecorationLine: 'underline', fontWeight: '700' }}>
-                          {lang === 'hi' ? 'सेवा की शर्तों एवं गोपनीयता नीति' : 'Terms & Privacy Policy'}
-                        </ThemedText>
-                      </Pressable>
-                      <ThemedText type="small" style={{ fontSize: 12, color: theme.dark ? '#ffffff' : '#051C0C', fontWeight: '600' }}>
-                        {lang === 'hi' ? ' से सहमत हूँ।' : '.'}
+                      {t.loginTab}
+                    </ThemedText>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => handleTabSwitch(false)}
+                    style={styles.modeTabBtn}
+                  >
+                    <ThemedText
+                      type="smallBold"
+                      style={[
+                        styles.modeTabText,
+                        { color: !isLoginMode ? '#ffffff' : (theme.dark ? 'rgba(255, 255, 255, 0.70)' : '#1B4D2E') }
+                      ]}
+                    >
+                      {t.signupTab}
+                    </ThemedText>
+                  </Pressable>
+                </View>
+
+                {errorMsg && (
+                  <View style={[styles.errorBox, { backgroundColor: theme.error + '1A', borderColor: theme.error }]}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.one }}>
+                      <SymbolView
+                        name={{ ios: 'exclamationmark.triangle.fill', android: 'warning', web: 'warning' } as any}
+                        size={14}
+                        tintColor={theme.error}
+                      />
+                      <ThemedText type="small" style={{ color: theme.error, fontWeight: '600' }}>
+                        {errorMsg}
                       </ThemedText>
                     </View>
                   </View>
+                )}
 
-                  <Pressable
-                    onPress={handleAuthSubmit}
-                    disabled={isLoading}
-                    style={({ pressed }) => [
-                      styles.submitBtn,
-                      { backgroundColor: '#166534' },
-                      pressed && { opacity: 0.9 },
-                      isLoading && { opacity: 0.7 }
-                    ]}
-                  >
-                    {isLoading ? (
-                      <ActivityIndicator size="small" color="#ffffff" />
-                    ) : (
-                      <ThemedText type="smallBold" style={[styles.submitBtnText, { color: '#ffffff' }]}>{t.btnSubmitLogin}</ThemedText>
-                    )}
-                  </Pressable>
-                </View>
-              ) : (
-                // SIGNUP FORM (MULTI-STEP)
-                <View style={styles.formFields}>
-                  {step === 1 ? (
-                    // Step 1: Account credentials
-                    <View style={{ gap: Spacing.two }}>
-                      <View style={styles.inputGroup}>
-                        <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#ffffff' : '#051C0C' }]}>{t.nameLabel}</ThemedText>
-                        <TextInput
-                          style={[styles.inputField, { color: theme.dark ? '#ffffff' : '#051C0C', borderColor: theme.dark ? 'rgba(255,255,255,0.3)' : 'rgba(11,41,20,0.25)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.45)' : '#FFFFFF' }]}
-                          placeholder={t.namePlace}
-                          placeholderTextColor={theme.dark ? 'rgba(255,255,255,0.55)' : 'rgba(10,35,18,0.55)'}
-                          value={name}
-                          onChangeText={setName}
-                          autoCapitalize="words"
-                        />
-                      </View>
-
+                {/* Form Content with Smooth Animated Crossfade */}
+                <Animated.View style={{ opacity: formAnim }}>
+                  {isLoginMode ? (
+                    // LOGIN FORM
+                    <View style={styles.formFields}>
                       <View style={styles.inputGroup}>
                         <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#ffffff' : '#051C0C' }]}>{t.phoneLabel}</ThemedText>
                         <TextInput
@@ -537,56 +519,6 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                         />
                       </View>
 
-                      <Pressable
-                        onPress={handleNextStep}
-                        style={({ pressed }) => [
-                          styles.submitBtn,
-                          { backgroundColor: '#166534' },
-                          pressed && { opacity: 0.9 }
-                        ]}
-                      >
-                        <ThemedText type="smallBold" style={[styles.submitBtnText, { color: '#ffffff' }]}>{t.btnNext}</ThemedText>
-                      </Pressable>
-                    </View>
-                  ) : (
-                    // Step 2: Farm Profile Details
-                    <View style={{ gap: Spacing.two }}>
-                      <View style={styles.inputGroup}>
-                        <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#ffffff' : '#051C0C' }]}>{t.stateLabel}</ThemedText>
-                        <Pressable
-                          onPress={() => openModal('state')}
-                          style={[styles.selectorInputBtn, { borderColor: theme.dark ? 'rgba(255,255,255,0.3)' : 'rgba(11,41,20,0.25)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.45)' : '#FFFFFF' }]}
-                        >
-                          <ThemedText type="small" style={{ color: selectedState ? (theme.dark ? '#ffffff' : '#051C0C') : (theme.dark ? 'rgba(255,255,255,0.55)' : 'rgba(10,35,18,0.55)') }}>
-                            {selectedState || t.selectPlace}
-                          </ThemedText>
-                        </Pressable>
-                      </View>
-
-                      <View style={styles.inputGroup}>
-                        <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#ffffff' : '#051C0C' }]}>{t.soilLabel}</ThemedText>
-                        <Pressable
-                          onPress={() => openModal('soil')}
-                          style={[styles.selectorInputBtn, { borderColor: theme.dark ? 'rgba(255,255,255,0.3)' : 'rgba(11,41,20,0.25)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.45)' : '#FFFFFF' }]}
-                        >
-                          <ThemedText type="small" style={{ color: selectedSoil ? (theme.dark ? '#ffffff' : '#051C0C') : (theme.dark ? 'rgba(255,255,255,0.55)' : 'rgba(10,35,18,0.55)') }}>
-                            {selectedSoil || t.selectPlace}
-                          </ThemedText>
-                        </Pressable>
-                      </View>
-
-                      <View style={styles.inputGroup}>
-                        <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#ffffff' : '#051C0C' }]}>{t.cropLabel}</ThemedText>
-                        <Pressable
-                          onPress={() => openModal('crop')}
-                          style={[styles.selectorInputBtn, { borderColor: theme.dark ? 'rgba(255,255,255,0.3)' : 'rgba(11,41,20,0.25)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.45)' : '#FFFFFF' }]}
-                        >
-                          <ThemedText type="small" style={{ color: selectedCrop ? (theme.dark ? '#ffffff' : '#051C0C') : (theme.dark ? 'rgba(255,255,255,0.55)' : 'rgba(10,35,18,0.55)') }}>
-                            {selectedCrop || t.selectPlace}
-                          </ThemedText>
-                        </Pressable>
-                      </View>
-
                       {/* Terms & Conditions Checkbox Row */}
                       <View style={styles.termsAgreementRow}>
                         <Pressable
@@ -605,199 +537,418 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                           )}
                         </Pressable>
                         <View style={styles.termsTextWrap}>
-                          <ThemedText type="small" style={{ fontSize: 12, color: theme.dark ? '#ffffff' : '#051C0C' }}>
+                          <ThemedText type="small" style={{ fontSize: 12, color: theme.dark ? '#ffffff' : '#051C0C', fontWeight: '600' }}>
                             {lang === 'hi' ? 'मैं ' : 'I agree to '}
                           </ThemedText>
                           <Pressable onPress={() => setTermsModalVisible(true)}>
-                            <ThemedText type="smallBold" style={{ fontSize: 12, color: theme.dark ? '#86efac' : '#166534', textDecorationLine: 'underline' }}>
+                            <ThemedText type="smallBold" style={{ fontSize: 12, color: theme.dark ? '#86efac' : '#166534', textDecorationLine: 'underline', fontWeight: '700' }}>
                               {lang === 'hi' ? 'सेवा की शर्तों एवं गोपनीयता नीति' : 'Terms & Privacy Policy'}
                             </ThemedText>
                           </Pressable>
-                          <ThemedText type="small" style={{ fontSize: 12, color: theme.dark ? '#ffffff' : '#051C0C' }}>
+                          <ThemedText type="small" style={{ fontSize: 12, color: theme.dark ? '#ffffff' : '#051C0C', fontWeight: '600' }}>
                             {lang === 'hi' ? ' से सहमत हूँ।' : '.'}
                           </ThemedText>
                         </View>
                       </View>
 
-                      <View style={styles.signupNavBtns}>
-                        <Pressable
-                          onPress={() => setStep(1)}
-                          style={({ pressed }) => [
-                            styles.backBtn,
-                            { borderColor: theme.dark ? 'rgba(255,255,255,0.35)' : 'rgba(11,41,20,0.25)', backgroundColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' },
-                            pressed && { opacity: 0.8 }
-                          ]}
-                        >
-                          <ThemedText type="smallBold" style={{ color: theme.dark ? '#ffffff' : '#051C0C' }}>{t.btnBack}</ThemedText>
-                        </Pressable>
+                      <Pressable
+                        onPress={handleAuthSubmit}
+                        disabled={isLoading}
+                        style={({ pressed }) => [
+                          styles.submitBtn,
+                          { backgroundColor: '#166534' },
+                          pressed && { opacity: 0.9 },
+                          isLoading && { opacity: 0.7 }
+                        ]}
+                      >
+                        {isLoading ? (
+                          <ActivityIndicator size="small" color="#ffffff" />
+                        ) : (
+                          <ThemedText type="smallBold" style={[styles.submitBtnText, { color: '#ffffff' }]}>{t.btnSubmitLogin}</ThemedText>
+                        )}
+                      </Pressable>
+                    </View>
+                  ) : (
+                    // SIGNUP FORM (MULTI-STEP)
+                    <View style={styles.formFields}>
+                      {step === 1 ? (
+                        // Step 1: Personal credentials
+                        <View style={{ gap: Spacing.two }}>
+                          <View style={styles.inputGroup}>
+                            <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#ffffff' : '#051C0C' }]}>{t.nameLabel}</ThemedText>
+                            <TextInput
+                              style={[styles.inputField, { color: theme.dark ? '#ffffff' : '#051C0C', borderColor: theme.dark ? 'rgba(255,255,255,0.3)' : 'rgba(11,41,20,0.25)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.45)' : '#FFFFFF' }]}
+                              placeholder={t.namePlace}
+                              placeholderTextColor={theme.dark ? 'rgba(255,255,255,0.55)' : 'rgba(10,35,18,0.55)'}
+                              value={name}
+                              onChangeText={setName}
+                              autoCapitalize="words"
+                            />
+                          </View>
 
-                        <Pressable
-                          onPress={handleAuthSubmit}
-                          disabled={isLoading}
-                          style={({ pressed }) => [
-                            styles.signupSubmitBtn,
-                            { backgroundColor: '#166534' },
-                            pressed && { opacity: 0.9 },
-                            isLoading && { opacity: 0.7 }
-                          ]}
-                        >
-                          {isLoading ? (
-                            <ActivityIndicator size="small" color="#ffffff" />
-                          ) : (
-                            <ThemedText type="smallBold" style={[styles.submitBtnText, { color: '#ffffff' }]}>{t.btnSubmitSignup}</ThemedText>
-                          )}
-                        </Pressable>
-                      </View>
+                          <View style={styles.inputGroup}>
+                            <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#ffffff' : '#051C0C' }]}>{t.phoneLabel}</ThemedText>
+                            <TextInput
+                              style={[styles.inputField, { color: theme.dark ? '#ffffff' : '#051C0C', borderColor: theme.dark ? 'rgba(255,255,255,0.3)' : 'rgba(11,41,20,0.25)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.45)' : '#FFFFFF' }]}
+                              placeholder={t.phonePlace}
+                              placeholderTextColor={theme.dark ? 'rgba(255,255,255,0.55)' : 'rgba(10,35,18,0.55)'}
+                              value={phone}
+                              onChangeText={(val) => setPhone(val.replace(/[^0-9]/g, ''))}
+                              keyboardType="phone-pad"
+                              maxLength={10}
+                            />
+                          </View>
+
+                          <View style={styles.inputGroup}>
+                            <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#ffffff' : '#051C0C' }]}>{t.pinLabel}</ThemedText>
+                            <TextInput
+                              style={[styles.inputField, { color: theme.dark ? '#ffffff' : '#051C0C', borderColor: theme.dark ? 'rgba(255,255,255,0.3)' : 'rgba(11,41,20,0.25)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.45)' : '#FFFFFF' }]}
+                              placeholder={t.pinPlace}
+                              placeholderTextColor={theme.dark ? 'rgba(255,255,255,0.55)' : 'rgba(10,35,18,0.55)'}
+                              value={pin}
+                              onChangeText={(val) => setPin(val.replace(/[^0-9]/g, ''))}
+                              keyboardType="numeric"
+                              secureTextEntry
+                              maxLength={4}
+                            />
+                          </View>
+
+                          <Pressable
+                            onPress={handleNextStep}
+                            style={({ pressed }) => [
+                              styles.submitBtn,
+                              { backgroundColor: '#166534' },
+                              pressed && { opacity: 0.9 }
+                            ]}
+                          >
+                            <ThemedText type="smallBold" style={[styles.submitBtnText, { color: '#ffffff' }]}>{t.btnNext}</ThemedText>
+                          </Pressable>
+                        </View>
+                      ) : (
+                        // Step 2: Farm Profile Details
+                        <View style={{ gap: Spacing.two }}>
+                          <View style={styles.inputGroup}>
+                            <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#ffffff' : '#051C0C' }]}>{t.stateLabel}</ThemedText>
+                            <Pressable
+                              onPress={() => openModal('state')}
+                              style={[styles.selectorInputBtn, { borderColor: theme.dark ? 'rgba(255,255,255,0.3)' : 'rgba(11,41,20,0.25)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.45)' : '#FFFFFF' }]}
+                            >
+                              <ThemedText type="small" style={{ color: selectedState ? (theme.dark ? '#ffffff' : '#051C0C') : (theme.dark ? 'rgba(255,255,255,0.55)' : 'rgba(10,35,18,0.55)') }}>
+                                {selectedState || t.selectPlace}
+                              </ThemedText>
+                            </Pressable>
+                          </View>
+
+                          <View style={styles.inputGroup}>
+                            <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#ffffff' : '#051C0C' }]}>{t.soilLabel}</ThemedText>
+                            <Pressable
+                              onPress={() => openModal('soil')}
+                              style={[styles.selectorInputBtn, { borderColor: theme.dark ? 'rgba(255,255,255,0.3)' : 'rgba(11,41,20,0.25)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.45)' : '#FFFFFF' }]}
+                            >
+                              <ThemedText type="small" style={{ color: selectedSoil ? (theme.dark ? '#ffffff' : '#051C0C') : (theme.dark ? 'rgba(255,255,255,0.55)' : 'rgba(10,35,18,0.55)') }}>
+                                {selectedSoil || t.selectPlace}
+                              </ThemedText>
+                            </Pressable>
+                          </View>
+
+                          <View style={styles.inputGroup}>
+                            <ThemedText type="smallBold" style={[styles.inputLabel, { color: theme.dark ? '#ffffff' : '#051C0C' }]}>{t.cropLabel}</ThemedText>
+                            <Pressable
+                              onPress={() => openModal('crop')}
+                              style={[styles.selectorInputBtn, { borderColor: theme.dark ? 'rgba(255,255,255,0.3)' : 'rgba(11,41,20,0.25)', backgroundColor: theme.dark ? 'rgba(0,0,0,0.45)' : '#FFFFFF' }]}
+                            >
+                              <ThemedText type="small" style={{ color: selectedCrop ? (theme.dark ? '#ffffff' : '#051C0C') : (theme.dark ? 'rgba(255,255,255,0.55)' : 'rgba(10,35,18,0.55)') }}>
+                                {selectedCrop || t.selectPlace}
+                              </ThemedText>
+                            </Pressable>
+                          </View>
+
+                          {/* Terms & Conditions Checkbox Row */}
+                          <View style={styles.termsAgreementRow}>
+                            <Pressable
+                              onPress={() => setAgreedToTerms(!agreedToTerms)}
+                              style={[
+                                styles.checkboxSquare,
+                                agreedToTerms && { backgroundColor: '#166534', borderColor: '#166534' }
+                              ]}
+                            >
+                              {agreedToTerms && (
+                                <SymbolView
+                                  name={{ ios: 'checkmark', android: 'check', web: 'check' } as any}
+                                  size={13}
+                                  tintColor="#ffffff"
+                                />
+                              )}
+                            </Pressable>
+                            <View style={styles.termsTextWrap}>
+                              <ThemedText type="small" style={{ fontSize: 12, color: theme.dark ? '#ffffff' : '#051C0C' }}>
+                                {lang === 'hi' ? 'मैं ' : 'I agree to '}
+                              </ThemedText>
+                              <Pressable onPress={() => setTermsModalVisible(true)}>
+                                <ThemedText type="smallBold" style={{ fontSize: 12, color: theme.dark ? '#86efac' : '#166534', textDecorationLine: 'underline' }}>
+                                  {lang === 'hi' ? 'सेवा की शर्तों एवं गोपनीयता नीति' : 'Terms & Privacy Policy'}
+                                </ThemedText>
+                              </Pressable>
+                              <ThemedText type="small" style={{ fontSize: 12, color: theme.dark ? '#ffffff' : '#051C0C' }}>
+                                {lang === 'hi' ? ' से सहमत हूँ।' : '.'}
+                              </ThemedText>
+                            </View>
+                          </View>
+
+                          <View style={styles.signupNavBtns}>
+                            <Pressable
+                              onPress={() => setStep(1)}
+                              style={({ pressed }) => [
+                                styles.backBtn,
+                                { borderColor: theme.dark ? 'rgba(255,255,255,0.35)' : 'rgba(11,41,20,0.25)', backgroundColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' },
+                                pressed && { opacity: 0.8 }
+                              ]}
+                            >
+                              <ThemedText type="smallBold" style={{ color: theme.dark ? '#ffffff' : '#051C0C' }}>{t.btnBack}</ThemedText>
+                            </Pressable>
+
+                            <Pressable
+                              onPress={handleAuthSubmit}
+                              disabled={isLoading}
+                              style={({ pressed }) => [
+                                styles.signupSubmitBtn,
+                                { backgroundColor: '#166534' },
+                                pressed && { opacity: 0.9 },
+                                isLoading && { opacity: 0.7 }
+                              ]}
+                            >
+                              {isLoading ? (
+                                <ActivityIndicator size="small" color="#ffffff" />
+                              ) : (
+                                <ThemedText type="smallBold" style={[styles.submitBtnText, { color: '#ffffff' }]}>{t.btnSubmitSignup}</ThemedText>
+                              )}
+                            </Pressable>
+                          </View>
+                        </View>
+                      )}
                     </View>
                   )}
-                </View>
-              )}
-            </Animated.View>
-          </View>
+                </Animated.View>
+              </View>
 
-          {/* Demo Bypass / Skip for now Button */}
-          <Pressable
-            onPress={handleSkipLogin}
-            disabled={isLoading}
-            style={({ pressed }) => [
-              styles.skipBtn,
-              { backgroundColor: theme.dark ? 'rgba(15, 32, 20, 0.85)' : 'rgba(255, 255, 255, 0.90)', borderColor: theme.dark ? 'rgba(255, 255, 255, 0.35)' : 'rgba(22, 101, 52, 0.35)' },
-              pressed && { opacity: 0.8 }
-            ]}
-          >
-            <ThemedText type="smallBold" style={[styles.skipBtnText, { color: theme.dark ? '#ffffff' : '#166534' }]}>
-              {t.btnSkip}
-            </ThemedText>
-          </Pressable>
-
-          {/* App Key Features Showcase Grid */}
-          <View style={styles.featuresContainer}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 12 }}>
-              <SymbolView
-                name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' } as any}
-                size={20}
-                tintColor="#22C55E"
-              />
-              <ThemedText type="subtitle" style={styles.featuresHeadline}>
-                {lang === 'hi' ? 'कृषिक मित्र की मुख्य सुविधाएं' : 'Key Platform Features'}
-              </ThemedText>
+              {/* Demo Bypass / Skip for now Button */}
+              <Pressable
+                onPress={handleSkipLogin}
+                disabled={isLoading}
+                style={({ pressed }) => [
+                  styles.skipBtn,
+                  { backgroundColor: theme.dark ? 'rgba(15, 32, 20, 0.85)' : 'rgba(255, 255, 255, 0.90)', borderColor: theme.dark ? 'rgba(255, 255, 255, 0.35)' : 'rgba(22, 101, 52, 0.35)' },
+                  pressed && { opacity: 0.8 }
+                ]}
+              >
+                <ThemedText type="smallBold" style={[styles.skipBtnText, { color: theme.dark ? '#ffffff' : '#166534' }]}>
+                  {t.btnSkip}
+                </ThemedText>
+              </Pressable>
             </View>
 
-            <View style={styles.featuresGrid}>
-              {/* Feature 1 */}
-              <View style={styles.featureCard}>
-                <View style={styles.featureIconBadge}>
-                  <SymbolView
-                    name={{ ios: 'cpu.fill', android: 'smart_toy', web: 'smart_toy' } as any}
-                    size={24}
-                    tintColor="#22C55E"
-                  />
+            {/* DESKTOP ONLY: Right 3 Features Column */}
+            {isDesktop && (
+              <View style={styles.sideFeaturesCol}>
+                {/* Feature 4 */}
+                <View style={styles.featureCardStacked}>
+                  <View style={styles.featureIconBadge}>
+                    <SymbolView
+                      name={{ ios: 'sun.max.fill', android: 'wb_sunny', web: 'wb_sunny' } as any}
+                      size={24}
+                      tintColor="#FBB024"
+                    />
+                  </View>
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <ThemedText type="smallBold" style={styles.featureTitle}>
+                      {lang === 'hi' ? 'मौसम एडवाइजरी' : 'Weather Advisory'}
+                    </ThemedText>
+                    <ThemedText type="small" style={styles.featureDesc}>
+                      {lang === 'hi'
+                        ? 'स्थानीय बारिश, तापमान व साप्ताहिक सलाह।'
+                        : 'Hyper-local weather alerts & crop advisory.'}
+                    </ThemedText>
+                  </View>
                 </View>
-                <ThemedText type="smallBold" style={styles.featureTitle}>
-                  {lang === 'hi' ? 'AI कृषि सलाहकार' : 'AI Agronomy Bot'}
-                </ThemedText>
-                <ThemedText type="small" style={styles.featureDesc}>
-                  {lang === 'hi'
-                    ? 'अपनी भाषा में बोलकर फसल कीट, बीमारी और खेती की सलाह पाएँ।'
-                    : 'Ask farming & crop questions via native Voice or Text.'}
-                </ThemedText>
-              </View>
 
-              {/* Feature 2 */}
-              <View style={styles.featureCard}>
-                <View style={styles.featureIconBadge}>
-                  <SymbolView
-                    name={{ ios: 'camera.fill', android: 'photo_camera', web: 'photo_camera' } as any}
-                    size={24}
-                    tintColor="#22C55E"
-                  />
+                {/* Feature 5 */}
+                <View style={styles.featureCardStacked}>
+                  <View style={styles.featureIconBadge}>
+                    <SymbolView
+                      name={{ ios: 'flask.fill', android: 'science', web: 'science' } as any}
+                      size={24}
+                      tintColor="#22C55E"
+                    />
+                  </View>
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <ThemedText type="smallBold" style={styles.featureTitle}>
+                      {lang === 'hi' ? 'खाद कैलकुलेटर' : 'Fertilizer Calculator'}
+                    </ThemedText>
+                    <ThemedText type="small" style={styles.featureDesc}>
+                      {lang === 'hi'
+                        ? 'क्षेत्रफल के अनुसार यूरिया, डीएपी की मात्रा।'
+                        : 'Precise crop fertilizer dosage calculator.'}
+                    </ThemedText>
+                  </View>
                 </View>
-                <ThemedText type="smallBold" style={styles.featureTitle}>
-                  {lang === 'hi' ? 'कीट पहचान (AI Scan)' : 'Pest Scan Diagnosis'}
-                </ThemedText>
-                <ThemedText type="small" style={styles.featureDesc}>
-                  {lang === 'hi'
-                    ? 'पत्ती की फोटो खींचें और तुरंत सटीक बीमारी व इलाज जानें।'
-                    : 'Instant leaf disease diagnosis and treatment plan with camera.'}
-                </ThemedText>
-              </View>
 
-              {/* Feature 3 */}
-              <View style={styles.featureCard}>
-                <View style={styles.featureIconBadge}>
-                  <SymbolView
-                    name={{ ios: 'chart.line.uptrend.xyaxis', android: 'trending_up', web: 'trending_up' } as any}
-                    size={24}
-                    tintColor="#22C55E"
-                  />
+                {/* Feature 6 */}
+                <View style={styles.featureCardStacked}>
+                  <View style={styles.featureIconBadge}>
+                    <SymbolView
+                      name={{ ios: 'person.2.fill', android: 'group', web: 'group' } as any}
+                      size={24}
+                      tintColor="#3B82F6"
+                    />
+                  </View>
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <ThemedText type="smallBold" style={styles.featureTitle}>
+                      {lang === 'hi' ? 'किसान चौपाल' : 'Farmer Community'}
+                    </ThemedText>
+                    <ThemedText type="small" style={styles.featureDesc}>
+                      {lang === 'hi'
+                        ? 'अन्य किसान भाइयों से अनुभव शेयर करें।'
+                        : 'Connect with fellow farmers for crop advice.'}
+                    </ThemedText>
+                  </View>
                 </View>
-                <ThemedText type="smallBold" style={styles.featureTitle}>
-                  {lang === 'hi' ? 'लाइव मंडी भाव' : 'Live Mandi Prices'}
-                </ThemedText>
-                <ThemedText type="small" style={styles.featureDesc}>
-                  {lang === 'hi'
-                    ? 'देश भर की एपीएमसी मंडियों के ताजा जिंस रेट देखें।'
-                    : 'Real-time APMC commodity rates from mandis across India.'}
-                </ThemedText>
               </View>
+            )}
 
-              {/* Feature 4 */}
-              <View style={styles.featureCard}>
-                <View style={styles.featureIconBadge}>
-                  <SymbolView
-                    name={{ ios: 'sun.max.fill', android: 'wb_sunny', web: 'wb_sunny' } as any}
-                    size={24}
-                    tintColor="#FBB024"
-                  />
-                </View>
-                <ThemedText type="smallBold" style={styles.featureTitle}>
-                  {lang === 'hi' ? 'मौसम एडवाइजरी' : 'Weather & Advisory'}
-                </ThemedText>
-                <ThemedText type="small" style={styles.featureDesc}>
-                  {lang === 'hi'
-                    ? 'स्थानीय बारिश, तापमान और साप्ताहिक कृषि सलाह।'
-                    : 'Hyper-local weather alerts, rain forecast, and crop advisory.'}
-                </ThemedText>
-              </View>
+            {/* MOBILE ONLY: Features Showcase Grid below Auth Card */}
+            {!isDesktop && (
+              <View style={styles.rightFeaturesCol}>
+                <View style={styles.featuresContainer}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 12 }}>
+                    <SymbolView
+                      name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' } as any}
+                      size={20}
+                      tintColor="#22C55E"
+                    />
+                    <ThemedText type="subtitle" style={[styles.featuresHeadline, { color: theme.dark ? '#ffffff' : '#051C0C' }]}>
+                      {lang === 'hi' ? 'कृषिक मित्र की मुख्य सुविधाएं' : 'Key Platform Features'}
+                    </ThemedText>
+                  </View>
 
-              {/* Feature 5 */}
-              <View style={styles.featureCard}>
-                <View style={styles.featureIconBadge}>
-                  <SymbolView
-                    name={{ ios: 'flask.fill', android: 'science', web: 'science' } as any}
-                    size={24}
-                    tintColor="#22C55E"
-                  />
-                </View>
-                <ThemedText type="smallBold" style={styles.featureTitle}>
-                  {lang === 'hi' ? 'मृदा व खाद कैलकुलेटर' : 'Fertilizer Calculator'}
-                </ThemedText>
-                <ThemedText type="small" style={styles.featureDesc}>
-                  {lang === 'hi'
-                    ? 'जमीन के क्षेत्रफल के अनुसार यूरिया, डीएपी की सही मात्रा।'
-                    : 'Precise crop fertilizer dosage calculator scaled for your land.'}
-                </ThemedText>
-              </View>
+                  <View style={styles.featuresGrid}>
+                    {/* Feature 1 */}
+                    <View style={styles.featureCard}>
+                      <View style={styles.featureIconBadge}>
+                        <SymbolView
+                          name={{ ios: 'cpu.fill', android: 'smart_toy', web: 'smart_toy' } as any}
+                          size={24}
+                          tintColor="#22C55E"
+                        />
+                      </View>
+                      <ThemedText type="smallBold" style={styles.featureTitle}>
+                        {lang === 'hi' ? 'AI कृषि सलाहकार' : 'AI Agronomy Bot'}
+                      </ThemedText>
+                      <ThemedText type="small" style={styles.featureDesc}>
+                        {lang === 'hi'
+                          ? 'अपनी भाषा में बोलकर फसल कीट, बीमारी और खेती की सलाह पाएँ।'
+                          : 'Ask farming & crop questions via native Voice or Text.'}
+                      </ThemedText>
+                    </View>
 
-              {/* Feature 6 */}
-              <View style={styles.featureCard}>
-                <View style={styles.featureIconBadge}>
-                  <SymbolView
-                    name={{ ios: 'person.2.fill', android: 'group', web: 'group' } as any}
-                    size={24}
-                    tintColor="#3B82F6"
-                  />
+                    {/* Feature 2 */}
+                    <View style={styles.featureCard}>
+                      <View style={styles.featureIconBadge}>
+                        <SymbolView
+                          name={{ ios: 'camera.fill', android: 'photo_camera', web: 'photo_camera' } as any}
+                          size={24}
+                          tintColor="#22C55E"
+                        />
+                      </View>
+                      <ThemedText type="smallBold" style={styles.featureTitle}>
+                        {lang === 'hi' ? 'कीट पहचान (AI Scan)' : 'Pest Scan Diagnosis'}
+                      </ThemedText>
+                      <ThemedText type="small" style={styles.featureDesc}>
+                        {lang === 'hi'
+                          ? 'पत्ती की फोटो खींचें और तुरंत सटीक बीमारी व इलाज जानें।'
+                          : 'Instant leaf disease diagnosis and treatment plan with camera.'}
+                      </ThemedText>
+                    </View>
+
+                    {/* Feature 3 */}
+                    <View style={styles.featureCard}>
+                      <View style={styles.featureIconBadge}>
+                        <SymbolView
+                          name={{ ios: 'chart.line.uptrend.xyaxis', android: 'trending_up', web: 'trending_up' } as any}
+                          size={24}
+                          tintColor="#22C55E"
+                        />
+                      </View>
+                      <ThemedText type="smallBold" style={styles.featureTitle}>
+                        {lang === 'hi' ? 'लाइव मंडी भाव' : 'Live Mandi Prices'}
+                      </ThemedText>
+                      <ThemedText type="small" style={styles.featureDesc}>
+                        {lang === 'hi'
+                          ? 'देश भर की एपीएमसी मंडियों के ताजा जिंस रेट देखें।'
+                          : 'Real-time APMC commodity rates from mandis across India.'}
+                      </ThemedText>
+                    </View>
+
+                    {/* Feature 4 */}
+                    <View style={styles.featureCard}>
+                      <View style={styles.featureIconBadge}>
+                        <SymbolView
+                          name={{ ios: 'sun.max.fill', android: 'wb_sunny', web: 'wb_sunny' } as any}
+                          size={24}
+                          tintColor="#FBB024"
+                        />
+                      </View>
+                      <ThemedText type="smallBold" style={styles.featureTitle}>
+                        {lang === 'hi' ? 'मौसम एडवाइजरी' : 'Weather & Advisory'}
+                      </ThemedText>
+                      <ThemedText type="small" style={styles.featureDesc}>
+                        {lang === 'hi'
+                          ? 'स्थानीय बारिश, तापमान और साप्ताहिक कृषि सलाह।'
+                          : 'Hyper-local weather alerts, rain forecast, and crop advisory.'}
+                      </ThemedText>
+                    </View>
+
+                    {/* Feature 5 */}
+                    <View style={styles.featureCard}>
+                      <View style={styles.featureIconBadge}>
+                        <SymbolView
+                          name={{ ios: 'flask.fill', android: 'science', web: 'science' } as any}
+                          size={24}
+                          tintColor="#22C55E"
+                        />
+                      </View>
+                      <ThemedText type="smallBold" style={styles.featureTitle}>
+                        {lang === 'hi' ? 'मृदा व खाद कैलकुलेटर' : 'Fertilizer Calculator'}
+                      </ThemedText>
+                      <ThemedText type="small" style={styles.featureDesc}>
+                        {lang === 'hi'
+                          ? 'जमीन के क्षेत्रफल के अनुसार यूरिया, डीएपी की सही मात्रा।'
+                          : 'Precise crop fertilizer dosage calculator scaled for your land.'}
+                      </ThemedText>
+                    </View>
+
+                    {/* Feature 6 */}
+                    <View style={styles.featureCard}>
+                      <View style={styles.featureIconBadge}>
+                        <SymbolView
+                          name={{ ios: 'person.2.fill', android: 'group', web: 'group' } as any}
+                          size={24}
+                          tintColor="#3B82F6"
+                        />
+                      </View>
+                      <ThemedText type="smallBold" style={styles.featureTitle}>
+                        {lang === 'hi' ? 'किसान चौपाल' : 'Farmer Community'}
+                      </ThemedText>
+                      <ThemedText type="small" style={styles.featureDesc}>
+                        {lang === 'hi'
+                          ? 'अन्य किसान भाइयों से अनुभव शेयर करें और सुझाव पाएँ।'
+                          : 'Connect with fellow farmers and share crop advice.'}
+                      </ThemedText>
+                    </View>
+                  </View>
                 </View>
-                <ThemedText type="smallBold" style={styles.featureTitle}>
-                  {lang === 'hi' ? 'किसान चौपाल' : 'Farmer Community'}
-                </ThemedText>
-                <ThemedText type="small" style={styles.featureDesc}>
-                  {lang === 'hi'
-                    ? 'अन्य किसान भाइयों से अनुभव शेयर करें और सुझाव पाएँ।'
-                    : 'Connect with fellow farmers and share crop advice.'}
-                </ThemedText>
               </View>
-            </View>
+            )}
+
           </View>
         </ScrollView>
 
@@ -852,9 +1003,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     width: '100%',
+    height: '100%',
+    backgroundColor: '#05140A',
   },
   bgImage: {
-    flex: 1,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     width: '100%',
     height: '100%',
   },
@@ -868,9 +1025,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexGrow: 1,
-    maxWidth: 580,
+    maxWidth: 1280,
     width: '100%',
     alignSelf: 'center',
+  },
+  mainLayoutWrap: {
+    width: '100%',
+    alignItems: 'center',
+    gap: Spacing.three,
+  },
+  desktop3ColWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 20,
+    width: '100%',
+    marginTop: Spacing.two,
+  },
+  sideFeaturesCol: {
+    flex: 1,
+    maxWidth: 340,
+    gap: 16,
+  },
+  centerAuthCol: {
+    width: '100%',
+    maxWidth: 460,
+    alignItems: 'center',
+  },
+  leftAuthCol: {
+    width: '100%',
+    maxWidth: 500,
+    alignItems: 'center',
+  },
+  rightFeaturesCol: {
+    width: '100%',
+    maxWidth: 580,
   },
   langToggleContainer: {
     position: 'absolute',
@@ -1274,5 +1463,26 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     color: '#E8F5E9',
     lineHeight: 16,
+  },
+  featureCardStacked: {
+    width: '100%',
+    borderRadius: 20,
+    padding: Spacing.two,
+    backgroundColor: 'rgba(10, 32, 18, 0.88)',
+    borderWidth: 1.2,
+    borderColor: 'rgba(255, 255, 255, 0.28)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    ...Platform.select({
+      web: {
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)',
+      } as any,
+      default: {
+        elevation: 6,
+      }
+    })
   },
 });

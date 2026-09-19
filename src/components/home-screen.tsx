@@ -161,16 +161,6 @@ export function HomeScreen({ onExploreDemo, onLoginSuccess }: HomeScreenProps) {
           
           {/* 1. Hero Showcase Section */}
           <View style={styles.heroSection}>
-            <View style={[styles.heroBadge, { backgroundColor: iconBadgeBg, borderColor: iconBadgeBorder }]}>
-              <SymbolView
-                name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' } as any}
-                size={14}
-                tintColor={iconTint}
-              />
-              <ThemedText type="smallBold" style={{ color: iconTint, fontSize: 12, letterSpacing: 0.5 }}>
-                {isHi ? 'नेक्स्ट-जनरेशन स्मार्ट एग्री-टेक' : 'NEXT-GEN SMART AGRI-TECH'}
-              </ThemedText>
-            </View>
 
             <AppLogo
               size="hero"
@@ -516,7 +506,7 @@ export function HomeScreen({ onExploreDemo, onLoginSuccess }: HomeScreenProps) {
         animationType="slide"
         onRequestClose={() => setAuthModalVisible(false)}
       >
-        <View style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#EBF7EE' }}>
+        <View style={{ flex: 1, width: '100%', height: '100%', backgroundColor: '#05140A' }}>
           {/* Back button header (Top Left Opposite Side) */}
           <Pressable
             onPress={() => setAuthModalVisible(false)}
