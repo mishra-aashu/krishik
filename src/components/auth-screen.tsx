@@ -26,6 +26,7 @@ import cropsData from '@/constants/crops.json';
 import { SelectionModal } from '@/components/selection-modal';
 import { AppLogo } from '@/components/app-logo';
 import { TermsModal } from '@/components/terms-modal';
+import { ForgotPinModal } from '@/components/forgot-pin-modal';
 
 const STATES = [
   'Uttar Pradesh', 'Punjab', 'Haryana', 'Madhya Pradesh', 
@@ -131,11 +132,13 @@ export function AuthScreen({ onLoginSuccess, onBack }: AuthScreenProps) {
     setActiveModal(null);
   };
 
-  // Status & Terms states
+  // Status & Terms & Forgot PIN states
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [agreedToTerms, setAgreedToTerms] = useState(true);
   const [termsModalVisible, setTermsModalVisible] = useState(false);
+  const [forgotModalVisible, setForgotModalVisible] = useState(false);
 
   // Translations
   const t = {
@@ -380,9 +383,10 @@ export function AuthScreen({ onLoginSuccess, onBack }: AuthScreenProps) {
           {/* Brand Header */}
           <View style={styles.brandContainer}>
             <AppLogo
-              size={isDesktop ? "hero" : "large"}
+              size={isDesktop ? "hero" : "medium"}
+              showTagline={isDesktop}
+              welcomeText={isDesktop ? t.welcome : undefined}
               language={lang}
-              welcomeText={t.welcome}
               textColor="#ffffff"
             />
           </View>
@@ -511,6 +515,21 @@ export function AuthScreen({ onLoginSuccess, onBack }: AuthScreenProps) {
                   </Pressable>
                 </View>
 
+                {successMsg && (
+                  <View style={[styles.errorBox, { backgroundColor: '#10B9811A', borderColor: '#10B981' }]}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.one }}>
+                      <SymbolView
+                        name={{ ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check' } as any}
+                        size={14}
+                        tintColor="#10B981"
+                      />
+                      <ThemedText type="small" style={{ color: '#10B981', fontWeight: '700' }}>
+                        {successMsg}
+                      </ThemedText>
+                    </View>
+                  </View>
+                )}
+
                 {errorMsg && (
                   <View style={[styles.errorBox, { backgroundColor: theme.error + '1A', borderColor: theme.error }]}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.one }}>
@@ -561,6 +580,23 @@ export function AuthScreen({ onLoginSuccess, onBack }: AuthScreenProps) {
                           maxLength={4}
                           textContentType="oneTimeCode"
                         />
+                      </View>
+
+                      {/* Forgot PIN Link */}
+                      <View style={{ alignItems: 'flex-end', marginTop: 2, marginBottom: 4 }}>
+                        <Pressable onPress={() => setForgotModalVisible(true)}>
+                          <ThemedText
+                            type="smallBold"
+                            style={{
+                              fontSize: 12.5,
+                              color: theme.dark ? '#86efac' : '#166534',
+                              textDecorationLine: 'underline',
+                              fontWeight: '700'
+                            }}
+                          >
+                            {lang === 'hi' ? 'पिन भूल गए? (Forgot PIN?)' : 'Forgot PIN?'}
+                          </ThemedText>
+                        </Pressable>
                       </View>
 
                       {/* Terms & Conditions Checkbox Row */}
@@ -867,140 +903,6 @@ export function AuthScreen({ onLoginSuccess, onBack }: AuthScreenProps) {
               </View>
             )}
 
-            {/* MOBILE ONLY: Features Showcase Grid below Auth Card */}
-            {!isDesktop && (
-              <View style={styles.rightFeaturesCol}>
-                <View style={styles.featuresContainer}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 12 }}>
-                    <SymbolView
-                      name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' } as any}
-                      size={20}
-                      tintColor="#22C55E"
-                    />
-                    <ThemedText type="subtitle" style={[styles.featuresHeadline, { color: theme.dark ? '#ffffff' : '#051C0C' }]}>
-                      {lang === 'hi' ? 'कृषिक मित्र की मुख्य सुविधाएं' : 'Key Platform Features'}
-                    </ThemedText>
-                  </View>
-
-                  <View style={styles.featuresGrid}>
-                    {/* Feature 1 */}
-                    <View style={styles.featureCard}>
-                      <View style={styles.featureIconBadge}>
-                        <SymbolView
-                          name={{ ios: 'cpu.fill', android: 'smart_toy', web: 'smart_toy' } as any}
-                          size={24}
-                          tintColor="#22C55E"
-                        />
-                      </View>
-                      <ThemedText type="smallBold" style={styles.featureTitle}>
-                        {lang === 'hi' ? 'AI कृषि सलाहकार' : 'AI Agronomy Bot'}
-                      </ThemedText>
-                      <ThemedText type="small" style={styles.featureDesc}>
-                        {lang === 'hi'
-                          ? 'अपनी भाषा में बोलकर फसल कीट, बीमारी और खेती की सलाह पाएँ।'
-                          : 'Ask farming & crop questions via native Voice or Text.'}
-                      </ThemedText>
-                    </View>
-
-                    {/* Feature 2 */}
-                    <View style={styles.featureCard}>
-                      <View style={styles.featureIconBadge}>
-                        <SymbolView
-                          name={{ ios: 'camera.fill', android: 'photo_camera', web: 'photo_camera' } as any}
-                          size={24}
-                          tintColor="#22C55E"
-                        />
-                      </View>
-                      <ThemedText type="smallBold" style={styles.featureTitle}>
-                        {lang === 'hi' ? 'कीट पहचान (AI Scan)' : 'Pest Scan Diagnosis'}
-                      </ThemedText>
-                      <ThemedText type="small" style={styles.featureDesc}>
-                        {lang === 'hi'
-                          ? 'पत्ती की फोटो खींचें और तुरंत सटीक बीमारी व इलाज जानें।'
-                          : 'Instant leaf disease diagnosis and treatment plan with camera.'}
-                      </ThemedText>
-                    </View>
-
-                    {/* Feature 3 */}
-                    <View style={styles.featureCard}>
-                      <View style={styles.featureIconBadge}>
-                        <SymbolView
-                          name={{ ios: 'chart.line.uptrend.xyaxis', android: 'trending_up', web: 'trending_up' } as any}
-                          size={24}
-                          tintColor="#22C55E"
-                        />
-                      </View>
-                      <ThemedText type="smallBold" style={styles.featureTitle}>
-                        {lang === 'hi' ? 'लाइव मंडी भाव' : 'Live Mandi Prices'}
-                      </ThemedText>
-                      <ThemedText type="small" style={styles.featureDesc}>
-                        {lang === 'hi'
-                          ? 'देश भर की एपीएमसी मंडियों के ताजा जिंस रेट देखें।'
-                          : 'Real-time APMC commodity rates from mandis across India.'}
-                      </ThemedText>
-                    </View>
-
-                    {/* Feature 4 */}
-                    <View style={styles.featureCard}>
-                      <View style={styles.featureIconBadge}>
-                        <SymbolView
-                          name={{ ios: 'sun.max.fill', android: 'wb_sunny', web: 'wb_sunny' } as any}
-                          size={24}
-                          tintColor="#FBB024"
-                        />
-                      </View>
-                      <ThemedText type="smallBold" style={styles.featureTitle}>
-                        {lang === 'hi' ? 'मौसम एडवाइजरी' : 'Weather & Advisory'}
-                      </ThemedText>
-                      <ThemedText type="small" style={styles.featureDesc}>
-                        {lang === 'hi'
-                          ? 'स्थानीय बारिश, तापमान और साप्ताहिक कृषि सलाह।'
-                          : 'Hyper-local weather alerts, rain forecast, and crop advisory.'}
-                      </ThemedText>
-                    </View>
-
-                    {/* Feature 5 */}
-                    <View style={styles.featureCard}>
-                      <View style={styles.featureIconBadge}>
-                        <SymbolView
-                          name={{ ios: 'flask.fill', android: 'science', web: 'science' } as any}
-                          size={24}
-                          tintColor="#22C55E"
-                        />
-                      </View>
-                      <ThemedText type="smallBold" style={styles.featureTitle}>
-                        {lang === 'hi' ? 'मृदा व खाद कैलकुलेटर' : 'Fertilizer Calculator'}
-                      </ThemedText>
-                      <ThemedText type="small" style={styles.featureDesc}>
-                        {lang === 'hi'
-                          ? 'जमीन के क्षेत्रफल के अनुसार यूरिया, डीएपी की सही मात्रा।'
-                          : 'Precise crop fertilizer dosage calculator scaled for your land.'}
-                      </ThemedText>
-                    </View>
-
-                    {/* Feature 6 */}
-                    <View style={styles.featureCard}>
-                      <View style={styles.featureIconBadge}>
-                        <SymbolView
-                          name={{ ios: 'person.2.fill', android: 'group', web: 'group' } as any}
-                          size={24}
-                          tintColor="#3B82F6"
-                        />
-                      </View>
-                      <ThemedText type="smallBold" style={styles.featureTitle}>
-                        {lang === 'hi' ? 'किसान चौपाल' : 'Farmer Community'}
-                      </ThemedText>
-                      <ThemedText type="small" style={styles.featureDesc}>
-                        {lang === 'hi'
-                          ? 'अन्य किसान भाइयों से अनुभव शेयर करें और सुझाव पाएँ।'
-                          : 'Connect with fellow farmers and share crop advice.'}
-                      </ThemedText>
-                    </View>
-                  </View>
-                </View>
-              </View>
-            )}
-
           </View>
         </ScrollView>
 
@@ -1047,6 +949,23 @@ export function AuthScreen({ onLoginSuccess, onBack }: AuthScreenProps) {
         onAccept={() => setAgreedToTerms(true)}
         language={lang}
       />
+
+      {/* Forgot Passcode / PIN Modal */}
+      <ForgotPinModal
+        visible={forgotModalVisible}
+        onClose={() => setForgotModalVisible(false)}
+        onSuccess={(rPhone, rPin) => {
+          setPhone(rPhone);
+          setPin(rPin);
+          setForgotModalVisible(false);
+          setSuccessMsg(
+            lang === 'hi'
+              ? 'पिन सफलतापूर्वक रीसेट हो गया है! नया पिन स्वतः भर दिया गया है।'
+              : 'PIN updated successfully! Your new PIN is filled below.'
+          );
+        }}
+        language={lang}
+      />
     </SafeAreaView>
   );
 }
@@ -1072,8 +991,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(5, 20, 10, 0.45)',
   },
   scrollContent: {
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.two,
     alignItems: 'center',
     justifyContent: 'center',
     flexGrow: 1,
@@ -1084,7 +1003,7 @@ const styles = StyleSheet.create({
   mainLayoutWrap: {
     width: '100%',
     alignItems: 'center',
-    gap: Spacing.three,
+    gap: Spacing.two,
   },
   desktop3ColWrap: {
     flexDirection: 'row',
@@ -1101,7 +1020,7 @@ const styles = StyleSheet.create({
   },
   centerAuthCol: {
     width: '100%',
-    maxWidth: 460,
+    maxWidth: 440,
     alignItems: 'center',
   },
   leftAuthCol: {
@@ -1120,7 +1039,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.three,
     paddingTop: Platform.OS === 'web' ? Spacing.two : Spacing.one,
-    paddingBottom: Spacing.one,
+    paddingBottom: 4,
     zIndex: 20,
   },
   topHeaderBtn: {
@@ -1129,8 +1048,8 @@ const styles = StyleSheet.create({
     gap: 6,
     borderWidth: 1,
     borderRadius: 20,
-    paddingVertical: 6,
-    paddingHorizontal: 14,
+    paddingVertical: 5,
+    paddingHorizontal: 12,
     ...Platform.select({
       web: {
         backdropFilter: 'blur(10px)',
@@ -1145,9 +1064,9 @@ const styles = StyleSheet.create({
   },
   brandContainer: {
     alignItems: 'center',
-    marginBottom: Spacing.two,
-    marginTop: Spacing.one,
-    gap: Spacing.half,
+    marginBottom: 6,
+    marginTop: 2,
+    gap: 2,
   },
   brandLogo: {
     width: 160,
@@ -1220,9 +1139,9 @@ const styles = StyleSheet.create({
   },
   authCard: {
     width: '100%',
-    borderRadius: 24,
+    borderRadius: 20,
     borderWidth: 1,
-    padding: Spacing.three,
+    padding: 14,
     ...Platform.select({
       web: {
         backdropFilter: 'blur(30px) saturate(190%)',
@@ -1241,9 +1160,9 @@ const styles = StyleSheet.create({
   modeTabs: {
     flexDirection: 'row',
     position: 'relative',
-    borderRadius: 16,
-    padding: 4,
-    marginBottom: Spacing.three,
+    borderRadius: 14,
+    padding: 3,
+    marginBottom: 10,
     overflow: 'hidden',
     ...Platform.select({
       web: {
@@ -1255,10 +1174,10 @@ const styles = StyleSheet.create({
   },
   slidingPill: {
     position: 'absolute',
-    top: 4,
-    bottom: 4,
+    top: 3,
+    bottom: 3,
     width: '48%',
-    borderRadius: 12,
+    borderRadius: 11,
     ...Platform.select({
       web: {
         boxShadow: '0 4px 16px rgba(0, 0, 0, 0.16), inset 0 1px 1px rgba(255, 255, 255, 0.95)',
@@ -1271,8 +1190,8 @@ const styles = StyleSheet.create({
   modeTabBtn: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 12,
-    borderRadius: 12,
+    paddingVertical: 8,
+    borderRadius: 11,
     zIndex: 2,
   },
   activeModeTab: {
@@ -1286,31 +1205,31 @@ const styles = StyleSheet.create({
     })
   },
   modeTabText: {
-    fontSize: 16,
+    fontSize: 14.5,
     fontWeight: '700',
   },
   errorBox: {
     borderWidth: 1,
-    borderRadius: Spacing.two,
-    padding: Spacing.two,
-    marginBottom: Spacing.two,
+    borderRadius: 12,
+    padding: 8,
+    marginBottom: 8,
   },
   formFields: {
-    gap: Spacing.three,
+    gap: 10,
   },
   inputGroup: {
-    gap: 6,
+    gap: 4,
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
   },
   inputField: {
-    height: 56,
+    height: 46,
     borderWidth: 1,
-    borderRadius: 16,
-    paddingHorizontal: Spacing.three,
-    fontSize: 18,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    fontSize: 15,
     ...Platform.select({
       web: {
         backdropFilter: 'blur(12px)',
@@ -1322,10 +1241,10 @@ const styles = StyleSheet.create({
     })
   },
   selectorInputBtn: {
-    height: 56,
+    height: 46,
     borderWidth: 1,
-    borderRadius: 16,
-    paddingHorizontal: Spacing.three,
+    borderRadius: 14,
+    paddingHorizontal: 12,
     justifyContent: 'center',
     ...Platform.select({
       web: {
@@ -1336,11 +1255,11 @@ const styles = StyleSheet.create({
     })
   },
   submitBtn: {
-    height: 56,
-    borderRadius: 16,
+    height: 46,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: Spacing.three,
+    marginTop: 10,
     ...Platform.select({
       web: {
         boxShadow: '0 8px 24px rgba(46, 125, 50, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.4)',
@@ -1352,34 +1271,34 @@ const styles = StyleSheet.create({
   },
   submitBtnText: {
     color: '#ffffff',
-    fontSize: 18,
+    fontSize: 15.5,
     fontWeight: '700',
   },
   signupNavBtns: {
     flexDirection: 'row',
-    gap: Spacing.two,
-    marginTop: Spacing.three,
+    gap: 8,
+    marginTop: 10,
   },
   backBtn: {
     flex: 1,
-    height: 56,
+    height: 46,
     borderWidth: 1,
-    borderRadius: 16,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
   signupSubmitBtn: {
     flex: 2,
-    height: 56,
-    borderRadius: 16,
+    height: 46,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
   skipBtn: {
-    marginTop: Spacing.three,
-    paddingVertical: 12,
-    paddingHorizontal: 28,
-    borderRadius: 24,
+    marginTop: 10,
+    paddingVertical: 9,
+    paddingHorizontal: 22,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.5)',
     ...Platform.select({

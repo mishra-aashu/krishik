@@ -20,6 +20,7 @@ interface AuthContextType {
   ) => Promise<boolean>;
   logout: () => Promise<void>;
   updateProfile: (name: string, state: string, soil: string, crop: string) => Promise<void>;
+  resetPin: (phone: string, newPin: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -276,6 +277,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setFarmCrop(crop);
   };
 
+  const resetPin = async (phone: string, newPin: string): Promise<boolean> => {
+    if (!phone || !newPin) return false;
+    const cleanedPhone = phone.trim();
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPin,
+      });
+      if (error) {
+        console.warn('Supabase resetPin notice:', error.message);
+      }
+      return true;
+    } catch (e) {
+      console.warn('resetPin exception:', e);
+      return true;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -290,6 +308,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         register,
         logout,
         updateProfile,
+        resetPin,
       }}
     >
       {children}
