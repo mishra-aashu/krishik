@@ -535,28 +535,10 @@ export function HomeScreen({ onExploreDemo, onLoginSuccess }: HomeScreenProps) {
         onRequestClose={() => setAuthModalVisible(false)}
       >
         <View style={{ flex: 1, width: '100%', height: '100%', backgroundColor: '#05140A' }}>
-          {/* Back button header (Top Left Opposite Side) */}
-          <Pressable
-            onPress={() => setAuthModalVisible(false)}
-            style={[
-              styles.modalCloseHeaderBtn,
-              {
-                backgroundColor: isDark ? 'rgba(10, 32, 18, 0.90)' : '#ffffff',
-                borderColor: isDark ? 'rgba(255, 255, 255, 0.35)' : 'rgba(46, 125, 50, 0.35)',
-              }
-            ]}
-          >
-            <SymbolView
-              name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' } as any}
-              size={18}
-              tintColor={textColor}
-            />
-            <ThemedText type="smallBold" style={{ color: textColor, fontSize: 13 }}>
-              {isHi ? 'वापस (Back)' : 'Back'}
-            </ThemedText>
-          </Pressable>
-
-          <AuthScreen onLoginSuccess={handleLoginSuccessInternal} />
+          <AuthScreen
+            onLoginSuccess={handleLoginSuccessInternal}
+            onBack={() => setAuthModalVisible(false)}
+          />
         </View>
       </Modal>
     </SafeAreaView>

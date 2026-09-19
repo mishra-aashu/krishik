@@ -45,9 +45,10 @@ const BG_IMAGES = [
 
 interface AuthScreenProps {
   onLoginSuccess: () => void;
+  onBack?: () => void;
 }
 
-export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
+export function AuthScreen({ onLoginSuccess, onBack }: AuthScreenProps) {
   const { login, register } = useAuth();
   const theme = useTheme();
   const { width } = useWindowDimensions();
@@ -325,11 +326,40 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
         <View style={styles.bgOverlay} />
       </View>
 
-        {/* Language Selector */}
-        <View style={styles.langToggleContainer}>
+        {/* Top Header Row for Navigation & Language Switcher */}
+        <View style={styles.topHeaderBar}>
+          {onBack ? (
+            <Pressable
+              onPress={onBack}
+              style={({ pressed }) => [
+                styles.topHeaderBtn,
+                { backgroundColor: theme.dark ? 'rgba(20,40,25,0.85)' : 'rgba(255,255,255,0.92)', borderColor: theme.dark ? 'rgba(255,255,255,0.35)' : '#166534' },
+                pressed && { opacity: 0.8 }
+              ]}
+            >
+              <SymbolView
+                name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' } as any}
+                size={14}
+                tintColor={theme.dark ? '#ffffff' : '#166534'}
+              />
+              <ThemedText
+                type="smallBold"
+                style={{ color: theme.dark ? '#ffffff' : '#166534' }}
+              >
+                {lang === 'hi' ? 'वापस' : 'Back'}
+              </ThemedText>
+            </Pressable>
+          ) : (
+            <View />
+          )}
+
           <Pressable
             onPress={() => setLang(lang === 'hi' ? 'en' : 'hi')}
-            style={[styles.langToggleBtn, { backgroundColor: theme.dark ? 'rgba(20,40,25,0.85)' : 'rgba(255,255,255,0.92)', borderColor: theme.dark ? 'rgba(255,255,255,0.35)' : '#166534' }]}
+            style={({ pressed }) => [
+              styles.topHeaderBtn,
+              { backgroundColor: theme.dark ? 'rgba(20,40,25,0.85)' : 'rgba(255,255,255,0.92)', borderColor: theme.dark ? 'rgba(255,255,255,0.35)' : '#166534' },
+              pressed && { opacity: 0.8 }
+            ]}
           >
             <SymbolView
               name={{ ios: 'globe', android: 'language', web: 'language' } as any}
@@ -350,7 +380,7 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
           {/* Brand Header */}
           <View style={styles.brandContainer}>
             <AppLogo
-              size="hero"
+              size={isDesktop ? "hero" : "large"}
               language={lang}
               welcomeText={t.welcome}
               textColor="#ffffff"
@@ -509,8 +539,11 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                           placeholderTextColor={theme.dark ? 'rgba(255,255,255,0.55)' : 'rgba(10,35,18,0.55)'}
                           value={phone}
                           onChangeText={(val) => setPhone(val.replace(/[^0-9]/g, ''))}
-                          keyboardType="phone-pad"
+                          keyboardType="number-pad"
+                          inputMode="numeric"
                           maxLength={10}
+                          autoComplete="tel"
+                          textContentType="telephoneNumber"
                         />
                       </View>
 
@@ -522,9 +555,11 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                           placeholderTextColor={theme.dark ? 'rgba(255,255,255,0.55)' : 'rgba(10,35,18,0.55)'}
                           value={pin}
                           onChangeText={(val) => setPin(val.replace(/[^0-9]/g, ''))}
-                          keyboardType="numeric"
+                          keyboardType="number-pad"
+                          inputMode="numeric"
                           secureTextEntry
                           maxLength={4}
+                          textContentType="oneTimeCode"
                         />
                       </View>
 
@@ -592,6 +627,9 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                               value={name}
                               onChangeText={setName}
                               autoCapitalize="words"
+                              autoCorrect={false}
+                              autoComplete="name"
+                              textContentType="name"
                             />
                           </View>
 
@@ -603,8 +641,11 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                               placeholderTextColor={theme.dark ? 'rgba(255,255,255,0.55)' : 'rgba(10,35,18,0.55)'}
                               value={phone}
                               onChangeText={(val) => setPhone(val.replace(/[^0-9]/g, ''))}
-                              keyboardType="phone-pad"
+                              keyboardType="number-pad"
+                              inputMode="numeric"
                               maxLength={10}
+                              autoComplete="tel"
+                              textContentType="telephoneNumber"
                             />
                           </View>
 
@@ -616,9 +657,11 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                               placeholderTextColor={theme.dark ? 'rgba(255,255,255,0.55)' : 'rgba(10,35,18,0.55)'}
                               value={pin}
                               onChangeText={(val) => setPin(val.replace(/[^0-9]/g, ''))}
-                              keyboardType="numeric"
+                              keyboardType="number-pad"
+                              inputMode="numeric"
                               secureTextEntry
                               maxLength={4}
+                              textContentType="oneTimeCode"
                             />
                           </View>
 
@@ -1070,13 +1113,17 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 580,
   },
-  langToggleContainer: {
-    position: 'absolute',
-    top: Spacing.three,
-    right: Spacing.three,
-    zIndex: 10,
+  topHeaderBar: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.three,
+    paddingTop: Platform.OS === 'web' ? Spacing.two : Spacing.one,
+    paddingBottom: Spacing.one,
+    zIndex: 20,
   },
-  langToggleBtn: {
+  topHeaderBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
@@ -1099,6 +1146,7 @@ const styles = StyleSheet.create({
   brandContainer: {
     alignItems: 'center',
     marginBottom: Spacing.two,
+    marginTop: Spacing.one,
     gap: Spacing.half,
   },
   brandLogo: {
