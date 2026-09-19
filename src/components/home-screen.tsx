@@ -8,6 +8,7 @@ import {
   Platform,
   SafeAreaView,
   Modal,
+  useWindowDimensions,
 } from 'react-native';
 import { ThemedText } from './themed-text';
 import { Colors, Spacing } from '@/constants/theme';
@@ -26,8 +27,10 @@ export function HomeScreen({ onExploreDemo, onLoginSuccess }: HomeScreenProps) {
   const { colorScheme, setThemeMode, theme } = useThemeContext();
   const { language, toggleLanguage, isHi } = useLanguage();
   const [authModalVisible, setAuthModalVisible] = useState(false);
+  const { width } = useWindowDimensions();
 
   const isDark = colorScheme === 'dark';
+  const isMobile = width < 640;
 
   const toggleTheme = () => {
     setThemeMode(isDark ? 'light' : 'dark');
@@ -74,7 +77,7 @@ export function HomeScreen({ onExploreDemo, onLoginSuccess }: HomeScreenProps) {
           }
         ]}
       >
-        <View style={styles.topNavInner}>
+        <View style={[styles.topNavInner, { paddingHorizontal: isMobile ? Spacing.two : Spacing.four }]}>
           <View style={styles.topNavLogo}>
             <AppLogo size="small" showText={false} />
             <View>
@@ -88,47 +91,51 @@ export function HomeScreen({ onExploreDemo, onLoginSuccess }: HomeScreenProps) {
           </View>
 
           <View style={styles.topNavActions}>
-            {/* Light / Dark Mode Toggle */}
-            <Pressable
-              onPress={toggleTheme}
-              style={[
-                styles.pillBtn,
-                {
-                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.18)' : 'rgba(46, 125, 50, 0.12)',
-                  borderColor: isDark ? 'rgba(255, 255, 255, 0.35)' : 'rgba(46, 125, 50, 0.40)',
-                }
-              ]}
-            >
-              <SymbolView
-                name={{ ios: isDark ? 'sun.max.fill' : 'moon.stars.fill', android: isDark ? 'light_mode' : 'dark_mode', web: isDark ? 'light_mode' : 'dark_mode' } as any}
-                size={14}
-                tintColor={textColor}
-              />
-              <ThemedText type="smallBold" style={{ color: textColor, fontSize: 12.5 }}>
-                {isDark ? (isHi ? 'लाइट' : 'Light') : (isHi ? 'डार्क' : 'Dark')}
-              </ThemedText>
-            </Pressable>
+            {/* Light / Dark Mode Toggle — hidden on mobile */}
+            {!isMobile && (
+              <Pressable
+                onPress={toggleTheme}
+                style={[
+                  styles.pillBtn,
+                  {
+                    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.18)' : 'rgba(46, 125, 50, 0.12)',
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.35)' : 'rgba(46, 125, 50, 0.40)',
+                  }
+                ]}
+              >
+                <SymbolView
+                  name={{ ios: isDark ? 'sun.max.fill' : 'moon.stars.fill', android: isDark ? 'light_mode' : 'dark_mode', web: isDark ? 'light_mode' : 'dark_mode' } as any}
+                  size={14}
+                  tintColor={textColor}
+                />
+                <ThemedText type="smallBold" style={{ color: textColor, fontSize: 12.5 }}>
+                  {isDark ? (isHi ? 'लाइट' : 'Light') : (isHi ? 'डार्क' : 'Dark')}
+                </ThemedText>
+              </Pressable>
+            )}
 
-            {/* Language Switcher */}
-            <Pressable
-              onPress={toggleLanguage}
-              style={[
-                styles.pillBtn,
-                {
-                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.18)' : 'rgba(46, 125, 50, 0.12)',
-                  borderColor: isDark ? 'rgba(255, 255, 255, 0.35)' : 'rgba(46, 125, 50, 0.40)',
-                }
-              ]}
-            >
-              <SymbolView
-                name={{ ios: 'globe', android: 'language', web: 'language' } as any}
-                size={14}
-                tintColor={textColor}
-              />
-              <ThemedText type="smallBold" style={{ color: textColor, fontSize: 12.5 }}>
-                {isHi ? 'English' : 'हिंदी'}
-              </ThemedText>
-            </Pressable>
+            {/* Language Switcher — hidden on mobile */}
+            {!isMobile && (
+              <Pressable
+                onPress={toggleLanguage}
+                style={[
+                  styles.pillBtn,
+                  {
+                    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.18)' : 'rgba(46, 125, 50, 0.12)',
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.35)' : 'rgba(46, 125, 50, 0.40)',
+                  }
+                ]}
+              >
+                <SymbolView
+                  name={{ ios: 'globe', android: 'language', web: 'language' } as any}
+                  size={14}
+                  tintColor={textColor}
+                />
+                <ThemedText type="smallBold" style={{ color: textColor, fontSize: 12.5 }}>
+                  {isHi ? 'English' : 'हिंदी'}
+                </ThemedText>
+              </Pressable>
+            )}
 
             {/* Login Button */}
             <Pressable
@@ -144,9 +151,11 @@ export function HomeScreen({ onExploreDemo, onLoginSuccess }: HomeScreenProps) {
                 size={16}
                 tintColor={theme.onPrimary}
               />
-              <ThemedText type="smallBold" style={{ color: theme.onPrimary, fontSize: 13 }}>
-                {isHi ? 'लॉगिन' : 'Login'}
-              </ThemedText>
+              {!isMobile && (
+                <ThemedText type="smallBold" style={{ color: theme.onPrimary, fontSize: 13 }}>
+                  {isHi ? 'लॉगिन' : 'Login'}
+                </ThemedText>
+              )}
             </Pressable>
           </View>
         </View>
@@ -154,40 +163,58 @@ export function HomeScreen({ onExploreDemo, onLoginSuccess }: HomeScreenProps) {
 
       {/* Main Landing Page Body */}
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          isMobile && { paddingHorizontal: Spacing.two, paddingVertical: Spacing.three },
+        ]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.landingWrapper}>
+        <View style={[styles.landingWrapper, isMobile && { gap: 24 }]}>
           
           {/* 1. Hero Showcase Section */}
-          <View style={styles.heroSection}>
+          <View style={[styles.heroSection, isMobile && { paddingHorizontal: Spacing.two, gap: Spacing.two }]}>
 
             <AppLogo
-              size="hero"
+              size={isMobile ? 'small' : 'hero'}
               language={language}
               showSubtitle={false}
               textColor={textColor}
             />
 
-            <ThemedText type="title" style={[styles.heroHeadline, { color: textColor }]}>
+            <ThemedText
+              type="title"
+              style={[
+                styles.heroHeadline,
+                { color: textColor },
+                isMobile && { fontSize: 22, lineHeight: 30, maxWidth: '100%' },
+              ]}
+            >
               {isHi
                 ? 'भारतीय किसानों के लिए एकीकृत AI कृषि क्रांति'
                 : 'Empowering Indian Agriculture with Advanced AI'}
             </ThemedText>
 
-            <ThemedText type="small" style={[styles.heroSubtext, { color: subTextColor }]}>
+            <ThemedText
+              type="small"
+              style={[
+                styles.heroSubtext,
+                { color: subTextColor },
+                isMobile && { fontSize: 13, lineHeight: 20, maxWidth: '100%' },
+              ]}
+            >
               {isHi
                 ? 'फसल सुरक्षा, रोग निदान, लाइव मंडी भाव, मौसम एडवाइजरी एवं मृदा उर्वरक नियोजन का सम्पूर्ण डिजिटल समाधान।'
                 : 'Complete digital ecosystem featuring automated pest diagnosis, real-time APMC mandi commodity rates, hyper-local weather alerts & fertilizer planning.'}
             </ThemedText>
 
             {/* Action Buttons */}
-            <View style={styles.heroCtaRow}>
+            <View style={[styles.heroCtaRow, isMobile && { flexDirection: 'column', gap: 12 }]}>
               <Pressable
                 onPress={() => setAuthModalVisible(true)}
                 style={({ pressed }) => [
                   styles.primaryCtaBtn,
                   { backgroundColor: theme.primary },
+                  isMobile && { minWidth: 0, width: '100%', paddingHorizontal: 16, paddingVertical: 14 },
                   pressed && { opacity: 0.9 }
                 ]}
               >
@@ -196,7 +223,7 @@ export function HomeScreen({ onExploreDemo, onLoginSuccess }: HomeScreenProps) {
                   size={18}
                   tintColor={theme.onPrimary}
                 />
-                <ThemedText type="smallBold" style={[styles.ctaText, { color: theme.onPrimary }]}>
+                <ThemedText type="smallBold" style={[styles.ctaText, { color: theme.onPrimary }, isMobile && { fontSize: 14 }]}>
                   {isHi ? 'लॉगिन / नया खाता बनाएँ' : 'Login / Register Account'}
                 </ThemedText>
               </Pressable>
@@ -209,6 +236,7 @@ export function HomeScreen({ onExploreDemo, onLoginSuccess }: HomeScreenProps) {
                     backgroundColor: isDark ? 'rgba(255, 255, 255, 0.18)' : '#ffffff',
                     borderColor: isDark ? 'rgba(255, 255, 255, 0.40)' : 'rgba(46, 125, 50, 0.50)',
                   },
+                  isMobile && { minWidth: 0, width: '100%', paddingHorizontal: 16, paddingVertical: 14 },
                   pressed && { opacity: 0.85 }
                 ]}
               >
@@ -217,7 +245,7 @@ export function HomeScreen({ onExploreDemo, onLoginSuccess }: HomeScreenProps) {
                   size={18}
                   tintColor={textColor}
                 />
-                <ThemedText type="smallBold" style={[styles.ctaText, { color: textColor }]}>
+                <ThemedText type="smallBold" style={[styles.ctaText, { color: textColor }, isMobile && { fontSize: 14 }]}>
                   {isHi ? 'बिना लॉगिन के देखें (Demo App)' : 'Explore App Demo'}
                 </ThemedText>
               </Pressable>
