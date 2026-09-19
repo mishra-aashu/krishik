@@ -123,6 +123,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email,
         password: pin,
       });
+
+      // Always sync profile to Supabase public.profiles
+      const { data: rpcData } = await supabase.rpc('sync_user_profile', {
+        p_name: `Farmer ${cleanedPhone.slice(-4)}`,
+        p_phone: cleanedPhone,
+        p_state: farmState || 'Punjab',
+        p_soil: farmSoil || 'Alluvial Soil (जलोढ़)',
+        p_crop: farmCrop || 'Wheat (गेहूं)',
+        p_pin: pin,
+      });
+
       if (!error && data?.user) {
         const profile = await loadProfile(data.user.id);
         if (profile) {
@@ -138,13 +149,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         return true;
       }
-      if (error) console.warn('Login note:', error.message);
+
+      if (rpcData?.id) {
+        applyProfile(rpcData.id, {
+          name: `Farmer ${cleanedPhone.slice(-4)}`,
+          phone: cleanedPhone,
+          farm_state: farmState,
+          farm_soil: farmSoil,
+          farm_crop: farmCrop,
+        });
+        return true;
+      }
     } catch (e) {
       console.warn('Login exception:', e);
     }
 
-    // Fallback local session if Supabase is offline/unreachable
-    applyProfile(`local-${cleanedPhone}`, {
+    applyProfile(`user-${cleanedPhone}`, {
       name: `Farmer ${cleanedPhone.slice(-4)}`,
       phone: cleanedPhone,
       farm_state: farmState,
@@ -180,51 +200,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const email = `${cleanedPhone}@gmail.com`;
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password: pin,
-        options: {
-          data: {
-            name: name.trim(),
-            phone: cleanedPhone,
-            farm_state: state,
-            farm_soil: soil,
-            farm_crop: crop,
-          },
-        },
+
+      // 1. Sync user profile to Supabase public.profiles & auth.users via RPC
+      const { data: rpcData, error: rpcError } = await supabase.rpc('sync_user_profile', {
+        p_name: name.trim(),
+        p_phone: cleanedPhone,
+        p_state: state,
+        p_soil: soil,
+        p_crop: crop,
+        p_pin: pin,
       });
 
-      if (!error && data?.user) {
-        const { error: profileError } = await supabase.from('profiles').upsert({
-          id: data.user.id,
-          name: name.trim(),
-          phone: cleanedPhone,
-          farm_state: state,
-          farm_soil: soil,
-          farm_crop: crop,
-        });
-
-        if (profileError) {
-          console.warn('Profile upsert warning:', profileError.message);
-        }
-
-        applyProfile(data.user.id, {
-          name: name.trim(),
-          phone: cleanedPhone,
-          farm_state: state,
-          farm_soil: soil,
-          farm_crop: crop,
-        });
-        return true;
-      } else if (error) {
-        console.warn('Supabase register notice:', error.message);
+      if (rpcError) {
+        console.warn('sync_user_profile notice:', rpcError.message);
       }
+
+      // 2. Establish Auth Session
+      const { data: authData } = await supabase.auth.signUp({
+        email,
+        password: pin,
+      });
+
+      const activeUid = rpcData?.id || authData?.user?.id || `user-${cleanedPhone}`;
+
+      applyProfile(activeUid, {
+        name: name.trim(),
+        phone: cleanedPhone,
+        farm_state: state,
+        farm_soil: soil,
+        farm_crop: crop,
+      });
+      return true;
     } catch (e) {
       console.warn('Register exception:', e);
     }
 
-    // Fallback: apply local profile so user experience is not blocked
-    applyProfile(`local-${cleanedPhone}`, {
+    applyProfile(`user-${cleanedPhone}`, {
       name: name.trim(),
       phone: cleanedPhone,
       farm_state: state,
@@ -251,22 +262,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     soil: string,
     crop: string
   ) => {
-    if (!userId) return;
+    if (!userPhone) return;
     try {
-      if (!userId.startsWith('guest-') && !userId.startsWith('local-')) {
-        const { error } = await supabase
-          .from('profiles')
-          .update({
-            name: name.trim(),
-            farm_state: state,
-            farm_soil: soil,
-            farm_crop: crop,
-          })
-          .eq('id', userId);
-
-        if (error) {
-          console.warn('updateProfile warning:', error.message);
-        }
+      if (userPhone !== '9999999999') {
+        await supabase.rpc('sync_user_profile', {
+          p_name: name.trim(),
+          p_phone: userPhone,
+          p_state: state,
+          p_soil: soil,
+          p_crop: crop,
+        });
       }
     } catch (e) {
       console.warn('updateProfile exception:', e);
