@@ -14,19 +14,33 @@ const ExpoSSRSafeStorage = {
     if (typeof window === 'undefined') {
       return Promise.resolve(null);
     }
-    return AsyncStorage.getItem(key);
+    try {
+      return Promise.resolve(window.localStorage.getItem(key));
+    } catch {
+      return AsyncStorage.getItem(key);
+    }
   },
   setItem: (key: string, value: string) => {
     if (typeof window === 'undefined') {
       return Promise.resolve();
     }
-    return AsyncStorage.setItem(key, value);
+    try {
+      window.localStorage.setItem(key, value);
+      return Promise.resolve();
+    } catch {
+      return AsyncStorage.setItem(key, value);
+    }
   },
   removeItem: (key: string) => {
     if (typeof window === 'undefined') {
       return Promise.resolve();
     }
-    return AsyncStorage.removeItem(key);
+    try {
+      window.localStorage.removeItem(key);
+      return Promise.resolve();
+    } catch {
+      return AsyncStorage.removeItem(key);
+    }
   },
 };
 

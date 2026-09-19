@@ -1077,7 +1077,7 @@ export default function ChatScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
         <OfflineNotice language={language} />
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -1085,7 +1085,7 @@ export default function ChatScreen() {
           enabled={Platform.OS !== 'web'}
         >
           {/* Header Panel */}
-          <View style={[styles.headerPanel, { borderBottomColor: theme.border }]}>
+          <View style={[styles.headerPanel, { borderBottomColor: theme.border, backgroundColor: theme.background }]}>
             <View style={[styles.headerInfoRow, { flexShrink: 1 }]}>
               <Pressable
                 onPress={() => router.back()}
@@ -1352,6 +1352,12 @@ export default function ChatScreen() {
                 styles.textInput,
                 { color: theme.text, borderColor: theme.border, backgroundColor: theme.backgroundElement }
               ]}
+              autoComplete="off"
+              textContentType="none"
+              importantForAutofill="no"
+              secureTextEntry={false}
+              autoCapitalize="sentences"
+              autoCorrect={true}
               placeholder={
                 isOffline
                   ? (language === 'hi' ? "ऑफ़लाइन: चैट उपलब्ध नहीं है" : "Offline: Chat unavailable")
@@ -1585,17 +1591,23 @@ export default function ChatScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    height: '100%',
+    maxHeight: '100%',
+    width: '100%',
     alignItems: 'center',
     flexDirection: 'column',
+    overflow: 'hidden',
   },
   safeArea: {
     flex: 1,
     width: '100%',
+    height: '100%',
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
   },
   keyboardView: {
     flex: 1,
+    height: '100%',
     width: '100%',
   },
   headerPanel: {
@@ -1607,6 +1619,7 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.two,
     paddingHorizontal: Spacing.three,
     borderBottomWidth: 1,
+    zIndex: 10,
   },
   headerInfoRow: {
     flexDirection: 'row',

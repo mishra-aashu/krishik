@@ -113,10 +113,18 @@ export function ForgotPinModal({
     setIsLoading(true);
 
     try {
-      await resetPin(resetPhone, newPin);
+      const success = await resetPin(resetPhone, newPin);
       setIsLoading(false);
-      onSuccess(resetPhone, newPin);
-      resetState();
+      if (success) {
+        onSuccess(resetPhone, newPin);
+        resetState();
+      } else {
+        setErrorMsg(
+          isHi
+            ? 'पिन रीसेट करने में समस्या आई। कृपया जांचें कि नंबर सही है या नहीं।'
+            : 'Failed to reset PIN. Please verify phone number.'
+        );
+      }
     } catch (e) {
       console.error('Reset PIN error:', e);
       setIsLoading(false);

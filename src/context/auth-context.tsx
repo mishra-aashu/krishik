@@ -1,10 +1,12 @@
 import { supabase } from '@/lib/supabase';
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { LocalStorage } from '@/utils/storage';
 
 interface AuthContextType {
   isAuthenticated: boolean;
   userName: string;
   userPhone: string;
+  userEmail: string;
   farmState: string;
   farmSoil: string;
   farmCrop: string;
@@ -19,7 +21,15 @@ interface AuthContextType {
     pin: string
   ) => Promise<boolean>;
   logout: () => Promise<void>;
-  updateProfile: (name: string, state: string, soil: string, crop: string) => Promise<void>;
+  updateProfile: (
+    name: string,
+    emailOrState: string,
+    stateOrSoil?: string,
+    soilOrCrop?: string,
+    cropParam?: string,
+    langParam?: string,
+    themeParam?: string
+  ) => Promise<void>;
   resetPin: (phone: string, newPin: string) => Promise<boolean>;
 }
 
@@ -29,6 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userName, setUserName] = useState('');
   const [userPhone, setUserPhone] = useState('');
+  const [userEmail, setUserEmail] = useState('');
   const [userId, setUserId] = useState('');
   const [farmState, setFarmState] = useState('Punjab');
   const [farmSoil, setFarmSoil] = useState('Alluvial Soil (जलोढ़)');
@@ -47,20 +58,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const applyProfile = (uid: string, profile: any) => {
+    const fullProfile = {
+      id: uid,
+      name: profile.name || 'Kisan',
+      phone: profile.phone || '',
+      email: profile.email || (profile.phone ? `${profile.phone}@gmail.com` : ''),
+      farm_state: profile.farm_state || farmState || 'Punjab',
+      farm_soil: profile.farm_soil || farmSoil || 'Alluvial Soil (जलोढ़)',
+      farm_crop: profile.farm_crop || farmCrop || 'Wheat (गेहूं)',
+      preferred_language: profile.preferred_language || 'hi',
+      preferred_theme: profile.preferred_theme || 'light',
+    };
     setUserId(uid);
-    setUserName(profile.name);
-    setUserPhone(profile.phone);
-    setFarmState(profile.farm_state);
-    setFarmSoil(profile.farm_soil);
-    setFarmCrop(profile.farm_crop);
+    setUserName(fullProfile.name);
+    setUserPhone(fullProfile.phone);
+    setUserEmail(fullProfile.email);
+    setFarmState(fullProfile.farm_state);
+    setFarmSoil(fullProfile.farm_soil);
+    setFarmCrop(fullProfile.farm_crop);
     setIsAuthenticated(true);
+
+    // Save session to LocalStorage for persistent auto-login
+    LocalStorage.setItem('krishik_saved_user_profile', JSON.stringify(fullProfile));
   };
 
   const clearState = () => {
     setUserId('');
     setUserName('');
     setUserPhone('');
+    setUserEmail('');
     setIsAuthenticated(false);
+
+    // Clear saved session on explicit logout
+    LocalStorage.removeItem('krishik_saved_user_profile');
   };
 
   // ── restore session on app start ───────────────────────────────────────────
@@ -69,10 +99,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     async function restoreSession() {
       try {
+        // 1. Try restoring from Supabase Auth Session
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user && mounted) {
           const profile = await loadProfile(session.user.id);
-          if (profile) applyProfile(session.user.id, profile);
+          if (profile) {
+            applyProfile(session.user.id, profile);
+            if (mounted) setIsLoading(false);
+            return;
+          }
+        }
+
+        // 2. Try restoring from LocalStorage saved profile fallback
+        const savedStr = await LocalStorage.getItem('krishik_saved_user_profile');
+        if (savedStr && mounted) {
+          const savedProfile = JSON.parse(savedStr);
+          if (savedProfile && savedProfile.phone && savedProfile.name) {
+            setUserId(savedProfile.id || `user-${savedProfile.phone}`);
+            setUserName(savedProfile.name);
+            setUserPhone(savedProfile.phone);
+            setUserEmail(savedProfile.email || `${savedProfile.phone}@gmail.com`);
+            setFarmState(savedProfile.farm_state || 'Punjab');
+            setFarmSoil(savedProfile.farm_soil || 'Alluvial Soil (जलोढ़)');
+            setFarmCrop(savedProfile.farm_crop || 'Wheat (गेहूं)');
+            setIsAuthenticated(true);
+          }
         }
       } catch (e) {
         console.error('Failed to restore Supabase session', e);
@@ -119,59 +170,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const email = `${cleanedPhone}@gmail.com`;
-      const { data, error } = await supabase.auth.signInWithPassword({
+
+      // Establish Auth Session with Supabase GoTrue
+      const { data: authData, error: authErr } = await supabase.auth.signInWithPassword({
         email,
         password: pin,
       });
 
-      // Always sync profile to Supabase public.profiles
-      const { data: rpcData } = await supabase.rpc('sync_user_profile', {
-        p_name: `Farmer ${cleanedPhone.slice(-4)}`,
-        p_phone: cleanedPhone,
-        p_state: farmState || 'Punjab',
-        p_soil: farmSoil || 'Alluvial Soil (जलोढ़)',
-        p_crop: farmCrop || 'Wheat (गेहूं)',
-        p_pin: pin,
-      });
-
-      if (!error && data?.user) {
-        const profile = await loadProfile(data.user.id);
-        if (profile) {
-          applyProfile(data.user.id, profile);
-        } else {
-          applyProfile(data.user.id, {
-            name: `Farmer ${cleanedPhone.slice(-4)}`,
-            phone: cleanedPhone,
-            farm_state: farmState,
-            farm_soil: farmSoil,
-            farm_crop: farmCrop,
-          });
-        }
-        return true;
+      if (authErr || !authData?.user) {
+        console.warn('signInWithPassword error:', authErr?.message);
+        return false;
       }
 
-      if (rpcData?.id) {
-        applyProfile(rpcData.id, {
-          name: `Farmer ${cleanedPhone.slice(-4)}`,
+      const activeUid = authData.user.id;
+      const profile = await loadProfile(activeUid);
+      if (profile) {
+        applyProfile(activeUid, profile);
+      } else {
+        applyProfile(activeUid, {
+          name: authData.user.user_metadata?.name || `Farmer ${cleanedPhone.slice(-4)}`,
           phone: cleanedPhone,
-          farm_state: farmState,
-          farm_soil: farmSoil,
-          farm_crop: farmCrop,
+          farm_state: authData.user.user_metadata?.farm_state || farmState,
+          farm_soil: authData.user.user_metadata?.farm_soil || farmSoil,
+          farm_crop: authData.user.user_metadata?.farm_crop || farmCrop,
         });
-        return true;
       }
+      return true;
     } catch (e) {
       console.warn('Login exception:', e);
+      return false;
     }
-
-    applyProfile(`user-${cleanedPhone}`, {
-      name: `Farmer ${cleanedPhone.slice(-4)}`,
-      phone: cleanedPhone,
-      farm_state: farmState,
-      farm_soil: farmSoil,
-      farm_crop: farmCrop,
-    });
-    return true;
   };
 
   // ── register ───────────────────────────────────────────────────────────────
@@ -216,33 +244,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // 2. Establish Auth Session
-      const { data: authData } = await supabase.auth.signUp({
+      const { data: authData, error: authErr } = await supabase.auth.signInWithPassword({
         email,
         password: pin,
       });
 
-      const activeUid = rpcData?.id || authData?.user?.id || `user-${cleanedPhone}`;
+      const activeUid = authData?.user?.id || rpcData?.id;
 
-      applyProfile(activeUid, {
-        name: name.trim(),
-        phone: cleanedPhone,
-        farm_state: state,
-        farm_soil: soil,
-        farm_crop: crop,
-      });
-      return true;
+      if (activeUid) {
+        applyProfile(activeUid, {
+          name: name.trim(),
+          phone: cleanedPhone,
+          farm_state: state,
+          farm_soil: soil,
+          farm_crop: crop,
+        });
+        return true;
+      }
+      return false;
     } catch (e) {
       console.warn('Register exception:', e);
+      return false;
     }
-
-    applyProfile(`user-${cleanedPhone}`, {
-      name: name.trim(),
-      phone: cleanedPhone,
-      farm_state: state,
-      farm_soil: soil,
-      farm_crop: crop,
-    });
-    return true;
   };
 
   // ── logout ─────────────────────────────────────────────────────────────────
@@ -258,28 +281,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // ── updateProfile ──────────────────────────────────────────────────────────
   const updateProfile = async (
     name: string,
-    state: string,
-    soil: string,
-    crop: string
+    emailOrState: string,
+    stateOrSoil?: string,
+    soilOrCrop?: string,
+    cropParam?: string,
+    langParam?: string,
+    themeParam?: string
   ) => {
     if (!userPhone) return;
+
+    let emailVal = userEmail || `${userPhone}@gmail.com`;
+    let stateVal = farmState;
+    let soilVal = farmSoil;
+    let cropVal = farmCrop;
+
+    if (cropParam !== undefined) {
+      // 5 arguments passed: (name, email, state, soil, crop)
+      emailVal = emailOrState ? emailOrState.trim() : emailVal;
+      stateVal = stateOrSoil || farmState;
+      soilVal = soilOrCrop || farmSoil;
+      cropVal = cropParam || farmCrop;
+    } else {
+      // 4 arguments passed: (name, state, soil, crop)
+      stateVal = emailOrState || farmState;
+      soilVal = stateOrSoil || farmSoil;
+      cropVal = soilOrCrop || farmCrop;
+    }
+
+    const savedLang = langParam || (await LocalStorage.getItem('chat_lang')) || 'hi';
+    const savedTheme = themeParam || (await LocalStorage.getItem('app_theme')) || 'light';
+
     try {
       if (userPhone !== '9999999999') {
         await supabase.rpc('sync_user_profile', {
           p_name: name.trim(),
           p_phone: userPhone,
-          p_state: state,
-          p_soil: soil,
-          p_crop: crop,
+          p_state: stateVal,
+          p_soil: soilVal,
+          p_crop: cropVal,
+          p_email: emailVal,
+          p_language: savedLang,
+          p_theme: savedTheme,
         });
       }
     } catch (e) {
       console.warn('updateProfile exception:', e);
     }
     setUserName(name.trim());
-    setFarmState(state);
-    setFarmSoil(soil);
-    setFarmCrop(crop);
+    setUserEmail(emailVal);
+    setFarmState(stateVal);
+    setFarmSoil(soilVal);
+    setFarmCrop(cropVal);
   };
 
   const resetPin = async (phone: string, newPin: string): Promise<boolean> => {
@@ -292,13 +344,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       if (error) {
         console.warn('Supabase resetPin RPC notice:', error.message);
-      } else {
-        console.log('Supabase resetPin success:', data);
+        return false;
       }
       return true;
     } catch (e) {
       console.warn('resetPin exception:', e);
-      return true;
+      return false;
     }
   };
 
@@ -308,6 +359,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated,
         userName,
         userPhone,
+        userEmail,
         farmState,
         farmSoil,
         farmCrop,
