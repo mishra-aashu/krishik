@@ -357,7 +357,7 @@ export default function ChatScreen() {
   const { language: globalLang, setLanguage: setGlobalLanguage } = useLanguage();
 
   // Chat settings
-  const [language, setLanguageState] = useState<'hi' | 'en' | 'hinglish'>(globalLang || 'hi');
+  const [language, setLanguageState] = useState<'hi' | 'en' | 'hinglish'>(globalLang || 'en');
 
   useEffect(() => {
     if (globalLang && (globalLang === 'hi' || globalLang === 'en')) {

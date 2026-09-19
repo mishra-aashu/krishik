@@ -60,7 +60,7 @@ export default function HomeScreen() {
   const { farmState, farmSoil, farmCrop, updateProfile, logout, userName } = useAuth();
 
   // Language state
-  const [language, setLanguage] = useState<'hi' | 'en'>('hi');
+  const [language, setLanguage] = useState<'hi' | 'en'>('en');
 
   // Weather state
   const [weatherData, setWeatherData] = useState<RawWeatherData | null>(null);

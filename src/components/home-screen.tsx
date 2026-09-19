@@ -246,7 +246,7 @@ export function HomeScreen({ onExploreDemo, onLoginSuccess }: HomeScreenProps) {
                   tintColor={textColor}
                 />
                 <ThemedText type="smallBold" style={[styles.ctaText, { color: textColor }, isMobile && { fontSize: 14 }]}>
-                  {isHi ? 'बिना लॉगिन के देखें (Demo App)' : 'Explore App Demo'}
+                  {isHi ? 'बिना लॉगिन के देखें (गेस्ट)' : 'Explore as Guest'}
                 </ThemedText>
               </Pressable>
             </View>
@@ -413,12 +413,12 @@ export function HomeScreen({ onExploreDemo, onLoginSuccess }: HomeScreenProps) {
                   <ThemedText type="smallBold" style={{ color: theme.onPrimary, fontSize: 13 }}>1</ThemedText>
                 </View>
                 <ThemedText type="smallBold" style={[styles.stepTitle, { color: textColor }]}>
-                  {isHi ? 'लॉगिन / रजिस्ट्रेशन करें' : 'Create Profile or Try Demo'}
+                  {isHi ? 'लॉगिन / रजिस्ट्रेशन करें' : 'Create Profile or Explore as Guest'}
                 </ThemedText>
                 <ThemedText type="small" style={[styles.stepDesc, { color: subTextColor }]}>
                   {isHi
-                    ? 'फोन नंबर से 10 सेकंड में लॉगिन करें या सीधे डेमो चुनें।'
-                    : 'Sign in with your mobile number or jump in via instant demo mode.'}
+                    ? 'फोन नंबर से 10 सेकंड में लॉगिन करें या सीधे गेस्ट मोड चुनें।'
+                    : 'Sign in with your mobile number or jump in as guest.'}
                 </ThemedText>
               </View>
 

@@ -56,6 +56,11 @@ const TRANSLATIONS = {
     logoutConfirm: 'Are you sure you want to sign out?',
     cancel: 'Cancel',
     badgeText: 'Verified Kisan',
+    guestBadgeText: 'Guest Mode',
+    guestBannerTitle: 'Exploring as Guest',
+    guestBannerSub: 'Sign in to save your farm profile and chat history',
+    btnLoginNow: 'Login / Register Account',
+    btnExitGuest: 'Exit Guest Mode',
   },
   hi: {
     title: 'सेटिंग्स',
@@ -79,6 +84,11 @@ const TRANSLATIONS = {
     logoutConfirm: 'क्या आप वाकई लॉग आउट करना चाहते हैं?',
     cancel: 'रद्द करें',
     badgeText: 'सत्यापित किसान',
+    guestBadgeText: 'गेस्ट मोड',
+    guestBannerTitle: 'गेस्ट मोड में जुड़े हैं',
+    guestBannerSub: 'अपना डेटा, खेत विवरण और चैट इतिहास सेव करने के लिए लॉगिन करें',
+    btnLoginNow: 'लॉगिन या नया खाता बनाएं',
+    btnExitGuest: 'गेस्ट मोड से बाहर निकलें',
   }
 };
 
@@ -86,7 +96,9 @@ export default function ProfileScreen() {
   const { userName, userPhone, farmState, farmSoil, farmCrop, updateProfile, logout } = useAuth();
   const { themeMode, setThemeMode, theme, colorScheme } = useThemeContext();
 
-  const [lang, setLang] = useState<'hi' | 'en'>('hi');
+  const isGuest = userPhone === '9999999999' || userName === 'Kisan Guest';
+
+  const [lang, setLang] = useState<'hi' | 'en'>('en');
   const [editableName, setEditableName] = useState(userName);
   const [selectedState, setSelectedState] = useState(farmState);
   const [selectedSoil, setSelectedSoil] = useState(farmSoil);
@@ -138,6 +150,10 @@ export default function ProfileScreen() {
     setActiveModal('logout');
   };
 
+  const handleGoToLogin = async () => {
+    await logout();
+  };
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
@@ -164,115 +180,163 @@ export default function ProfileScreen() {
           </View>
         )}
 
-        {/* Hero Profile Section */}
-        <View style={styles.heroSection}>
-          <View style={[styles.avatarOutline, { borderColor: theme.primary + '30' }]}>
-            <View style={[styles.avatarCircle, { backgroundColor: theme.primary }]}>
-              <ThemedText style={[styles.avatarInitial, { color: theme.onPrimary }]}>
-                {editableName ? editableName.charAt(0).toUpperCase() : 'K'}
+        {isGuest ? (
+          /* Clean Guest Login Card (No fake phone/profile data) */
+          <ThemedView type="card" style={[styles.guestPromptCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <View style={[styles.guestAvatarBg, { backgroundColor: theme.primary + '18' }]}>
+              <SymbolView
+                name={{ ios: 'person.crop.circle.badge.plus', android: 'account_circle', web: 'account_circle' } as any}
+                size={48}
+                tintColor={theme.primary}
+              />
+            </View>
+
+            <ThemedText type="title" style={{ fontSize: 22, textAlign: 'center', marginTop: 12 }}>
+              {lang === 'hi' ? 'गेस्ट अकाउंट' : 'Guest Account'}
+            </ThemedText>
+
+            <ThemedText type="small" style={{ color: theme.textSecondary, textAlign: 'center', marginTop: 6, lineHeight: 20, paddingHorizontal: 12 }}>
+              {lang === 'hi'
+                ? 'आप अभी बिना लॉगिन किए ऐप का उपयोग कर रहे हैं। अपना फ़ार्म प्रोफाइल, चैट इतिहास और चौपाल गतिविधियों को सुरक्षित रखने के लिए लॉगिन करें।'
+                : 'You are currently exploring as a guest. Sign in or create an account to save your farm profile, sync chat history, and access farmer communities.'}
+            </ThemedText>
+
+            <PressableScale
+              onPress={handleGoToLogin}
+              style={({ pressed }) => [
+                styles.guestLoginMainBtn,
+                { backgroundColor: theme.primary },
+                pressed && { opacity: 0.9 }
+              ]}
+            >
+              <SymbolView
+                name={{ ios: 'arrow.right.circle.fill', android: 'login', web: 'login' } as any}
+                size={18}
+                tintColor={theme.onPrimary}
+              />
+              <ThemedText
+                type="smallBold"
+                numberOfLines={1}
+                style={{ color: theme.onPrimary, fontSize: 14, fontWeight: '700' }}
+              >
+                {lang === 'hi' ? 'लॉगिन / नया खाता बनाएं' : 'Login / Register'}
               </ThemedText>
+            </PressableScale>
+          </ThemedView>
+        ) : (
+          /* Normal Registered User Profile View */
+          <>
+            {/* Hero Profile Section */}
+            <View style={styles.heroSection}>
+              <View style={[styles.avatarOutline, { borderColor: theme.primary + '30' }]}>
+                <View style={[styles.avatarCircle, { backgroundColor: theme.primary }]}>
+                  <ThemedText style={[styles.avatarInitial, { color: theme.onPrimary }]}>
+                    {editableName ? editableName.charAt(0).toUpperCase() : 'K'}
+                  </ThemedText>
+                </View>
+              </View>
+              <ThemedText type="title" style={styles.heroName}>
+                {editableName || 'Kisan Mitra'}
+              </ThemedText>
+              <View style={styles.heroDetailsRow}>
+                <SymbolView 
+                  name={{ ios: 'phone.fill', android: 'phone', web: 'phone' } as any} 
+                  size={12} 
+                  tintColor={theme.textSecondary} 
+                />
+                <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                  {userPhone}
+                </ThemedText>
+              </View>
+              <View style={[styles.verifiedBadge, { backgroundColor: theme.primary + '18' }]}>
+                <SymbolView 
+                  name={{ ios: 'checkmark.seal.fill', android: 'verified', web: 'verified' } as any} 
+                  size={12} 
+                  tintColor={theme.primary} 
+                />
+                <ThemedText type="code" style={{ color: theme.primary, fontWeight: '700' }}>
+                  {t.badgeText}
+                </ThemedText>
+              </View>
             </View>
-          </View>
-          <ThemedText type="title" style={styles.heroName}>
-            {editableName || 'Kisan Mitra'}
-          </ThemedText>
-          <View style={styles.heroDetailsRow}>
-            <SymbolView 
-              name={{ ios: 'phone.fill', android: 'phone', web: 'phone' } as any} 
-              size={12} 
-              tintColor={theme.textSecondary} 
-            />
-            <ThemedText type="small" style={{ color: theme.textSecondary }}>
-              {userPhone || '+91 9999999999'}
+
+            {/* Card 1: Personal Details */}
+            <ThemedView type="backgroundElement" style={[styles.card, { borderColor: theme.border }]}>
+              <View style={styles.cardHeaderRow}>
+                <View style={[styles.cardHeaderIconContainer, { backgroundColor: theme.primary + '10' }]}>
+                  <SymbolView name={{ ios: 'person.fill', android: 'person', web: 'person' } as any} size={14} tintColor={theme.primary} />
+                </View>
+                <ThemedText type="smallBold" style={styles.cardSectionTitle}>{t.nameLabel}</ThemedText>
+              </View>
+              <View style={styles.inputGroup}>
+                <TextInput
+                  style={[styles.textInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.background }]}
+                  value={editableName}
+                  onChangeText={setEditableName}
+                  placeholder={t.namePlaceholder}
+                  placeholderTextColor={theme.textSecondary}
+                  maxLength={30}
+                />
+              </View>
+            </ThemedView>
+
+            {/* Card 2: Farm Details */}
+            <ThemedText type="smallBold" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
+              {t.farmSection}
             </ThemedText>
-          </View>
-          <View style={[styles.verifiedBadge, { backgroundColor: theme.primary + '18' }]}>
-            <SymbolView 
-              name={{ ios: 'checkmark.seal.fill', android: 'verified', web: 'verified' } as any} 
-              size={12} 
-              tintColor={theme.primary} 
-            />
-            <ThemedText type="code" style={{ color: theme.primary, fontWeight: '700' }}>
-              {t.badgeText}
-            </ThemedText>
-          </View>
-        </View>
+            
+            <ThemedView type="backgroundElement" style={[styles.card, { borderColor: theme.border, paddingVertical: Spacing.two }]}>
+              {/* State selector */}
+              <PressableScale 
+                onPress={() => setActiveModal('state')}
+                style={({ pressed }) => [styles.selectorRow, pressed && { backgroundColor: theme.backgroundSelected }]}
+              >
+                <View style={[styles.rowIconContainer, { backgroundColor: theme.primary + '10' }]}>
+                  <SymbolView name={{ ios: 'mappin.and.ellipse', android: 'place', web: 'place' } as any} size={16} tintColor={theme.primary} />
+                </View>
+                <View style={styles.rowTextContainer}>
+                  <ThemedText type="small" style={{ color: theme.textSecondary, fontSize: 11 }}>{t.stateLabel}</ThemedText>
+                  <ThemedText type="smallBold" style={styles.selectorValue}>{selectedState}</ThemedText>
+                </View>
+                <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any} size={14} tintColor={theme.textSecondary} />
+              </PressableScale>
 
-        {/* Card 1: Personal Details */}
-        <ThemedView type="backgroundElement" style={[styles.card, { borderColor: theme.border }]}>
-          <View style={styles.cardHeaderRow}>
-            <View style={[styles.cardHeaderIconContainer, { backgroundColor: theme.primary + '10' }]}>
-              <SymbolView name={{ ios: 'person.fill', android: 'person', web: 'person' } as any} size={14} tintColor={theme.primary} />
-            </View>
-            <ThemedText type="smallBold" style={styles.cardSectionTitle}>{t.nameLabel}</ThemedText>
-          </View>
-          <View style={styles.inputGroup}>
-            <TextInput
-              style={[styles.textInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.background }]}
-              value={editableName}
-              onChangeText={setEditableName}
-              placeholder={t.namePlaceholder}
-              placeholderTextColor={theme.textSecondary}
-              maxLength={30}
-            />
-          </View>
-        </ThemedView>
+              <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
-        {/* Card 2: Farm Details */}
-        <ThemedText type="smallBold" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
-          {t.farmSection}
-        </ThemedText>
-        
-        <ThemedView type="backgroundElement" style={[styles.card, { borderColor: theme.border, paddingVertical: Spacing.two }]}>
-          {/* State selector */}
-          <PressableScale 
-            onPress={() => setActiveModal('state')}
-            style={({ pressed }) => [styles.selectorRow, pressed && { backgroundColor: theme.backgroundSelected }]}
-          >
-            <View style={[styles.rowIconContainer, { backgroundColor: theme.primary + '10' }]}>
-              <SymbolView name={{ ios: 'mappin.and.ellipse', android: 'place', web: 'place' } as any} size={16} tintColor={theme.primary} />
-            </View>
-            <View style={styles.rowTextContainer}>
-              <ThemedText type="small" style={{ color: theme.textSecondary, fontSize: 11 }}>{t.stateLabel}</ThemedText>
-              <ThemedText type="smallBold" style={styles.selectorValue}>{selectedState}</ThemedText>
-            </View>
-            <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any} size={14} tintColor={theme.textSecondary} />
-          </PressableScale>
+              {/* Soil selector */}
+              <PressableScale 
+                onPress={() => setActiveModal('soil')}
+                style={({ pressed }) => [styles.selectorRow, pressed && { backgroundColor: theme.backgroundSelected }]}
+              >
+                <View style={[styles.rowIconContainer, { backgroundColor: theme.primary + '10' }]}>
+                  <SymbolView name={{ ios: 'drop.fill', android: 'opacity', web: 'opacity' } as any} size={16} tintColor={theme.primary} />
+                </View>
+                <View style={styles.rowTextContainer}>
+                  <ThemedText type="small" style={{ color: theme.textSecondary, fontSize: 11 }}>{t.soilLabel}</ThemedText>
+                  <ThemedText type="smallBold" style={styles.selectorValue}>{selectedSoil}</ThemedText>
+                </View>
+                <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any} size={14} tintColor={theme.textSecondary} />
+              </PressableScale>
 
-          <View style={[styles.divider, { backgroundColor: theme.border }]} />
+              <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
-          {/* Soil selector */}
-          <PressableScale 
-            onPress={() => setActiveModal('soil')}
-            style={({ pressed }) => [styles.selectorRow, pressed && { backgroundColor: theme.backgroundSelected }]}
-          >
-            <View style={[styles.rowIconContainer, { backgroundColor: theme.primary + '10' }]}>
-              <SymbolView name={{ ios: 'drop.fill', android: 'opacity', web: 'opacity' } as any} size={16} tintColor={theme.primary} />
-            </View>
-            <View style={styles.rowTextContainer}>
-              <ThemedText type="small" style={{ color: theme.textSecondary, fontSize: 11 }}>{t.soilLabel}</ThemedText>
-              <ThemedText type="smallBold" style={styles.selectorValue}>{selectedSoil}</ThemedText>
-            </View>
-            <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any} size={14} tintColor={theme.textSecondary} />
-          </PressableScale>
-
-          <View style={[styles.divider, { backgroundColor: theme.border }]} />
-
-          {/* Crop selector */}
-          <PressableScale 
-            onPress={() => setActiveModal('crop')}
-            style={({ pressed }) => [styles.selectorRow, pressed && { backgroundColor: theme.backgroundSelected }]}
-          >
-            <View style={[styles.rowIconContainer, { backgroundColor: theme.primary + '10' }]}>
-              <SymbolView name={{ ios: 'laurel.leading', android: 'spa', web: 'spa' } as any} size={16} tintColor={theme.primary} />
-            </View>
-            <View style={styles.rowTextContainer}>
-              <ThemedText type="small" style={{ color: theme.textSecondary, fontSize: 11 }}>{t.cropLabel}</ThemedText>
-              <ThemedText type="smallBold" style={styles.selectorValue}>{selectedCrop}</ThemedText>
-            </View>
-            <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any} size={14} tintColor={theme.textSecondary} />
-          </PressableScale>
-        </ThemedView>
+              {/* Crop selector */}
+              <PressableScale 
+                onPress={() => setActiveModal('crop')}
+                style={({ pressed }) => [styles.selectorRow, pressed && { backgroundColor: theme.backgroundSelected }]}
+              >
+                <View style={[styles.rowIconContainer, { backgroundColor: theme.primary + '10' }]}>
+                  <SymbolView name={{ ios: 'laurel.leading', android: 'spa', web: 'spa' } as any} size={16} tintColor={theme.primary} />
+                </View>
+                <View style={styles.rowTextContainer}>
+                  <ThemedText type="small" style={{ color: theme.textSecondary, fontSize: 11 }}>{t.cropLabel}</ThemedText>
+                  <ThemedText type="smallBold" style={styles.selectorValue}>{selectedCrop}</ThemedText>
+                </View>
+                <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any} size={14} tintColor={theme.textSecondary} />
+              </PressableScale>
+            </ThemedView>
+          </>
+        )}
 
         {/* Card 3: App Preferences */}
         <ThemedText type="smallBold" style={[styles.sectionTitle, { color: theme.textSecondary }]}>
@@ -400,36 +464,62 @@ export default function ProfileScreen() {
 
         {/* Buttons */}
         <View style={styles.buttonContainer}>
-          <PressableScale
-            onPress={handleSave}
-            style={({ pressed }) => [
-              styles.saveButton,
-              { backgroundColor: theme.primary },
-              pressed && { opacity: 0.9 }
-            ]}
-          >
-            <ThemedText style={[styles.saveButtonText, { color: theme.onPrimary }]}>
-              {t.btnSave}
-            </ThemedText>
-          </PressableScale>
+          {isGuest ? (
+            <PressableScale
+              onPress={handleGoToLogin}
+              style={({ pressed }) => [
+                styles.saveButton,
+                { backgroundColor: theme.primary },
+                pressed && { opacity: 0.9 }
+              ]}
+            >
+              <SymbolView
+                name={{ ios: 'arrow.right.circle.fill', android: 'login', web: 'login' } as any}
+                size={18}
+                tintColor={theme.onPrimary}
+              />
+              <ThemedText
+                type="smallBold"
+                numberOfLines={1}
+                style={[styles.saveButtonText, { color: theme.onPrimary, fontSize: 14 }]}
+              >
+                {lang === 'hi' ? 'लॉगिन / नया खाता बनाएं' : 'Login / Register'}
+              </ThemedText>
+            </PressableScale>
+          ) : (
+            <>
+              <PressableScale
+                onPress={handleSave}
+                style={({ pressed }) => [
+                  styles.saveButton,
+                  { backgroundColor: theme.primary },
+                  pressed && { opacity: 0.9 }
+                ]}
+              >
+                <ThemedText style={[styles.saveButtonText, { color: theme.onPrimary }]}>
+                  {t.btnSave}
+                </ThemedText>
+              </PressableScale>
 
-          <PressableScale
-            onPress={handleLogout}
-            style={({ pressed }) => [
-              styles.logoutButton,
-              { borderColor: theme.border },
-              pressed && { backgroundColor: theme.backgroundSelected }
-            ]}
-          >
-            <SymbolView 
-              name={{ ios: 'arrow.left.square.fill', android: 'logout', web: 'logout' } as any} 
-              size={16} 
-              tintColor={theme.error} 
-            />
-            <ThemedText style={[styles.logoutButtonText, { color: theme.error }]}>
-              {t.btnLogout}
-            </ThemedText>
-          </PressableScale>
+              <PressableScale
+                onPress={handleLogout}
+                style={({ pressed }) => [
+                  styles.logoutButton,
+                  { borderColor: theme.border },
+                  pressed && { backgroundColor: theme.backgroundSelected }
+                ]}
+              >
+                <SymbolView 
+                  name={{ ios: 'arrow.left.square.fill', android: 'logout', web: 'logout' } as any} 
+                  size={16} 
+                  tintColor={theme.error} 
+                />
+                <ThemedText style={[styles.logoutButtonText, { color: theme.error }]}>
+                  {t.btnLogout}
+                </ThemedText>
+              </PressableScale>
+            </>
+          )}
         </View>
       </ScrollView>
 
@@ -622,6 +712,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: Spacing.four,
     gap: 8,
+  },
+  guestPromptCard: {
+    alignItems: 'center',
+    padding: Spacing.four,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginVertical: Spacing.two,
+  },
+  guestAvatarBg: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  guestLoginMainBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 14,
+    width: '100%',
+    marginTop: Spacing.four,
   },
   avatarOutline: {
     borderWidth: 1.5,

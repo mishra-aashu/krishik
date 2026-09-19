@@ -158,7 +158,7 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
       btnBack: '➔ पीछे',
       btnSubmitSignup: 'खाता बनाएं',
       btnSubmitLogin: 'प्रवेश करें',
-      btnSkip: 'बिना लॉगिन के देखें (Demo) ➔',
+      btnSkip: 'बिना लॉगिन के देखें (गेस्ट) ➔',
       loginErr: 'गलत मोबाइल नंबर या पिन दर्ज किया गया है।',
       fillErr: 'कृपया सभी आवश्यक फ़ील्ड भरें।',
       phoneFormatErr: 'कृपया मान्य 10 अंकों का मोबाइल नंबर दर्ज करें।',
@@ -187,7 +187,7 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
       btnBack: '➔ Back',
       btnSubmitSignup: 'Register Account',
       btnSubmitLogin: 'Login',
-      btnSkip: 'Explore App as Guest (Demo) ➔',
+      btnSkip: 'Explore as Guest ➔',
       loginErr: 'Invalid phone number or PIN.',
       fillErr: 'Please fill in all required fields.',
       phoneFormatErr: 'Please enter a valid 10-digit mobile number.',
@@ -286,17 +286,21 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
 
   const handleSkipLogin = async () => {
     setIsLoading(true);
-    // Create demo profile
-    await register(
-      'Kisan Guest',
-      '9999999999',
-      'Punjab',
-      'Alluvial Soil (जलोढ़)',
-      'Wheat (गेहूं)',
-      '1234'
-    );
-    setIsLoading(false);
-    onLoginSuccess();
+    try {
+      await register(
+        'Kisan Guest',
+        '9999999999',
+        'Punjab',
+        'Alluvial Soil (जलोढ़)',
+        'Wheat (गेहूं)',
+        '1234'
+      );
+    } catch (e) {
+      console.error('Guest skip login exception:', e);
+    } finally {
+      setIsLoading(false);
+      onLoginSuccess();
+    }
   };
 
   const nextBgIndex = (bgIndex + 1) % BG_IMAGES.length;

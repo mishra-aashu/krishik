@@ -90,12 +90,13 @@ export default function CommunityScreen() {
   const theme = useTheme();
   const safeAreaInsets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
+  const isMobile = width < 640;
   const { userName, userPhone } = useAuth();
   const netInfo = useNetInfo();
   const isOffline = netInfo.isConnected === false;
 
   // Language state
-  const [language, setLanguage] = useState<'hi' | 'en'>('hi');
+  const [language, setLanguage] = useState<'hi' | 'en'>('en');
 
   // Load language preference
   useFocusEffect(
@@ -548,21 +549,22 @@ export default function CommunityScreen() {
           <>
             {/* Header */}
             <View style={styles.header}>
-              <View>
-                <ThemedText type="smallBold" style={styles.headerTitle}>
+              <View style={{ flex: 1, marginRight: Spacing.two }}>
+                <ThemedText type="smallBold" style={[styles.headerTitle, isMobile && { fontSize: 18 }]} numberOfLines={1}>
                   {language === 'hi' ? 'किसान चौपाल' : 'Farmers Chowpal'}
                 </ThemedText>
-                <ThemedText type="small" style={[styles.headerSub, { color: theme.textSecondary, fontWeight: '600' }]}>
+                <ThemedText type="small" style={[styles.headerSub, { color: theme.textSecondary, fontWeight: '600' }]} numberOfLines={1}>
                   {language === 'hi' ? 'आपसी चर्चा और साझेदारी मंच' : 'Peer-to-Peer Sharing & Forums'}
                 </ThemedText>
               </View>
 
-              <View style={{ flexDirection: 'row', gap: Spacing.two }}>
+              <View style={{ flexDirection: 'row', gap: isMobile ? 6 : Spacing.two, alignItems: 'center' }}>
                 <Pressable
                   onPress={toggleLanguage}
                   style={({ pressed }) => [
                     styles.headerActionBtn,
                     { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+                    isMobile && { paddingHorizontal: 8, paddingVertical: 5 },
                     pressed && { opacity: 0.8 }
                   ]}
                 >
@@ -593,6 +595,7 @@ export default function CommunityScreen() {
                       backgroundColor: isOffline ? theme.border : theme.primary, 
                       borderColor: theme.border 
                     },
+                    isMobile && { paddingHorizontal: 8, paddingVertical: 5 },
                     pressed && { opacity: 0.9 }
                   ]}
                 >
@@ -602,13 +605,15 @@ export default function CommunityScreen() {
                     tintColor={isOffline ? theme.textSecondary : theme.onPrimary}
                   />
                   <ThemedText style={{ color: isOffline ? theme.textSecondary : theme.onPrimary, fontSize: 11, fontWeight: '700' }}>
-                    {language === 'hi' ? 'नई चौपाल' : 'New Board'}
+                    {isMobile
+                      ? (language === 'hi' ? '+ चौपाल' : '+ Board')
+                      : (language === 'hi' ? 'नई चौपाल' : 'New Board')}
                   </ThemedText>
                 </Pressable>
               </View>
             </View>
 
-            {/* Tab selection bar: Chowpal Directories vs Consolidated Feed */}
+            {/* Tab selection bar: Chowpal Directories vs Consolidated Feed vs Trending */}
             <View style={[styles.tabBar, { borderBottomColor: theme.border }]}>
               <Pressable
                 onPress={() => { setActiveTab('communities'); setSearchQuery(''); }}
@@ -617,14 +622,20 @@ export default function CommunityScreen() {
                   activeTab === 'communities' && { borderBottomColor: theme.primary }
                 ]}
               >
+                <SymbolView
+                  name={{ ios: 'square.grid.2x2.fill', android: 'grid_view', web: 'grid_view' } as any}
+                  size={15}
+                  tintColor={activeTab === 'communities' ? theme.primary : theme.textSecondary}
+                />
                 <ThemedText
                   type="smallBold"
                   style={{
                     color: activeTab === 'communities' ? theme.primary : theme.textSecondary,
-                    fontSize: 14
+                    fontSize: 13
                   }}
+                  numberOfLines={1}
                 >
-                  {language === 'hi' ? 'चौपाल सूची' : 'Chowpal Boards'}
+                  {language === 'hi' ? 'चौपाल सूची' : 'Boards'}
                 </ThemedText>
               </Pressable>
 
@@ -635,12 +646,18 @@ export default function CommunityScreen() {
                   activeTab === 'my-feed' && { borderBottomColor: theme.primary }
                 ]}
               >
+                <SymbolView
+                  name={{ ios: 'tray.full.fill', android: 'feed', web: 'feed' } as any}
+                  size={15}
+                  tintColor={activeTab === 'my-feed' ? theme.primary : theme.textSecondary}
+                />
                 <ThemedText
                   type="smallBold"
                   style={{
                     color: activeTab === 'my-feed' ? theme.primary : theme.textSecondary,
-                    fontSize: 14
+                    fontSize: 13
                   }}
+                  numberOfLines={1}
                 >
                   {language === 'hi' ? 'मेरी फ़ीड' : 'My Feed'}
                 </ThemedText>
@@ -653,14 +670,20 @@ export default function CommunityScreen() {
                   activeTab === 'trending' && { borderBottomColor: theme.primary }
                 ]}
               >
+                <SymbolView
+                  name={{ ios: 'flame.fill', android: 'local_fire_department', web: 'local_fire_department' } as any}
+                  size={15}
+                  tintColor={activeTab === 'trending' ? theme.primary : theme.textSecondary}
+                />
                 <ThemedText
                   type="smallBold"
                   style={{
                     color: activeTab === 'trending' ? theme.primary : theme.textSecondary,
-                    fontSize: 14
+                    fontSize: 13
                   }}
+                  numberOfLines={1}
                 >
-                  {language === 'hi' ? 'चर्चित (Trending)' : 'Trending'}
+                  {language === 'hi' ? 'चर्चित' : 'Trending'}
                 </ThemedText>
               </Pressable>
             </View>
@@ -1948,14 +1971,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     width: '100%',
     borderBottomWidth: 1,
-    paddingHorizontal: Spacing.three
+    paddingHorizontal: Spacing.one,
   },
   tabButton: {
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.three,
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 4,
     borderBottomWidth: 3,
     borderBottomColor: 'transparent',
-    marginRight: Spacing.two
   },
   searchContainer: {
     paddingHorizontal: Spacing.three,
@@ -1982,6 +2009,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 20,
     borderWidth: 1,
+    flexShrink: 0,
   },
   scrollContent: {
     paddingHorizontal: Spacing.three,

@@ -199,7 +199,7 @@ export default function ExploreScreen() {
   const safeAreaInsets = useSafeAreaInsets();
   const netInfo = useNetInfo();
   const isOffline = netInfo.isConnected === false;
-  const [language, setLanguage] = useState<'hi' | 'en'>('hi');
+  const [language, setLanguage] = useState<'hi' | 'en'>('en');
 
   const getTabLabel = (tab: 'calc' | 'pest' | 'scheme') => {
     const isHindi = language === 'hi';
