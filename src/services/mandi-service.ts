@@ -168,6 +168,16 @@ function mapCommodityName(rawName: string): string {
   return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
 }
 
+export function deduplicateMandiItems(items: MandiItem[]): MandiItem[] {
+  const seen = new Set<string>();
+  return items.filter(item => {
+    const key = `${item.commodity.trim().toLowerCase()}___${item.state.trim().toLowerCase()}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 export async function fetchLiveMandiPrices(stateName: string): Promise<MandiItem[]> {
   const cacheKey = `mandi_cache_${stateName}`;
 
@@ -195,7 +205,7 @@ export async function fetchLiveMandiPrices(stateName: string): Promise<MandiItem
     }
 
     if (!error && data && data.length > 0) {
-      const items: MandiItem[] = data.map((row: any, index: number) => ({
+      const rawItems: MandiItem[] = data.map((row: any, index: number) => ({
         id: `sb-${row.id}-${index}`,
         commodity: mapCommodityName(row.commodity),
         price: Number(row.price) || 0,
@@ -204,6 +214,8 @@ export async function fetchLiveMandiPrices(stateName: string): Promise<MandiItem
         change: row.change || '0',
         variety: row.variety || '',
       }));
+
+      const items = deduplicateMandiItems(rawItems);
 
       // Update local cache as offline fallback
       try {

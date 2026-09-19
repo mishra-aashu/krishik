@@ -333,22 +333,22 @@ export default function ProfileScreen() {
         <ThemedText type="smallBold" style={styles.headerTitle}>{t.title}</ThemedText>
       </View>
 
-      {/* Floating Success Toast Notification */}
+      {/* Floating Success Toast Notification (Slim & Sleek) */}
       {successMsg && (
         <View style={styles.floatingToastContainer}>
           <View style={[styles.floatingToast, { backgroundColor: '#15803D' }]}>
             <View style={styles.toastIconCircle}>
               <SymbolView
                 name={{ ios: 'checkmark', android: 'check', web: 'check' } as any}
-                size={16}
+                size={13}
                 tintColor={'#15803D'}
               />
             </View>
-            <View style={{ flex: 1, marginLeft: 10 }}>
-              <ThemedText style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '700' }}>
+            <View style={{ flex: 1, marginLeft: 8 }}>
+              <ThemedText style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700' }}>
                 {successMsg}
               </ThemedText>
-              <ThemedText style={{ color: '#DCFCE7', fontSize: 11, fontWeight: '500' }}>
+              <ThemedText style={{ color: '#DCFCE7', fontSize: 10, fontWeight: '500' }}>
                 {lang === 'hi' ? 'आपकी प्राथमिकताएं अपडेट हो गईं ✓' : 'Your preferences have been updated ✓'}
               </ThemedText>
             </View>
@@ -885,7 +885,7 @@ export default function ProfileScreen() {
         </View>
       </ScrollView>
 
-      {/* Floating Bottom Unsaved Changes Sticky Bar */}
+      {/* Floating Bottom Unsaved Changes Sticky Bar (Slim & Sleek) */}
       {isDirty && (
         <View style={styles.unsavedStickyBarContainer}>
           <View style={[styles.unsavedStickyBar, { backgroundColor: '#D97706' }]}>
@@ -893,16 +893,13 @@ export default function ProfileScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <SymbolView
                   name={{ ios: 'exclamationmark.triangle.fill', android: 'warning', web: 'warning' } as any}
-                  size={16}
+                  size={14}
                   tintColor={'#FFFFFF'}
                 />
-                <ThemedText style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '800' }}>
+                <ThemedText style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700' }}>
                   {lang === 'hi' ? 'असुरक्षित बदलाव!' : 'Unsaved Changes!'}
                 </ThemedText>
               </View>
-              <ThemedText style={{ color: '#FEF3C7', fontSize: 10, fontWeight: '500', marginTop: 2 }}>
-                {lang === 'hi' ? 'सुरक्षित करने के लिए बटन दबाएं' : 'Click button to save your changes'}
-              </ThemedText>
             </View>
 
             <TouchableOpacity
@@ -912,11 +909,11 @@ export default function ProfileScreen() {
             >
               <SymbolView
                 name={{ ios: 'square.and.arrow.down.fill', android: 'save', web: 'save' } as any}
-                size={14}
+                size={12}
                 tintColor={'#D97706'}
               />
-              <ThemedText style={{ color: '#D97706', fontSize: 12, fontWeight: '800' }}>
-                {lang === 'hi' ? 'अभी सुरक्षित करें' : 'Save Now'}
+              <ThemedText style={{ color: '#D97706', fontSize: 11, fontWeight: '800' }}>
+                {lang === 'hi' ? 'सुरक्षित करें' : 'Save Now'}
               </ThemedText>
             </TouchableOpacity>
           </View>
@@ -1092,27 +1089,27 @@ const styles = StyleSheet.create({
   floatingToast: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 16,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 12,
     width: '100%',
     ...Platform.select({
       web: {
-        boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.25)',
+        boxShadow: '0px 4px 16px rgba(0, 0, 0, 0.2)',
       } as any,
       default: {
-        elevation: 10,
+        elevation: 8,
         shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.35,
-        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
       },
     }),
   },
   toastIconCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
@@ -1129,20 +1126,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 16,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 12,
     width: '100%',
     ...Platform.select({
       web: {
-        boxShadow: '0px 8px 24px rgba(217, 119, 6, 0.4)',
+        boxShadow: '0px 4px 16px rgba(217, 119, 6, 0.35)',
       } as any,
       default: {
-        elevation: 12,
+        elevation: 10,
         shadowColor: '#D97706',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.4,
-        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.35,
+        shadowRadius: 8,
       },
     }),
   },
@@ -1152,11 +1149,11 @@ const styles = StyleSheet.create({
   unsavedActionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
     backgroundColor: '#FFFFFF',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 12,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 8,
     marginLeft: 10,
   },
   scrollView: {

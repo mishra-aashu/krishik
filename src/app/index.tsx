@@ -328,7 +328,7 @@ export default function HomeScreen() {
     }
   };
 
-  // Filter and sort prices
+  // Filter, deduplicate and sort prices
   const filteredMandiPrices = React.useMemo(() => {
     // 1. Filter by search query
     let list = mandiPrices.filter(item =>
@@ -336,7 +336,16 @@ export default function HomeScreen() {
       item.state.toLowerCase().includes(mandiSearch.toLowerCase())
     );
 
-    // 2. Sort by user's active crop priority
+    // 2. Deduplicate items so same commodity in same market isn't repeated 10 times
+    const seen = new Set<string>();
+    list = list.filter(item => {
+      const key = `${item.commodity.trim().toLowerCase()}___${item.state.trim().toLowerCase()}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    // 3. Sort by user's active crop priority
     if (farmCrop) {
       const activeCropClean = farmCrop.split('(')[0].trim().toLowerCase();
       list = [...list].sort((a, b) => {
@@ -348,7 +357,7 @@ export default function HomeScreen() {
       });
     }
 
-    // 3. Limit default view to 25 items so page isn't too long, but show all if searching
+    // 4. Limit default view to 25 items so page isn't too long, but show all if searching
     if (!mandiSearch) {
       return list.slice(0, 25);
     }
