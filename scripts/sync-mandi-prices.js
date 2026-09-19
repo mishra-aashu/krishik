@@ -25,11 +25,15 @@ function loadEnv() {
 
 loadEnv();
 
-const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://rqrlhbbdgpfcemeiwija.supabase.co';
-const SUPABASE_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJxcmxoYmJkZ3BmY2VtZWl3aWphIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4Mjc2MTIsImV4cCI6MjEwNTQwMzYxMn0.WZLzsmiuLMuJUnFYrrDbRIPkrGPlUN2haTm6pNUepks';
-const GOVT_API_KEY = process.env.EXPO_PUBLIC_DATA_GOV_IN_API_KEY || '579b464db66ec23bdd000001cdd3946e44ce4aad7209ff7b23ac571b';
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const SUPABASE_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+const GOVT_API_KEY = process.env.EXPO_PUBLIC_DATA_GOV_IN_API_KEY;
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+  console.warn('[Mandi Sync] Warning: EXPO_PUBLIC_SUPABASE_URL or EXPO_PUBLIC_SUPABASE_ANON_KEY is missing in environment.');
+}
+
+const supabase = createClient(SUPABASE_URL || 'https://placeholder.supabase.co', SUPABASE_KEY || 'placeholder-key');
 
 const MAJOR_STATES = [
   'Punjab',
