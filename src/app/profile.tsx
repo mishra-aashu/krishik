@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   View,
@@ -141,6 +141,7 @@ export default function ProfileScreen() {
   const { themeMode, setThemeMode, theme, colorScheme } = useThemeContext();
 
   const isGuest = userPhone === '9999999999' || userName === 'Kisan Guest';
+  const scrollRef = useRef<ScrollView>(null);
 
   const [lang, setLang] = useState<'hi' | 'en'>('en');
   const [editableName, setEditableName] = useState(userName);
@@ -149,6 +150,21 @@ export default function ProfileScreen() {
   const [selectedSoil, setSelectedSoil] = useState(farmSoil);
   const [selectedCrop, setSelectedCrop] = useState(farmCrop);
   
+  // Saved values tracking for unsaved changes detection
+  const [savedValues, setSavedValues] = useState<{
+    name: string;
+    email: string;
+    state: string;
+    soil: string;
+    crop: string;
+    lang: string;
+    theme: string;
+    weather: boolean;
+    mandi: boolean;
+    pest: boolean;
+    voice: boolean;
+  } | null>(null);
+
   // Modal & feedback state
   const [activeModal, setActiveModal] = useState<'state' | 'soil' | 'crop' | 'logout' | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -163,40 +179,61 @@ export default function ProfileScreen() {
   useEffect(() => {
     async function loadPreferences() {
       const savedLang = await LocalStorage.getItem('chat_lang');
+      let currentLang = 'en';
       if (savedLang === 'en' || savedLang === 'hi') {
         setLang(savedLang);
+        currentLang = savedLang;
       }
-      const w = await LocalStorage.getItem('pref_weather_alerts');
-      const m = await LocalStorage.getItem('pref_mandi_alerts');
-      const p = await LocalStorage.getItem('pref_pest_alerts');
-      const v = await LocalStorage.getItem('pref_voice_response');
-      if (w !== null) setWeatherAlerts(w === 'true');
-      if (m !== null) setMandiAlerts(m === 'true');
-      if (p !== null) setPestAlerts(p === 'true');
-      if (v !== null) setVoiceResponse(v === 'true');
+      const w = await LocalStorage.getItem('weather_alerts');
+      const m = await LocalStorage.getItem('mandi_alerts');
+      const p = await LocalStorage.getItem('pest_alerts');
+      const v = await LocalStorage.getItem('voice_response');
+      const wVal = w !== null ? w === 'true' : true;
+      const mVal = m !== null ? m === 'true' : true;
+      const pVal = p !== null ? p === 'true' : true;
+      const vVal = v !== null ? v === 'true' : true;
+
+      if (w !== null) setWeatherAlerts(wVal);
+      if (m !== null) setMandiAlerts(mVal);
+      if (p !== null) setPestAlerts(pVal);
+      if (v !== null) setVoiceResponse(vVal);
+
+      setSavedValues({
+        name: userName,
+        email: userEmail || (userPhone ? `${userPhone}@gmail.com` : ''),
+        state: farmState,
+        soil: farmSoil,
+        crop: farmCrop,
+        lang: currentLang,
+        theme: themeMode,
+        weather: wVal,
+        mandi: mVal,
+        pest: pVal,
+        voice: vVal,
+      });
     }
     loadPreferences();
-  }, []);
+  }, [userName, userEmail, userPhone, farmState, farmSoil, farmCrop, themeMode]);
 
-  // Preference toggle handlers
+  // Preference toggle handlers — save immediately to LocalStorage
   const toggleWeather = async (val: boolean) => {
     setWeatherAlerts(val);
-    await LocalStorage.setItem('pref_weather_alerts', String(val));
+    await LocalStorage.setItem('weather_alerts', String(val));
   };
 
   const toggleMandi = async (val: boolean) => {
     setMandiAlerts(val);
-    await LocalStorage.setItem('pref_mandi_alerts', String(val));
+    await LocalStorage.setItem('mandi_alerts', String(val));
   };
 
   const togglePest = async (val: boolean) => {
     setPestAlerts(val);
-    await LocalStorage.setItem('pref_pest_alerts', String(val));
+    await LocalStorage.setItem('pest_alerts', String(val));
   };
 
   const toggleVoice = async (val: boolean) => {
     setVoiceResponse(val);
-    await LocalStorage.setItem('pref_voice_response', String(val));
+    await LocalStorage.setItem('voice_response', String(val));
   };
 
   const handleClearCache = async () => {
@@ -221,6 +258,21 @@ export default function ProfileScreen() {
 
   const t = TRANSLATIONS[lang];
 
+  // Unsaved changes dirty detection
+  const isDirty = !isGuest && savedValues !== null && (
+    editableName.trim() !== savedValues.name ||
+    editableEmail.trim() !== savedValues.email ||
+    selectedState !== savedValues.state ||
+    selectedSoil !== savedValues.soil ||
+    selectedCrop !== savedValues.crop ||
+    lang !== savedValues.lang ||
+    themeMode !== savedValues.theme ||
+    weatherAlerts !== savedValues.weather ||
+    mandiAlerts !== savedValues.mandi ||
+    pestAlerts !== savedValues.pest ||
+    voiceResponse !== savedValues.voice
+  );
+
   const handleLanguageChange = async (newLang: 'en' | 'hi') => {
     setLang(newLang);
     await LocalStorage.setItem('chat_lang', newLang);
@@ -238,12 +290,31 @@ export default function ProfileScreen() {
       selectedSoil,
       selectedCrop,
       lang,
-      themeMode
+      themeMode,
+      weatherAlerts,
+      mandiAlerts,
+      pestAlerts,
+      voiceResponse,
     );
+    // Update baseline saved values so isDirty resets to false
+    setSavedValues({
+      name: editableName.trim(),
+      email: editableEmail.trim(),
+      state: selectedState,
+      soil: selectedSoil,
+      crop: selectedCrop,
+      lang: lang,
+      theme: themeMode,
+      weather: weatherAlerts,
+      mandi: mandiAlerts,
+      pest: pestAlerts,
+      voice: voiceResponse,
+    });
     setSuccessMsg(t.saveSuccess);
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
     setTimeout(() => {
       setSuccessMsg(null);
-    }, 3000);
+    }, 3500);
   };
 
   const handleLogout = () => {
@@ -262,23 +333,35 @@ export default function ProfileScreen() {
         <ThemedText type="smallBold" style={styles.headerTitle}>{t.title}</ThemedText>
       </View>
 
-      <ScrollView 
+      {/* Floating Success Toast Notification */}
+      {successMsg && (
+        <View style={styles.floatingToastContainer}>
+          <View style={[styles.floatingToast, { backgroundColor: '#15803D' }]}>
+            <View style={styles.toastIconCircle}>
+              <SymbolView
+                name={{ ios: 'checkmark', android: 'check', web: 'check' } as any}
+                size={16}
+                tintColor={'#15803D'}
+              />
+            </View>
+            <View style={{ flex: 1, marginLeft: 10 }}>
+              <ThemedText style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '700' }}>
+                {successMsg}
+              </ThemedText>
+              <ThemedText style={{ color: '#DCFCE7', fontSize: 11, fontWeight: '500' }}>
+                {lang === 'hi' ? 'आपकी प्राथमिकताएं अपडेट हो गईं ✓' : 'Your preferences have been updated ✓'}
+              </ThemedText>
+            </View>
+          </View>
+        </View>
+      )}
+
+      <ScrollView
+        ref={scrollRef}
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {successMsg && (
-          <View style={[styles.successBanner, { backgroundColor: theme.primary + '12', borderColor: theme.primary }]}>
-            <SymbolView 
-              name={{ ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check' } as any}
-              size={18}
-              tintColor={theme.primary}
-            />
-            <ThemedText type="smallBold" style={{ color: theme.primary, marginLeft: Spacing.two }}>
-              {successMsg}
-            </ThemedText>
-          </View>
-        )}
 
         {isGuest ? (
           /* Clean Guest Login Card (No fake phone/profile data) */
@@ -760,12 +843,23 @@ export default function ProfileScreen() {
                 onPress={handleSave}
                 style={({ pressed }) => [
                   styles.saveButton,
-                  { backgroundColor: theme.primary },
+                  { backgroundColor: isDirty ? '#D97706' : theme.primary },
                   pressed && { opacity: 0.9 }
                 ]}
               >
+                <SymbolView
+                  name={{
+                    ios: isDirty ? 'exclamationmark.triangle.fill' : 'checkmark.circle.fill',
+                    android: isDirty ? 'warning' : 'check_circle',
+                    web: isDirty ? 'warning' : 'check_circle'
+                  } as any}
+                  size={18}
+                  tintColor={theme.onPrimary}
+                />
                 <ThemedText style={[styles.saveButtonText, { color: theme.onPrimary }]}>
-                  {t.btnSave}
+                  {isDirty
+                    ? (lang === 'hi' ? 'विवरण सुरक्षित करें • (असुरक्षित बदलाव)' : 'Save Profile • (Unsaved Changes)')
+                    : (lang === 'hi' ? 'विवरण सुरक्षित है (Saved)' : 'Profile Saved')}
                 </ThemedText>
               </PressableScale>
 
@@ -790,6 +884,44 @@ export default function ProfileScreen() {
           )}
         </View>
       </ScrollView>
+
+      {/* Floating Bottom Unsaved Changes Sticky Bar */}
+      {isDirty && (
+        <View style={styles.unsavedStickyBarContainer}>
+          <View style={[styles.unsavedStickyBar, { backgroundColor: '#D97706' }]}>
+            <View style={styles.unsavedTextCol}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <SymbolView
+                  name={{ ios: 'exclamationmark.triangle.fill', android: 'warning', web: 'warning' } as any}
+                  size={16}
+                  tintColor={'#FFFFFF'}
+                />
+                <ThemedText style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '800' }}>
+                  {lang === 'hi' ? 'असुरक्षित बदलाव!' : 'Unsaved Changes!'}
+                </ThemedText>
+              </View>
+              <ThemedText style={{ color: '#FEF3C7', fontSize: 10, fontWeight: '500', marginTop: 2 }}>
+                {lang === 'hi' ? 'सुरक्षित करने के लिए बटन दबाएं' : 'Click button to save your changes'}
+              </ThemedText>
+            </View>
+
+            <TouchableOpacity
+              activeOpacity={0.8}
+              style={styles.unsavedActionBtn}
+              onPress={handleSave}
+            >
+              <SymbolView
+                name={{ ios: 'square.and.arrow.down.fill', android: 'save', web: 'save' } as any}
+                size={14}
+                tintColor={'#D97706'}
+              />
+              <ThemedText style={{ color: '#D97706', fontSize: 12, fontWeight: '800' }}>
+                {lang === 'hi' ? 'अभी सुरक्षित करें' : 'Save Now'}
+              </ThemedText>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
 
       {/* Selection Modals */}
       <SelectionModal
@@ -947,6 +1079,85 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 600,
     alignSelf: 'center',
+    position: 'relative',
+  },
+  floatingToastContainer: {
+    position: 'absolute',
+    top: 54,
+    left: 16,
+    right: 16,
+    zIndex: 9999,
+    alignItems: 'center',
+  },
+  floatingToast: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    width: '100%',
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.25)',
+      } as any,
+      default: {
+        elevation: 10,
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.35,
+        shadowRadius: 10,
+      },
+    }),
+  },
+  toastIconCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  unsavedStickyBarContainer: {
+    position: 'absolute',
+    bottom: 12,
+    left: 16,
+    right: 16,
+    zIndex: 9999,
+    alignItems: 'center',
+  },
+  unsavedStickyBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+    width: '100%',
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 8px 24px rgba(217, 119, 6, 0.4)',
+      } as any,
+      default: {
+        elevation: 12,
+        shadowColor: '#D97706',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.4,
+        shadowRadius: 10,
+      },
+    }),
+  },
+  unsavedTextCol: {
+    flex: 1,
+  },
+  unsavedActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    marginLeft: 10,
   },
   scrollView: {
     flex: 1,
@@ -972,9 +1183,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: Spacing.three,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: Spacing.one,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    marginBottom: Spacing.three,
+  },
+  successIconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
   },
   heroSection: {
     alignItems: 'center',

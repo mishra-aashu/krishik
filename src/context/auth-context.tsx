@@ -28,7 +28,11 @@ interface AuthContextType {
     soilOrCrop?: string,
     cropParam?: string,
     langParam?: string,
-    themeParam?: string
+    themeParam?: string,
+    weatherAlerts?: boolean,
+    mandiAlerts?: boolean,
+    pestAlerts?: boolean,
+    voiceResponse?: boolean
   ) => Promise<void>;
   resetPin: (phone: string, newPin: string) => Promise<boolean>;
 }
@@ -68,6 +72,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       farm_crop: profile.farm_crop || farmCrop || 'Wheat (गेहूं)',
       preferred_language: profile.preferred_language || 'hi',
       preferred_theme: profile.preferred_theme || 'light',
+      weather_alerts: profile.weather_alerts ?? true,
+      mandi_alerts: profile.mandi_alerts ?? true,
+      pest_alerts: profile.pest_alerts ?? true,
+      voice_response: profile.voice_response ?? false,
     };
     setUserId(uid);
     setUserName(fullProfile.name);
@@ -77,6 +85,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setFarmSoil(fullProfile.farm_soil);
     setFarmCrop(fullProfile.farm_crop);
     setIsAuthenticated(true);
+
+    // Persist alert settings to LocalStorage for Settings screen
+    LocalStorage.setItem('weather_alerts', String(fullProfile.weather_alerts));
+    LocalStorage.setItem('mandi_alerts', String(fullProfile.mandi_alerts));
+    LocalStorage.setItem('pest_alerts', String(fullProfile.pest_alerts));
+    LocalStorage.setItem('voice_response', String(fullProfile.voice_response));
 
     // Save session to LocalStorage for persistent auto-login
     LocalStorage.setItem('krishik_saved_user_profile', JSON.stringify(fullProfile));
@@ -286,7 +300,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     soilOrCrop?: string,
     cropParam?: string,
     langParam?: string,
-    themeParam?: string
+    themeParam?: string,
+    weatherAlertsParam?: boolean,
+    mandiAlertsParam?: boolean,
+    pestAlertsParam?: boolean,
+    voiceResponseParam?: boolean
   ) => {
     if (!userPhone) return;
 
@@ -296,13 +314,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let cropVal = farmCrop;
 
     if (cropParam !== undefined) {
-      // 5 arguments passed: (name, email, state, soil, crop)
       emailVal = emailOrState ? emailOrState.trim() : emailVal;
       stateVal = stateOrSoil || farmState;
       soilVal = soilOrCrop || farmSoil;
       cropVal = cropParam || farmCrop;
     } else {
-      // 4 arguments passed: (name, state, soil, crop)
       stateVal = emailOrState || farmState;
       soilVal = stateOrSoil || farmSoil;
       cropVal = soilOrCrop || farmCrop;
@@ -310,6 +326,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const savedLang = langParam || (await LocalStorage.getItem('chat_lang')) || 'hi';
     const savedTheme = themeParam || (await LocalStorage.getItem('app_theme')) || 'light';
+    const weatherVal = weatherAlertsParam ?? true;
+    const mandiVal = mandiAlertsParam ?? true;
+    const pestVal = pestAlertsParam ?? true;
+    const voiceVal = voiceResponseParam ?? false;
 
     try {
       if (userPhone !== '9999999999') {
@@ -322,11 +342,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           p_email: emailVal,
           p_language: savedLang,
           p_theme: savedTheme,
+          p_weather_alerts: weatherVal,
+          p_mandi_alerts: mandiVal,
+          p_pest_alerts: pestVal,
+          p_voice_response: voiceVal,
         });
       }
     } catch (e) {
       console.warn('updateProfile exception:', e);
     }
+
+    // Persist alert settings locally
+    LocalStorage.setItem('weather_alerts', String(weatherVal));
+    LocalStorage.setItem('mandi_alerts', String(mandiVal));
+    LocalStorage.setItem('pest_alerts', String(pestVal));
+    LocalStorage.setItem('voice_response', String(voiceVal));
+
     setUserName(name.trim());
     setUserEmail(emailVal);
     setFarmState(stateVal);
