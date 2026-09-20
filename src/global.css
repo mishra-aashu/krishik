@@ -8,15 +8,19 @@
   --font-serif: Georgia, 'Times New Roman', serif;
 
   /* Light theme accent colours */
-  --color-primary: #166534;
+  --color-primary: #059669;
   --color-accent: #D97706;
+  --color-glass-bg: rgba(255, 255, 255, 0.88);
+  --color-glass-border: rgba(5, 150, 105, 0.18);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     /* Dark theme accent colours */
-    --color-primary: #4ADE80;
-    --color-accent: #FBB024;
+    --color-primary: #10B981;
+    --color-accent: #F59E0B;
+    --color-glass-bg: rgba(19, 30, 23, 0.82);
+    --color-glass-border: rgba(16, 185, 129, 0.25);
   }
 }
 

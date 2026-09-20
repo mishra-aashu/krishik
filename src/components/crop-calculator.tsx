@@ -38,24 +38,6 @@ export default function CropCalculator({ language, theme, formatLabel }: CropCal
           <ThemedText type="smallBold" style={[styles.cardTitle, { marginBottom: 0 }]}>
             {language === 'hi' ? 'खुराक कैलकुलेटर' : 'Crop Input Calculator'}
           </ThemedText>
-          <View style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            backgroundColor: 'rgba(76, 175, 80, 0.12)',
-            paddingVertical: 2,
-            paddingHorizontal: 8,
-            borderRadius: 12,
-            gap: 4
-          }}>
-            <SymbolView
-              name={{ ios: 'checkmark.shield.fill', android: 'verified', web: 'verified' } as any}
-              size={12}
-              tintColor="#388E3C"
-            />
-            <ThemedText type="code" style={{ color: '#388E3C', fontSize: 10, fontWeight: '700' }}>
-              {language === 'hi' ? 'ऑफ़लाइन सक्षम' : 'Offline Ready'}
-            </ThemedText>
-          </View>
         </View>
         <ThemedText type="small" style={{ color: theme.textSecondary, marginBottom: Spacing.two }}>
           {language === 'hi'

@@ -130,7 +130,7 @@ export function TabButton({ iconName, label, isFocused, isMobile, ...props }: Ta
 
   const textColor = isFocused
     ? (isMobile ? theme.primary : theme.onPrimary)
-    : theme.text;
+    : theme.textSecondary;
 
   return (
     <Pressable
@@ -140,6 +140,7 @@ export function TabButton({ iconName, label, isFocused, isMobile, ...props }: Ta
         Platform.select({
           web: {
             outlineStyle: 'none',
+            cursor: 'pointer',
           } as any
         })
       ]}
@@ -148,28 +149,54 @@ export function TabButton({ iconName, label, isFocused, isMobile, ...props }: Ta
         style={[
           isMobile ? styles.mobileTabButton : styles.desktopTabButton,
           isMobile
-            ? { backgroundColor: 'transparent', borderColor: 'transparent' }
+            ? (isFocused
+                ? [styles.mobileTabButtonActive, { backgroundColor: theme.backgroundSelected, borderColor: theme.borderAccent }]
+                : { backgroundColor: 'transparent', borderColor: 'transparent' })
             : (isFocused
-                ? { backgroundColor: theme.primary, borderColor: theme.primary }
-                : { backgroundColor: theme.background, borderColor: theme.border })
+                ? [
+                    styles.desktopTabButtonActive,
+                    {
+                      backgroundColor: theme.primary,
+                      borderColor: theme.primaryDark,
+                      ...Platform.select({
+                        web: {
+                          boxShadow: `0 4px 16px ${theme.tabGlow}`,
+                        } as any,
+                        default: {
+                          shadowColor: theme.primary,
+                          shadowOffset: { width: 0, height: 4 },
+                          shadowOpacity: 0.35,
+                          shadowRadius: 8,
+                          elevation: 5,
+                        },
+                      }),
+                    },
+                  ]
+                : [
+                    styles.desktopTabButtonInactive,
+                    { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+                  ])
         ]}
       >
         <SymbolView
           name={iconName}
-          size={isMobile ? 24 : 18}
+          size={isMobile ? 22 : 17}
           tintColor={textColor}
-          style={!isFocused ? { opacity: 0.7 } : undefined}
+          style={!isFocused ? { opacity: 0.75 } : undefined}
         />
         <ThemedText 
           type={isMobile ? "code" : "small"} 
           style={[
             isMobile ? styles.mobileTabButtonText : styles.desktopTabButtonText,
-            { color: textColor },
-            !isFocused && { opacity: 0.7 }
+            { color: textColor, fontWeight: isFocused ? '700' : '500' },
+            !isFocused && { opacity: 0.85 }
           ]}
         >
           {label}
         </ThemedText>
+        {isMobile && isFocused && (
+          <View style={[styles.activeIndicatorDot, { backgroundColor: theme.accent }]} />
+        )}
       </View>
     </Pressable>
   );
@@ -191,24 +218,65 @@ export function CustomTabList({ children, isMobile, ...props }: CustomTabListPro
       style={[
         isMobile ? styles.mobileTabListContainer : styles.desktopTabListContainer,
         isMobile && { paddingBottom: Math.max(Spacing.two, insets.bottom) },
-        { backgroundColor: theme.background, borderColor: theme.border },
+        {
+          backgroundColor: theme.glassBackground,
+          borderColor: theme.border,
+          ...Platform.select({
+            web: {
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+            } as any,
+          }),
+        },
         isMobile && isChatScreen && { display: 'none' }
       ]}
     >
       <ThemedView 
-        type="backgroundElement" 
         style={[
           isMobile ? styles.mobileInnerContainer : styles.desktopInnerContainer,
-          { borderColor: theme.border }
+          {
+            backgroundColor: theme.glassBackground,
+            borderColor: theme.borderAccent,
+            ...Platform.select({
+              web: {
+                backdropFilter: 'blur(16px)',
+                WebkitBackdropFilter: 'blur(16px)',
+                boxShadow: `0 8px 32px ${theme.cardShadow}`,
+              } as any,
+              default: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.12,
+                shadowRadius: 12,
+                elevation: 4,
+              },
+            }),
+          }
         ]}
       >
         {!isMobile && (
-          <ThemedText type="smallBold" style={styles.brandText}>
-            Krishik Mitra (कृषिक मित्र)
-          </ThemedText>
+          <View style={styles.brandContainer}>
+            <View style={[styles.brandIconBadge, { backgroundColor: theme.backgroundSelected, borderColor: theme.borderAccent }]}>
+              <SymbolView
+                name={{ ios: 'laurel.leading', android: 'spa', web: 'spa' } as any}
+                size={18}
+                tintColor={theme.primary}
+              />
+            </View>
+            <ThemedText type="smallBold" style={styles.brandText}>
+              Krishik Mitra
+            </ThemedText>
+            <View style={[styles.harvestBadge, { backgroundColor: theme.accentLight }]}>
+              <ThemedText style={[styles.harvestBadgeText, { color: theme.accent }]}>
+                AI
+              </ThemedText>
+            </View>
+          </View>
         )}
 
-        {children}
+        <View style={isMobile ? styles.mobileButtonsRow : styles.desktopButtonsRow}>
+          {children}
+        </View>
       </ThemedView>
     </View>
   );
@@ -257,7 +325,7 @@ const styles = StyleSheet.create({
       }
     })
   },
-  // Mobile Tab List styling (static bottom bar)
+  // Mobile Tab List styling (glass bottom bar)
   mobileTabListContainer: {
     width: '100%',
     borderTopWidth: 1,
@@ -280,31 +348,50 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     gap: 0,
   },
+  mobileButtonsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    width: '100%',
+  },
   mobileTabButton: {
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: Spacing.two,
+    paddingVertical: Spacing.one + 2,
     paddingHorizontal: Spacing.two,
     borderRadius: Spacing.three,
-    gap: 4,
+    gap: 2,
     flex: 1,
     maxWidth: 120,
+    borderWidth: 1,
+    borderColor: 'transparent',
+    position: 'relative',
     ...Platform.select({
       web: {
         outlineStyle: 'none',
+        transition: 'all 0.2s ease',
       } as any
     })
   },
+  mobileTabButtonActive: {
+    borderWidth: 1,
+  },
+  activeIndicatorDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    marginTop: 2,
+  },
   mobileTabButtonText: {
     fontSize: 10,
-    fontWeight: '700',
     marginTop: 1,
   },
-  // Desktop Tab List styling (top capsule header)
+  // Desktop Tab List styling (top glass capsule header)
   desktopTabListContainer: {
     width: '100%',
-    padding: Spacing.three,
+    paddingVertical: Spacing.two + 2,
+    paddingHorizontal: Spacing.three,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -312,39 +399,72 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.five,
+    paddingHorizontal: Spacing.four,
     borderRadius: Spacing.five,
     width: '100%',
     maxWidth: MaxContentWidth,
-    gap: Spacing.three,
+    justifyContent: 'space-between',
+    borderWidth: 1,
+  },
+  brandContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  brandIconBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
     borderWidth: 1,
   },
   brandText: {
-    marginRight: 'auto',
     fontSize: 16,
+    letterSpacing: -0.3,
+  },
+  harvestBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  harvestBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  desktopButtonsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
   },
   desktopTabButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: Spacing.one,
-    paddingHorizontal: Spacing.three,
-    borderRadius: Spacing.three,
-    gap: Spacing.one,
+    paddingVertical: Spacing.two - 2,
+    paddingHorizontal: Spacing.three + 2,
+    borderRadius: 20,
+    gap: Spacing.one + 2,
     borderWidth: 1,
-    borderColor: 'transparent',
     ...Platform.select({
       web: {
         outlineStyle: 'none',
+        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
       } as any
     })
   },
+  desktopTabButtonActive: {
+    // Dynamic styles applied in component
+  },
+  desktopTabButtonInactive: {
+    // Dynamic styles applied in component
+  },
   desktopTabButtonText: {
     fontSize: 13,
+    letterSpacing: -0.1,
   },
   pressed: {
-    opacity: 0.7,
-  },
-  tabButtonView: {
-    // Shared container
+    opacity: 0.8,
+    transform: [{ scale: 0.97 }],
   },
 });

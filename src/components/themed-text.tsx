@@ -51,6 +51,7 @@ export function ThemedText({ style, type = 'default', themeColor, ...rest }: The
       type === 'subtitle' || 
       type === 'smallBold' || 
       flatStyle.fontWeight === 'bold' || 
+      flatStyle.fontWeight === '800' || 
       flatStyle.fontWeight === '700' || 
       flatStyle.fontWeight === '600';
       

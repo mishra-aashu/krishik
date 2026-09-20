@@ -102,16 +102,21 @@ const MessageItem = React.memo(
       >
         {!isUser && (
           <View style={styles.botHeaderRow}>
-            <View style={[styles.avatarBubble, { backgroundColor: theme.primary }]}>
+            <View style={[styles.avatarBubble, { backgroundColor: theme.primary, borderColor: theme.borderAccent }]}>
               <SymbolView
                 name={{ ios: 'laurel.leading', android: 'spa', web: 'spa' } as any}
-                size={12}
+                size={13}
                 tintColor={theme.onPrimary}
               />
             </View>
-            <ThemedText type="smallBold" style={[styles.botSenderName, { color: theme.textSecondary }]}>
+            <ThemedText type="smallBold" style={[styles.botSenderName, { color: theme.text }]}>
               Krishik Mitra AI
             </ThemedText>
+            <View style={[styles.verifiedTag, { backgroundColor: theme.accentLight }]}>
+              <ThemedText style={[styles.verifiedTagText, { color: theme.accent }]}>
+                VERIFIED
+              </ThemedText>
+            </View>
           </View>
         )}
 
@@ -125,8 +130,44 @@ const MessageItem = React.memo(
             style={[
               styles.messageBubble,
               isUser
-                ? [styles.userBubble, { backgroundColor: theme.chatUser }]
-                : [styles.botBubble, { backgroundColor: theme.chatBot, borderColor: theme.border }]
+                ? [
+                    styles.userBubble,
+                    {
+                      backgroundColor: theme.chatUser,
+                      borderColor: theme.borderAccent,
+                      ...Platform.select({
+                        web: {
+                          boxShadow: '0 2px 10px rgba(5, 150, 105, 0.12)',
+                        } as any,
+                        default: {
+                          shadowColor: theme.primary,
+                          shadowOffset: { width: 0, height: 2 },
+                          shadowOpacity: 0.1,
+                          shadowRadius: 4,
+                          elevation: 2,
+                        },
+                      }),
+                    },
+                  ]
+                : [
+                    styles.botBubble,
+                    {
+                      backgroundColor: theme.chatBot,
+                      borderColor: theme.chatBotBorder,
+                      ...Platform.select({
+                        web: {
+                          boxShadow: `0 4px 20px ${theme.cardShadow}`,
+                        } as any,
+                        default: {
+                          shadowColor: '#000',
+                          shadowOffset: { width: 0, height: 4 },
+                          shadowOpacity: 0.12,
+                          shadowRadius: 8,
+                          elevation: 3,
+                        },
+                      }),
+                    },
+                  ]
             ]}
           >
             {msg.image && (
@@ -142,7 +183,7 @@ const MessageItem = React.memo(
               />
             )}
             {isUser ? (
-              <ThemedText type="small" style={{ color: theme.text }}>
+              <ThemedText type="small" style={{ color: theme.text, fontSize: 15, lineHeight: 22 }}>
                 {msg.content}
               </ThemedText>
             ) : (
@@ -165,7 +206,8 @@ const MessageItem = React.memo(
                   onPress={handleCopy}
                   style={({ pressed }) => [
                     styles.actionButton,
-                    pressed && { opacity: 0.7 }
+                    { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+                    pressed && { opacity: 0.8, backgroundColor: theme.backgroundSelected }
                   ]}
                 >
                   <SymbolView
@@ -174,7 +216,7 @@ const MessageItem = React.memo(
                       android: isCopied ? 'check_circle' : 'content_copy',
                       web: isCopied ? 'check_circle' : 'content_copy',
                     } as any}
-                    size={13}
+                    size={12}
                     tintColor={isCopied ? theme.success : theme.primary}
                   />
                   <ThemedText
@@ -194,7 +236,8 @@ const MessageItem = React.memo(
                     onPress={() => onToggleSpeech(msg)}
                     style={({ pressed }) => [
                       styles.actionButton,
-                      pressed && { opacity: 0.7 }
+                      { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+                      pressed && { opacity: 0.8, backgroundColor: theme.backgroundSelected }
                     ]}
                   >
                     <SymbolView
@@ -203,7 +246,7 @@ const MessageItem = React.memo(
                         android: isSpeaking ? 'stop' : 'volume_up',
                         web: isSpeaking ? 'stop' : 'volume_up',
                       } as any}
-                      size={13}
+                      size={12}
                       tintColor={isSpeaking ? theme.error : theme.primary}
                     />
                     <ThemedText
@@ -224,7 +267,8 @@ const MessageItem = React.memo(
                     onPress={() => onFeedback(msg.id, 'like')}
                     style={({ pressed }) => [
                       styles.actionButton,
-                      pressed && { opacity: 0.7 }
+                      { backgroundColor: msg.feedback === 'like' ? theme.backgroundSelected : theme.backgroundElement, borderColor: msg.feedback === 'like' ? theme.primary : theme.border },
+                      pressed && { opacity: 0.8 }
                     ]}
                   >
                     <SymbolView
@@ -233,7 +277,7 @@ const MessageItem = React.memo(
                         android: 'thumb_up',
                         web: 'thumb_up',
                       } as any}
-                      size={13}
+                      size={12}
                       tintColor={msg.feedback === 'like' ? theme.success : theme.textSecondary}
                     />
                   </Pressable>
@@ -245,7 +289,8 @@ const MessageItem = React.memo(
                     onPress={() => onFeedback(msg.id, 'dislike')}
                     style={({ pressed }) => [
                       styles.actionButton,
-                      pressed && { opacity: 0.7 }
+                      { backgroundColor: msg.feedback === 'dislike' ? theme.backgroundSelected : theme.backgroundElement, borderColor: msg.feedback === 'dislike' ? theme.error : theme.border },
+                      pressed && { opacity: 0.8 }
                     ]}
                   >
                     <SymbolView
@@ -254,7 +299,7 @@ const MessageItem = React.memo(
                         android: 'thumb_down',
                         web: 'thumb_down',
                       } as any}
-                      size={13}
+                      size={12}
                       tintColor={msg.feedback === 'dislike' ? theme.error : theme.textSecondary}
                     />
                   </Pressable>
@@ -1085,32 +1130,51 @@ export default function ChatScreen() {
           enabled={Platform.OS !== 'web'}
         >
           {/* Header Panel */}
-          <View style={[styles.headerPanel, { borderBottomColor: theme.border, backgroundColor: theme.background }]}>
+          <View style={[
+            styles.headerPanel,
+            {
+              borderBottomColor: theme.borderAccent,
+              backgroundColor: theme.glassBackground,
+              ...Platform.select({
+                web: {
+                  backdropFilter: 'blur(16px)',
+                  WebkitBackdropFilter: 'blur(16px)',
+                } as any,
+              }),
+            }
+          ]}>
             <View style={[styles.headerInfoRow, { flexShrink: 1 }]}>
               <Pressable
                 onPress={() => router.back()}
                 style={({ pressed }) => [
                   styles.backButton,
+                  { backgroundColor: theme.backgroundSelected, borderColor: theme.borderAccent },
                   pressed && { opacity: 0.7 }
                 ]}
               >
                 <SymbolView
                   name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' } as any}
-                  size={20}
+                  size={18}
                   tintColor={theme.primary}
                 />
               </Pressable>
 
-              <View style={styles.avatarMini}>
+              <View style={[styles.avatarMini, { backgroundColor: theme.backgroundSelected, borderColor: theme.borderAccent }]}>
                 <SymbolView
                   name={{ ios: 'laurel.leading', android: 'spa', web: 'spa' } as any}
                   size={16}
                   tintColor={theme.primary}
                 />
+                <View style={[styles.onlineDot, { backgroundColor: theme.success }]} />
               </View>
               <View style={{ flexShrink: 1 }}>
-                <ThemedText type="smallBold" numberOfLines={1}>Krishik Mitra AI</ThemedText>
-                <ThemedText type="small" numberOfLines={1} style={{ fontSize: 10, color: theme.textSecondary, fontWeight: '600' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <ThemedText type="smallBold" numberOfLines={1}>Krishik Mitra AI</ThemedText>
+                  <View style={[styles.miniBadge, { backgroundColor: theme.accentLight }]}>
+                    <ThemedText style={[styles.miniBadgeText, { color: theme.accent }]}>PRO</ThemedText>
+                  </View>
+                </View>
+                <ThemedText type="small" numberOfLines={1} style={{ fontSize: 10, color: theme.textSecondary, fontWeight: '600', marginTop: 1 }}>
                   Context: {farmState} • {farmCrop.split(' ')[0]}
                 </ThemedText>
               </View>
@@ -1121,12 +1185,13 @@ export default function ChatScreen() {
                 onPress={() => setIsDrawerOpen(true)}
                 style={({ pressed }) => [
                   styles.controlIconBtn,
+                  { backgroundColor: theme.backgroundSelected, borderColor: theme.borderAccent },
                   pressed && { opacity: 0.8 }
                 ]}
               >
                 <SymbolView
                   name={{ ios: 'line.horizontal.3', android: 'menu', web: 'menu' } as any}
-                  size={20}
+                  size={18}
                   tintColor={theme.primary}
                 />
               </Pressable>
@@ -1135,19 +1200,18 @@ export default function ChatScreen() {
                 onPress={() => setIsMenuOpen(true)}
                 style={({ pressed }) => [
                   styles.controlIconBtn,
+                  { backgroundColor: theme.backgroundSelected, borderColor: theme.borderAccent },
                   pressed && { opacity: 0.8 }
                 ]}
               >
                 <SymbolView
                   name={{ ios: 'ellipsis.vertical', android: 'more_vert', web: 'more_vert' } as any}
-                  size={20}
+                  size={18}
                   tintColor={theme.primary}
                 />
               </Pressable>
             </View>
           </View>
-
-
 
           {/* Chat Messages Area */}
           <ScrollView
@@ -1161,22 +1225,41 @@ export default function ChatScreen() {
                 entering={FadeInDown.duration(400).springify()}
                 style={styles.welcomeContainer}
               >
-                <View style={[styles.welcomeLogo, { backgroundColor: theme.backgroundElement }]}>
+                <View style={[styles.welcomeLogo, { backgroundColor: theme.backgroundSelected, borderColor: theme.borderAccent }]}>
                   <SymbolView
                     name={{ ios: 'laurel.leading', android: 'spa', web: 'spa' } as any}
                     size={44}
                     tintColor={theme.primary}
                   />
+                  <View style={[styles.welcomeLogoGlow, { backgroundColor: theme.accentGlow }]} />
                 </View>
+                
                 <ThemedText type="smallBold" style={styles.welcomeTitle}>
                   Namaste! I am your Krishik Mitra (कृषिक मित्र).
                 </ThemedText>
+                
                 <ThemedText type="small" style={[styles.welcomeSub, { color: theme.textSecondary }]}>
-                  I'm configured with your farm profile in **{farmState}** growing **{farmCrop.split(' ')[0]}** on **{farmSoil.split(' ')[0]}** soil. Ask me anything!
+                  I'm configured with your farm profile in <ThemedText type="smallBold" style={{ color: theme.primary }}>{farmState}</ThemedText> growing <ThemedText type="smallBold" style={{ color: theme.accent }}>{farmCrop.split(' ')[0]}</ThemedText> on <ThemedText type="smallBold" style={{ color: theme.text }}>{farmSoil.split(' ')[0]}</ThemedText> soil.
                 </ThemedText>
 
+                {/* Profile Context Chips */}
+                <View style={styles.contextChipsRow}>
+                  <View style={[styles.chipItem, { backgroundColor: theme.backgroundSelected, borderColor: theme.borderAccent }]}>
+                    <SymbolView name={{ ios: 'location.fill', android: 'location_on', web: 'location_on' } as any} size={11} tintColor={theme.primary} />
+                    <ThemedText style={[styles.chipText, { color: theme.primary }]}>{farmState}</ThemedText>
+                  </View>
+                  <View style={[styles.chipItem, { backgroundColor: theme.accentLight, borderColor: 'rgba(217,119,6,0.25)' }]}>
+                    <SymbolView name={{ ios: 'leaf.fill', android: 'eco', web: 'eco' } as any} size={11} tintColor={theme.accent} />
+                    <ThemedText style={[styles.chipText, { color: theme.accent }]}>{farmCrop.split(' ')[0]}</ThemedText>
+                  </View>
+                  <View style={[styles.chipItem, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+                    <SymbolView name={{ ios: 'square.3.layers.3d', android: 'layers', web: 'layers' } as any} size={11} tintColor={theme.textSecondary} />
+                    <ThemedText style={[styles.chipText, { color: theme.textSecondary }]}>{farmSoil.split(' ')[0]}</ThemedText>
+                  </View>
+                </View>
+
                 <View style={styles.presetContainer}>
-                  <ThemedText type="code" style={styles.presetHeader}>SUGGESTED QUESTIONS:</ThemedText>
+                  <ThemedText type="code" style={[styles.presetHeader, { color: theme.textSecondary }]}>SUGGESTED QUESTIONS:</ThemedText>
                   
                   <Pressable
                     onPress={() => handleSendQuery(
@@ -1184,17 +1267,27 @@ export default function ChatScreen() {
                     )}
                     style={({ pressed }) => [
                       styles.presetBubble,
-                      { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+                      {
+                        backgroundColor: theme.backgroundElement,
+                        borderColor: theme.border,
+                        borderLeftColor: theme.accent,
+                        borderLeftWidth: 4,
+                      },
                       pressed && { backgroundColor: theme.backgroundSelected }
                     ]}
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
-                      <SymbolView
-                        name={{ ios: 'plus.minus.and.percent', android: 'calculate', web: 'calculate' } as any}
-                        size={15}
-                        tintColor={theme.primary}
-                      />
-                      <ThemedText type="small">Fertilizer doses for my {farmCrop.split(' ')[0]}</ThemedText>
+                      <View style={[styles.presetIconBadge, { backgroundColor: theme.accentLight }]}>
+                        <SymbolView
+                          name={{ ios: 'plus.minus.and.percent', android: 'calculate', web: 'calculate' } as any}
+                          size={14}
+                          tintColor={theme.accent}
+                        />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <ThemedText type="smallBold" style={{ fontSize: 13 }}>Fertilizer dosage for {farmCrop.split(' ')[0]}</ThemedText>
+                        <ThemedText type="code" style={{ color: theme.textSecondary, fontSize: 10, marginTop: 1 }}>NPK ratios & soil nutrient requirements</ThemedText>
+                      </View>
                     </View>
                   </Pressable>
 
@@ -1204,17 +1297,27 @@ export default function ChatScreen() {
                     )}
                     style={({ pressed }) => [
                       styles.presetBubble,
-                      { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+                      {
+                        backgroundColor: theme.backgroundElement,
+                        borderColor: theme.border,
+                        borderLeftColor: theme.primary,
+                        borderLeftWidth: 4,
+                      },
                       pressed && { backgroundColor: theme.backgroundSelected }
                     ]}
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
-                      <SymbolView
-                        name={{ ios: 'drop.fill', android: 'water_drop', web: 'water_drop' } as any}
-                        size={15}
-                        tintColor={theme.primary}
-                      />
-                      <ThemedText type="small">Water retention in {farmSoil.split(' ')[0]}</ThemedText>
+                      <View style={[styles.presetIconBadge, { backgroundColor: theme.backgroundSelected }]}>
+                        <SymbolView
+                          name={{ ios: 'drop.fill', android: 'water_drop', web: 'water_drop' } as any}
+                          size={14}
+                          tintColor={theme.primary}
+                        />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <ThemedText type="smallBold" style={{ fontSize: 13 }}>Water retention in {farmSoil.split(' ')[0]}</ThemedText>
+                        <ThemedText type="code" style={{ color: theme.textSecondary, fontSize: 10, marginTop: 1 }}>Drainage tips & irrigation schedules</ThemedText>
+                      </View>
                     </View>
                   </Pressable>
 
@@ -1224,17 +1327,27 @@ export default function ChatScreen() {
                     )}
                     style={({ pressed }) => [
                       styles.presetBubble,
-                      { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+                      {
+                        backgroundColor: theme.backgroundElement,
+                        borderColor: theme.border,
+                        borderLeftColor: theme.primaryDark,
+                        borderLeftWidth: 4,
+                      },
                       pressed && { backgroundColor: theme.backgroundSelected }
                     ]}
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
-                      <SymbolView
-                        name={{ ios: 'ladybug.fill', android: 'bug_report', web: 'bug_report' } as any}
-                        size={15}
-                        tintColor={theme.primary}
-                      />
-                      <ThemedText type="small">Common pests & organic cures</ThemedText>
+                      <View style={[styles.presetIconBadge, { backgroundColor: theme.backgroundSelected }]}>
+                        <SymbolView
+                          name={{ ios: 'ladybug.fill', android: 'bug_report', web: 'bug_report' } as any}
+                          size={14}
+                          tintColor={theme.primary}
+                        />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <ThemedText type="smallBold" style={{ fontSize: 13 }}>Pests & organic remedies</ThemedText>
+                        <ThemedText type="code" style={{ color: theme.textSecondary, fontSize: 10, marginTop: 1 }}>Biological crop protection & care</ThemedText>
+                      </View>
                     </View>
                   </Pressable>
                 </View>
@@ -1529,59 +1642,61 @@ export default function ChatScreen() {
       {isMenuOpen && (
         <View style={styles.menuBackdrop}>
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setIsMenuOpen(false)} />
-          <ThemedView type="card" style={[styles.dropdownMenu, { backgroundColor: theme.chatBot, borderColor: theme.border }]}>
-            <Pressable
-              onPress={() => {
-                toggleModel();
-                setIsMenuOpen(false);
-              }}
-              style={({ pressed }) => [
-                styles.menuOption,
-                pressed && { backgroundColor: theme.backgroundElement }
-              ]}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
-                <SymbolView
-                  name={
-                    model === 'fast'
-                      ? ({ ios: 'brain.head.profile', android: 'psychology', web: 'psychology' } as any)
-                      : ({ ios: 'bolt.fill', android: 'bolt', web: 'bolt' } as any)
-                  }
-                  size={16}
-                  tintColor={theme.primary}
-                />
-                <ThemedText style={{ fontSize: 13, color: theme.text, fontWeight: '600' }}>
-                  {model === 'fast'
-                    ? (language === 'hi' ? 'स्मार्ट मॉडल पर जाएं' : 'Switch to Smart Model')
-                    : (language === 'hi' ? 'फास्ट मॉडल पर जाएं' : 'Switch to Fast Model')}
-                </ThemedText>
-              </View>
-            </Pressable>
+          <View style={styles.dropdownMenuWrapper}>
+            <ThemedView type="card" style={[styles.dropdownMenu, { backgroundColor: theme.chatBot, borderColor: theme.border }]}>
+              <Pressable
+                onPress={() => {
+                  toggleModel();
+                  setIsMenuOpen(false);
+                }}
+                style={({ pressed }) => [
+                  styles.menuOption,
+                  pressed && { backgroundColor: theme.backgroundElement }
+                ]}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
+                  <SymbolView
+                    name={
+                      model === 'fast'
+                        ? ({ ios: 'brain.head.profile', android: 'psychology', web: 'psychology' } as any)
+                        : ({ ios: 'bolt.fill', android: 'bolt', web: 'bolt' } as any)
+                    }
+                    size={16}
+                    tintColor={theme.primary}
+                  />
+                  <ThemedText style={{ fontSize: 13, color: theme.text, fontWeight: '600' }}>
+                    {model === 'fast'
+                      ? (language === 'hi' ? 'स्मार्ट मॉडल पर जाएं' : 'Switch to Smart Model')
+                      : (language === 'hi' ? 'फास्ट मॉडल पर जाएं' : 'Switch to Fast Model')}
+                  </ThemedText>
+                </View>
+              </Pressable>
 
-            <View style={[styles.menuDivider, { backgroundColor: theme.border }]} />
+              <View style={[styles.menuDivider, { backgroundColor: theme.border }]} />
 
-            <Pressable
-              onPress={() => {
-                handleClearChat();
-                setIsMenuOpen(false);
-              }}
-              style={({ pressed }) => [
-                styles.menuOption,
-                pressed && { backgroundColor: theme.backgroundElement }
-              ]}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
-                <SymbolView
-                  name={{ ios: 'trash.fill', android: 'delete', web: 'delete' } as any}
-                  size={16}
-                  tintColor={theme.error}
-                />
-                <ThemedText style={{ fontSize: 13, color: theme.error, fontWeight: '600' }}>
-                  {language === 'hi' ? 'बातचीत साफ़ करें' : 'Clear Conversation'}
-                </ThemedText>
-              </View>
-            </Pressable>
-          </ThemedView>
+              <Pressable
+                onPress={() => {
+                  handleClearChat();
+                  setIsMenuOpen(false);
+                }}
+                style={({ pressed }) => [
+                  styles.menuOption,
+                  pressed && { backgroundColor: theme.backgroundElement }
+                ]}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
+                  <SymbolView
+                    name={{ ios: 'trash.fill', android: 'delete', web: 'delete' } as any}
+                    size={16}
+                    tintColor={theme.error}
+                  />
+                  <ThemedText style={{ fontSize: 13, color: theme.error, fontWeight: '600' }}>
+                    {language === 'hi' ? 'बातचीत साफ़ करें' : 'Clear Conversation'}
+                  </ThemedText>
+                </View>
+              </Pressable>
+            </ThemedView>
+          </View>
         </View>
       )}
     </ThemedView>
@@ -1616,8 +1731,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     paddingTop: Spacing.three,
-    paddingBottom: Spacing.two,
-    paddingHorizontal: Spacing.three,
+    paddingBottom: Spacing.two + 2,
+    paddingHorizontal: Spacing.three + 2,
     borderBottomWidth: 1,
     zIndex: 10,
   },
@@ -1627,52 +1742,90 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   backButton: {
-    marginRight: Spacing.one,
     paddingVertical: Spacing.one,
     paddingHorizontal: Spacing.two,
-    minWidth: 44,
-    minHeight: 44,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   controlIconBtn: {
-    width: 40,
-    height: 40,
-    minWidth: 44,
-    minHeight: 44,
-    borderRadius: 20,
-    backgroundColor: 'rgba(46,111,64,0.1)',
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  avatarMini: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  onlineDot: {
+    position: 'absolute',
+    bottom: -1,
+    right: -1,
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+  },
+  miniBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 6,
+  },
+  miniBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   menuBackdrop: {
     ...StyleSheet.absoluteFill,
     backgroundColor: 'transparent',
     zIndex: 99999,
   },
+  dropdownMenuWrapper: {
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    alignSelf: 'center',
+    position: 'relative',
+    pointerEvents: 'box-none',
+  },
   dropdownMenu: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 110 : 90,
+    top: Platform.OS === 'ios' ? 70 : 65,
     right: Spacing.three,
-    width: 200,
-    borderRadius: Spacing.two,
+    width: 210,
+    borderRadius: 16,
     borderWidth: 1,
+    zIndex: 100000,
     ...Platform.select({
       web: {
-        boxShadow: '0px 4px 5px rgba(0, 0, 0, 0.2)',
-      },
+        boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.2)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+      } as any,
       default: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 5,
-        elevation: 5,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.25,
+        shadowRadius: 8,
+        elevation: 8,
       }
     }),
-    paddingVertical: Spacing.one,
+    paddingVertical: Spacing.one + 2,
   },
   menuOption: {
-    paddingVertical: Spacing.two,
+    paddingVertical: Spacing.two + 2,
     paddingHorizontal: Spacing.three,
     justifyContent: 'center',
   },
@@ -1682,14 +1835,20 @@ const styles = StyleSheet.create({
   },
   drawerBackdrop: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
     zIndex: 9999,
     flexDirection: 'row',
     justifyContent: 'flex-end',
+    ...Platform.select({
+      web: {
+        backdropFilter: 'blur(4px)',
+        WebkitBackdropFilter: 'blur(4px)',
+      } as any
+    }),
   },
   drawerContainer: {
-    width: '80%',
-    maxWidth: 300,
+    width: '82%',
+    maxWidth: 320,
     height: '100%',
     borderLeftWidth: 1,
     paddingTop: Platform.OS === 'ios' ? 60 : 40,
@@ -1707,8 +1866,8 @@ const styles = StyleSheet.create({
   },
   drawerProfileCard: {
     borderWidth: 1,
-    borderRadius: Spacing.two,
-    padding: Spacing.two,
+    borderRadius: Spacing.three,
+    padding: Spacing.three,
     marginBottom: Spacing.three,
   },
   newChatBtn: {
@@ -1716,14 +1875,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.two,
-    borderWidth: 1,
-    borderRadius: Spacing.three,
-    paddingVertical: Spacing.two,
+    borderWidth: 1.5,
+    borderRadius: 20,
+    paddingVertical: Spacing.two + 2,
     marginBottom: Spacing.three,
   },
   historySectionLabel: {
     fontSize: 9,
-    opacity: 0.6,
+    letterSpacing: 0.5,
+    fontWeight: '700',
     marginBottom: Spacing.two,
   },
   drawerScrollView: {
@@ -1734,8 +1894,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1,
-    borderRadius: Spacing.two,
-    padding: Spacing.two,
+    borderRadius: Spacing.two + 2,
+    padding: Spacing.two + 2,
   },
   drawerFooter: {
     borderTopWidth: 1,
@@ -1749,41 +1909,10 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.one,
     paddingHorizontal: Spacing.three,
   },
-  avatarMini: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: 'rgba(46,111,64,0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   headerControls: {
     flexDirection: 'row',
-    gap: Spacing.one,
+    gap: Spacing.two,
     flexShrink: 0,
-  },
-  controlBadge: {
-    paddingVertical: 4,
-    paddingHorizontal: Spacing.two,
-    borderRadius: Spacing.two,
-  },
-  controlBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  langBar: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-  },
-  langTab: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: Spacing.two,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-  },
-  langTabText: {
-    fontSize: 13,
   },
   messagesContainer: {
     flex: 1,
@@ -1802,38 +1931,81 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.five,
   },
   welcomeLogo: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 86,
+    height: 86,
+    borderRadius: 43,
+    borderWidth: 2,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: Spacing.three,
+    position: 'relative',
+  },
+  welcomeLogoGlow: {
+    position: 'absolute',
+    inset: -6,
+    borderRadius: 50,
+    zIndex: -1,
   },
   welcomeTitle: {
-    fontSize: 18,
+    fontSize: 20,
     textAlign: 'center',
-    marginBottom: Spacing.one,
+    marginBottom: Spacing.two,
+    letterSpacing: -0.2,
   },
   welcomeSub: {
-    fontSize: 13,
+    fontSize: 14,
     textAlign: 'center',
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: Spacing.three,
+    marginBottom: Spacing.three,
+    lineHeight: 20,
+  },
+  contextChipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: Spacing.two,
     marginBottom: Spacing.four,
-    lineHeight: 18,
+  },
+  chipItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  chipText: {
+    fontSize: 11,
+    fontWeight: '700',
   },
   presetContainer: {
     width: '100%',
-    gap: Spacing.two,
+    gap: Spacing.two + 2,
   },
   presetHeader: {
     fontSize: 10,
-    opacity: 0.6,
+    letterSpacing: 0.5,
+    fontWeight: '700',
     marginBottom: Spacing.one,
   },
   presetBubble: {
     borderWidth: 1,
-    borderRadius: Spacing.two,
-    padding: Spacing.two,
+    borderRadius: 16,
+    padding: Spacing.three,
+    ...Platform.select({
+      web: {
+        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+        cursor: 'pointer',
+      } as any
+    })
+  },
+  presetIconBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   messageRowContainer: {
     width: '100%',
@@ -1847,8 +2019,18 @@ const styles = StyleSheet.create({
     paddingLeft: Spacing.one,
   },
   botSenderName: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
+  },
+  verifiedTag: {
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 6,
+  },
+  verifiedTagText: {
+    fontSize: 8,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   messageRow: {
     flexDirection: 'row',
@@ -1861,28 +2043,31 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   avatarBubble: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   messageBubble: {
-    borderRadius: Spacing.three,
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.three,
+    borderRadius: 20,
+    paddingVertical: Spacing.two + 2,
+    paddingHorizontal: Spacing.three + 2,
   },
   userBubble: {
     maxWidth: '85%',
-    borderBottomRightRadius: 2,
+    borderBottomRightRadius: 4,
+    borderWidth: 1,
   },
   botBubble: {
-    maxWidth: '85%',
+    maxWidth: Platform.OS === 'web' ? '95%' : '92%',
     borderWidth: 1,
-    borderBottomLeftRadius: 2,
+    borderBottomLeftRadius: 4,
   },
   timestamp: {
-    fontSize: 9,
+    fontSize: 10,
+    fontWeight: '500',
   },
   loadingRow: {
     flexDirection: 'row',
@@ -1911,25 +2096,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
+    paddingVertical: Spacing.two + 2,
     gap: Spacing.two,
     paddingBottom: Platform.OS === 'ios' ? Spacing.two : Spacing.three,
   },
   textInput: {
     flex: 1,
     minWidth: 0,
-    height: 44,
+    height: 48,
     borderWidth: 1.5,
-    borderRadius: 22,
+    borderRadius: 24,
     paddingHorizontal: Spacing.four,
     fontSize: 15,
+    ...Platform.select({
+      web: {
+        outlineStyle: 'none',
+      } as any
+    })
   },
   sendButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
+    ...Platform.select({
+      web: {
+        cursor: 'pointer',
+      } as any
+    })
   },
   sendIcon: {
     color: '#ffffff',
@@ -1937,11 +2132,16 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   micButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
+    ...Platform.select({
+      web: {
+        cursor: 'pointer',
+      } as any
+    })
   },
   bubbleFooter: {
     flexDirection: 'row',
@@ -1952,28 +2152,40 @@ const styles = StyleSheet.create({
   bubbleActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.two,
+    gap: Spacing.one + 2,
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
     paddingHorizontal: 8,
-    paddingVertical: 6,
-    minHeight: 32,
-    borderRadius: 8,
+    paddingVertical: 4,
+    minHeight: 28,
+    borderRadius: 14,
+    borderWidth: 1,
+    ...Platform.select({
+      web: {
+        cursor: 'pointer',
+        transition: 'all 0.15s ease',
+      } as any
+    })
   },
   actionText: {
     fontSize: 9,
     fontWeight: '800',
   },
   attachButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     borderWidth: 1.5,
     justifyContent: 'center',
     alignItems: 'center',
+    ...Platform.select({
+      web: {
+        cursor: 'pointer',
+      } as any
+    })
   },
   imagePreviewContainer: {
     flexDirection: 'row',
