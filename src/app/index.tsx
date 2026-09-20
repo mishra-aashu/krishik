@@ -24,9 +24,11 @@ import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/context/auth-context';
 import { LocalStorage } from '@/utils/storage';
 import { fetchWeatherData, getWeatherCondition, generateWeatherAdvisory, type RawWeatherData } from '@/services/weather-service';
+import { getLiveGPSLocation, type LiveLocationData } from '@/services/location-service';
 import { fetchLiveMandiPrices, type MandiItem } from '@/services/mandi-service';
 import OfflineNotice from '@/components/offline-notice';
 import { AppLogo } from '@/components/app-logo';
+import { WeatherDisasterModal } from '@/components/weather-disaster-modal';
 
 import cropsData from '@/constants/crops.json';
 import { SelectionModal } from '@/components/selection-modal';
@@ -35,7 +37,10 @@ import { PressableScale } from '@/components/pressable-scale';
 // Constants for Profile
 const STATES = [
   'Uttar Pradesh', 'Punjab', 'Haryana', 'Madhya Pradesh', 
-  'Maharashtra', 'Rajasthan', 'Gujarat', 'Bihar', 'Karnataka', 'Andhra Pradesh'
+  'Maharashtra', 'Rajasthan', 'Gujarat', 'Bihar', 'West Bengal',
+  'Karnataka', 'Andhra Pradesh', 'Telangana', 'Tamil Nadu',
+  'Odisha', 'Jharkhand', 'Chhattisgarh', 'Assam', 'Himachal Pradesh',
+  'Uttarakhand', 'Kerala'
 ];
 const SOILS = [
   'Alluvial Soil (जलोढ़)', 'Black Soil (काली मिट्टी)', 'Red Soil (लाल मिट्टी)', 
@@ -67,26 +72,42 @@ export default function HomeScreen() {
   const [isLoadingWeather, setIsLoadingWeather] = useState(true);
   const [weatherError, setWeatherError] = useState<string | null>(null);
   const [weatherCachedAt, setWeatherCachedAt] = useState<Date | null>(null);
+  const [isDisasterModalOpen, setIsDisasterModalOpen] = useState(false);
+  const [liveLocation, setLiveLocation] = useState<LiveLocationData | null>(null);
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
 
-  // Fetch weather when farmState changes
+  // Fetch weather when farmState changes or on init
   useEffect(() => {
     let isMounted = true;
     async function loadWeather() {
-      if (!farmState) return;
       setIsLoadingWeather(true);
       setWeatherError(null);
       setWeatherCachedAt(null);
       try {
-        const data = await fetchWeatherData(farmState);
+        // 1. Check if user already has saved live GPS location
+        let targetLocation: string | { latitude: number; longitude: number } = farmState || 'Uttar Pradesh';
+        let cacheKey = `weather_cache_${farmState || 'default'}`;
+
+        const savedGpsStr = await LocalStorage.getItem('user_live_location');
+        if (savedGpsStr) {
+          try {
+            const savedGps: LiveLocationData = JSON.parse(savedGpsStr);
+            if (savedGps && savedGps.latitude && savedGps.longitude) {
+              if (isMounted) setLiveLocation(savedGps);
+              targetLocation = { latitude: savedGps.latitude, longitude: savedGps.longitude };
+              cacheKey = `weather_cache_gps_${savedGps.latitude.toFixed(2)}_${savedGps.longitude.toFixed(2)}`;
+            }
+          } catch (e) {}
+        }
+
+        const data = await fetchWeatherData(targetLocation);
         if (isMounted) {
           setWeatherData(data);
-          // Cache the fetched weather
-          await LocalStorage.setItem(`weather_cache_${farmState}`, JSON.stringify({ data, timestamp: Date.now() }));
+          await LocalStorage.setItem(cacheKey, JSON.stringify({ data, timestamp: Date.now() }));
         }
       } catch (err) {
         console.error('Error fetching weather:', err);
         if (isMounted) {
-          // Attempt to load from cache
           try {
             const cachedStr = await LocalStorage.getItem(`weather_cache_${farmState}`);
             if (cachedStr) {
@@ -148,8 +169,18 @@ export default function HomeScreen() {
     'Rajasthan': 'राजस्थान',
     'Gujarat': 'गुजरात',
     'Bihar': 'बिहार',
+    'West Bengal': 'पश्चिम बंगाल',
     'Karnataka': 'कर्नाटक',
-    'Andhra Pradesh': 'आंध्र प्रदेश'
+    'Andhra Pradesh': 'आंध्र प्रदेश',
+    'Telangana': 'तेलंगाना',
+    'Tamil Nadu': 'तमिलनाडु',
+    'Odisha': 'ओडिशा',
+    'Jharkhand': 'झारखंड',
+    'Chhattisgarh': 'छत्तीसगढ़',
+    'Assam': 'असम',
+    'Himachal Pradesh': 'हिमाचल प्रदेश',
+    'Uttarakhand': 'उत्तराखंड',
+    'Kerala': 'केरल',
   };
 
   const formatState = (stateName: string) => {
@@ -167,6 +198,104 @@ export default function HomeScreen() {
   const closeModal = () => {
     setActiveModal(null);
   };
+
+  // Live Location Detection & Auto-Sync
+  const handleDetectLocation = async () => {
+    setIsDetectingLocation(true);
+    try {
+      const loc = await getLiveGPSLocation();
+      if (loc) {
+        setLiveLocation(loc);
+        await LocalStorage.setItem('user_live_location', JSON.stringify(loc));
+
+        // Seamlessly match and sync profile state without user needing to select
+        if (loc.state) {
+          const matchedState = STATES.find(s => 
+            s.toLowerCase() === loc.state?.toLowerCase() || 
+            loc.state?.toLowerCase().includes(s.toLowerCase()) ||
+            s.toLowerCase().includes(loc.state?.toLowerCase() || '')
+          );
+          if (matchedState && matchedState !== farmState) {
+            await updateProfile(userName, matchedState, farmSoil, farmCrop);
+          }
+        }
+
+        // Close state selection popup if it was open
+        closeModal();
+
+        setIsLoadingWeather(true);
+        const data = await fetchWeatherData({ latitude: loc.latitude, longitude: loc.longitude });
+        setWeatherData(data);
+        const cacheKey = `weather_cache_gps_${loc.latitude.toFixed(2)}_${loc.longitude.toFixed(2)}`;
+        await LocalStorage.setItem(cacheKey, JSON.stringify({ data, timestamp: Date.now() }));
+      }
+    } catch (err) {
+      console.warn('Location detection notice:', err);
+    } finally {
+      setIsDetectingLocation(false);
+      setIsLoadingWeather(false);
+    }
+  };
+
+  // Direct Auto-Location Detection on App Launch (Zero Popups Required)
+  useEffect(() => {
+    let isMounted = true;
+    async function initAutoLocation() {
+      // 1. Immediately restore cached GPS location for instant 0ms weather
+      try {
+        const cachedGpsStr = await LocalStorage.getItem('user_live_location');
+        if (cachedGpsStr) {
+          const cachedGps: LiveLocationData = JSON.parse(cachedGpsStr);
+          if (cachedGps && cachedGps.latitude && cachedGps.longitude) {
+            if (isMounted) setLiveLocation(cachedGps);
+          }
+        }
+      } catch (e) {}
+
+      // 2. Silently fetch live GPS coordinates directly
+      try {
+        setIsDetectingLocation(true);
+        const loc = await getLiveGPSLocation();
+        if (loc && isMounted) {
+          setLiveLocation(loc);
+          await LocalStorage.setItem('user_live_location', JSON.stringify(loc));
+
+          // Auto-sync profile state if matched
+          if (loc.state) {
+            const matchedState = STATES.find(s => 
+              s.toLowerCase() === loc.state?.toLowerCase() || 
+              loc.state?.toLowerCase().includes(s.toLowerCase()) ||
+              s.toLowerCase().includes(loc.state?.toLowerCase() || '')
+            );
+            if (matchedState && matchedState !== farmState) {
+              await updateProfile(userName, matchedState, farmSoil, farmCrop);
+            }
+          }
+
+          setIsLoadingWeather(true);
+          const data = await fetchWeatherData({ latitude: loc.latitude, longitude: loc.longitude });
+          if (isMounted) {
+            setWeatherData(data);
+            const cacheKey = `weather_cache_gps_${loc.latitude.toFixed(2)}_${loc.longitude.toFixed(2)}`;
+            await LocalStorage.setItem(cacheKey, JSON.stringify({ data, timestamp: Date.now() }));
+          }
+        }
+      } catch (err) {
+        console.warn('Auto location detection notice:', err);
+      } finally {
+        if (isMounted) {
+          setIsDetectingLocation(false);
+          setIsLoadingWeather(false);
+        }
+      }
+    }
+
+    initAutoLocation();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Mandi prices state
   const [mandiPrices, setMandiPrices] = useState<MandiItem[]>(INITIAL_MANDI_PRICES);
@@ -416,7 +545,7 @@ export default function HomeScreen() {
 
           {/* Weather Widget */}
           <Animated.View entering={FadeInDown.duration(300).delay(50)}>
-            <ThemedView type="backgroundElement" style={styles.weatherCard}>
+            <ThemedView type="backgroundElement" style={[styles.weatherCard, { borderColor: theme.border }]}>
             {isLoadingWeather ? (
               <View style={[styles.weatherCenter, { height: 110 }]}>
                 <ActivityIndicator size="small" color={theme.primary} />
@@ -426,7 +555,7 @@ export default function HomeScreen() {
               </View>
             ) : weatherError || !weatherData ? (
               <View style={{ gap: Spacing.two }}>
-                <View style={styles.weatherRow}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                   <View>
                     <ThemedText type="smallBold" style={{ fontSize: 18, color: theme.error }}>
                       {language === 'hi' ? 'मौसम लोड करने में त्रुटि' : 'Weather unavailable'}
@@ -441,7 +570,7 @@ export default function HomeScreen() {
                     tintColor={theme.error}
                   />
                 </View>
-                <View style={[styles.weatherDivider, { backgroundColor: theme.border }]} />
+                <View style={{ height: 1, width: '100%', backgroundColor: theme.border }} />
                 <Pressable
                   onPress={() => {
                     setIsLoadingWeather(true);
@@ -470,32 +599,179 @@ export default function HomeScreen() {
               </View>
             ) : (
               <>
-                <View style={styles.weatherRow}>
-                  <View>
-                    <ThemedText type="smallBold" style={{ fontSize: 24 }}>{weatherData.temp}°C</ThemedText>
-                    <ThemedText type="small" style={{ color: theme.textSecondary }}>
-                      {language === 'hi' ? getWeatherCondition(weatherData.weatherCode).hi : getWeatherCondition(weatherData.weatherCode).en} (RH: {weatherData.humidity}%)
+                {/* 1. Header: Location & Live GPS Pill (Tappable to re-detect) + Top Forecast Pill */}
+                <View style={styles.weatherCardHeader}>
+                  <Pressable
+                    onPress={handleDetectLocation}
+                    disabled={isDetectingLocation}
+                    style={({ pressed }) => [
+                      styles.locationPill,
+                      {
+                        backgroundColor: liveLocation ? theme.primary + '12' : theme.backgroundElement,
+                        borderColor: liveLocation ? theme.primary + '35' : theme.border,
+                      },
+                      pressed && { opacity: 0.8 }
+                    ]}
+                  >
+                    <SymbolView
+                      name={{ ios: 'mappin.circle.fill', android: 'location_on', web: 'location_on' } as any}
+                      size={14}
+                      tintColor={theme.primary}
+                    />
+                    <ThemedText style={{ fontSize: 13, fontWeight: '700', color: theme.text }} numberOfLines={1}>
+                      {liveLocation?.displayName || formatState(farmState)}
                     </ThemedText>
-                    {weatherCachedAt && (
-                      <ThemedText type="code" style={{ fontSize: 9, color: theme.textSecondary, marginTop: 2 }}>
-                        {formatCacheTime(weatherCachedAt)}
-                      </ThemedText>
+                    {isDetectingLocation ? (
+                      <ActivityIndicator size={11} color={theme.primary} style={{ marginLeft: 2 }} />
+                    ) : (
+                      <View style={[styles.liveGpsTag, { backgroundColor: theme.primary }]}>
+                        <ThemedText style={{ fontSize: 8.5, fontWeight: '800', color: '#FFFFFF' }}>
+                          LIVE
+                        </ThemedText>
+                      </View>
                     )}
-                  </View>
-                  <SymbolView
-                    name={getWeatherCondition(weatherData.weatherCode).icon as any}
-                    size={36}
-                    tintColor={theme.accent}
-                  />
+                  </Pressable>
+
+                  <Pressable
+                    onPress={() => setIsDisasterModalOpen(true)}
+                    style={({ pressed }) => [
+                      styles.forecastPillBtn,
+                      { backgroundColor: theme.primary + '14', borderColor: theme.primary + '33' },
+                      pressed && { backgroundColor: theme.primary + '28' }
+                    ]}
+                  >
+                    <SymbolView
+                      name={{ ios: 'calendar', android: 'calendar_today', web: 'calendar_today' } as any}
+                      size={12}
+                      tintColor={theme.primary}
+                    />
+                    <ThemedText style={{ color: theme.primary, fontSize: 11.5, fontWeight: '700' }}>
+                      {language === 'hi' ? '7-दिन ›' : '7-Day ›'}
+                    </ThemedText>
+                  </Pressable>
                 </View>
-                <View style={[styles.weatherDivider, { backgroundColor: theme.border }]} />
-                <View style={styles.weatherAdviceRow}>
-                  <SymbolView
-                    name={{ ios: 'lightbulb.fill', android: 'lightbulb', web: 'lightbulb' } as any}
-                    size={18}
-                    tintColor={theme.accent}
-                  />
-                  <ThemedText type="small" style={styles.weatherAdviceText}>
+
+                {/* 2. Hero Weather Row: Big Temp + Condition on left, Circular Tinted Icon on right */}
+                {(() => {
+                  const isNight = weatherData.isDay === 0;
+                  const cond = getWeatherCondition(weatherData.weatherCode, weatherData.isDay);
+
+                  return (
+                    <View style={styles.weatherHeroRow}>
+                      <View style={{ flex: 1 }}>
+                        <ThemedText style={{ fontSize: 38, fontWeight: '800', lineHeight: 44, color: theme.text }}>
+                          {weatherData.temp}°C
+                        </ThemedText>
+                        <ThemedText style={{ fontSize: 14.5, fontWeight: '600', color: theme.textSecondary, marginTop: 2 }}>
+                          {language === 'hi' ? cond.hi : cond.en}
+                        </ThemedText>
+                      </View>
+
+                      <View style={[styles.weatherIconCircle, { backgroundColor: isNight ? '#6366F115' : theme.accent + '18' }]}>
+                        <SymbolView
+                          name={cond.icon as any}
+                          size={34}
+                          tintColor={isNight ? '#818CF8' : theme.accent}
+                        />
+                      </View>
+                    </View>
+                  );
+                })()}
+
+                {/* 3. Structured Metrics Grid: 2 Side-by-Side Clean Cards */}
+                <View style={styles.metricsGrid}>
+                  {weatherData.daily7d && weatherData.daily7d.length > 0 && (
+                    <View style={[styles.metricChip, { backgroundColor: theme.card, borderColor: theme.border }]}>
+                      <View style={[styles.metricIconBox, { backgroundColor: theme.primary + '15' }]}>
+                        <SymbolView
+                          name={{ ios: 'thermometer.medium', android: 'thermostat', web: 'thermostat' } as any}
+                          size={13}
+                          tintColor={theme.primary}
+                        />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <ThemedText style={{ fontSize: 10, color: theme.textSecondary, fontWeight: '600' }}>
+                          {language === 'hi' ? 'आज का तापमान' : 'Today Range'}
+                        </ThemedText>
+                        <ThemedText style={{ fontSize: 12.5, fontWeight: '700', color: theme.text, marginTop: 1 }}>
+                          {weatherData.daily7d[0].minTemp}° - {weatherData.daily7d[0].maxTemp}°C
+                        </ThemedText>
+                      </View>
+                    </View>
+                  )}
+
+                  <View style={[styles.metricChip, { backgroundColor: theme.card, borderColor: theme.border }]}>
+                    <View style={[styles.metricIconBox, { backgroundColor: '#0284C718' }]}>
+                      <SymbolView
+                        name={{ ios: 'humidity', android: 'water_drop', web: 'water_drop' } as any}
+                        size={13}
+                        tintColor="#0284C7"
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <ThemedText style={{ fontSize: 10, color: theme.textSecondary, fontWeight: '600' }}>
+                        {language === 'hi' ? 'हवा में नमी' : 'Humidity'}
+                      </ThemedText>
+                      <ThemedText style={{ fontSize: 12.5, fontWeight: '700', color: theme.text, marginTop: 1 }}>
+                        {weatherData.humidity}% RH
+                      </ThemedText>
+                    </View>
+                  </View>
+                </View>
+
+                {/* 4. Disaster Alert Card (If Active) */}
+                {weatherData.disasterAlert && (
+                  <Pressable
+                    onPress={() => setIsDisasterModalOpen(true)}
+                    style={({ pressed }) => [
+                      styles.disasterAlertCard,
+                      { backgroundColor: theme.error + '10', borderColor: theme.error + '35' },
+                      pressed && { opacity: 0.85 }
+                    ]}
+                  >
+                    <View style={styles.alertCardTopRow}>
+                      <View style={styles.alertCardTitleRow}>
+                        <View style={[styles.disasterAlertBadge, { backgroundColor: theme.error }]}>
+                          <SymbolView
+                            name={{ ios: 'exclamationmark.triangle.fill', android: 'warning', web: 'warning' } as any}
+                            size={12}
+                            tintColor="#FFFFFF"
+                          />
+                        </View>
+                        <ThemedText style={{ fontSize: 13, fontWeight: '700', color: theme.error, flex: 1 }} numberOfLines={1}>
+                          {(language === 'hi' ? weatherData.disasterAlert.titleHi : weatherData.disasterAlert.titleEn).replace(/^[^\w\s\u0900-\u097F]+/, '').trim()}
+                        </ThemedText>
+                      </View>
+                      <View style={[styles.disasterRiskPill, { backgroundColor: theme.error }]}>
+                        <ThemedText style={{ fontSize: 9.5, color: '#FFFFFF', fontWeight: '800' }}>
+                          {weatherData.disasterAlert.probability}% {language === 'hi' ? 'खतरा' : 'RISK'}
+                        </ThemedText>
+                      </View>
+                    </View>
+
+                    <View style={styles.alertCardBottomRow}>
+                      <ThemedText style={{ fontSize: 11, color: theme.textSecondary, flex: 1 }}>
+                        {language === 'hi' ? '48-घंटे का अलर्ट • विवरण व बचाव सलाह देखें' : '48h Alert • Tap to view forecast & advisory'}
+                      </ThemedText>
+                      <SymbolView
+                        name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any}
+                        size={13}
+                        tintColor={theme.error}
+                      />
+                    </View>
+                  </Pressable>
+                )}
+
+                {/* 5. Smart Farm Advisory Callout */}
+                <View style={[styles.advisoryCallout, { backgroundColor: theme.card, borderColor: theme.border }]}>
+                  <View style={[styles.advisoryIconBadge, { backgroundColor: theme.accent + '20' }]}>
+                    <SymbolView
+                      name={{ ios: 'lightbulb.fill', android: 'lightbulb', web: 'lightbulb' } as any}
+                      size={14}
+                      tintColor={theme.accent}
+                    />
+                  </View>
+                  <ThemedText style={[styles.advisoryCalloutText, { color: theme.text }]}>
                     {generateWeatherAdvisory(
                       weatherData.temp,
                       weatherData.humidity,
@@ -506,6 +782,36 @@ export default function HomeScreen() {
                     )}
                   </ThemedText>
                 </View>
+
+                {/* 6. Full Width 7-Day Forecast Action Button */}
+                <Pressable
+                  onPress={() => setIsDisasterModalOpen(true)}
+                  style={({ pressed }) => [
+                    styles.fullForecastBtn,
+                    { backgroundColor: theme.primary + '12', borderColor: theme.primary + '28' },
+                    pressed && { backgroundColor: theme.primary + '22' }
+                  ]}
+                >
+                  <SymbolView
+                    name={{ ios: 'calendar', android: 'calendar_today', web: 'calendar_today' } as any}
+                    size={14}
+                    tintColor={theme.primary}
+                  />
+                  <ThemedText style={{ color: theme.primary, fontSize: 12.5, fontWeight: '700', flex: 1 }}>
+                    {language === 'hi' ? '7 दिनों का विस्तृत मौसम व कृषि सलाह देखें' : 'View Full 7-Day Weather & Crop Forecast'}
+                  </ThemedText>
+                  <SymbolView
+                    name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any}
+                    size={14}
+                    tintColor={theme.primary}
+                  />
+                </Pressable>
+
+                {weatherCachedAt && (
+                  <ThemedText type="code" style={{ fontSize: 9.5, color: theme.textSecondary, textAlign: 'center', marginTop: 1 }}>
+                    {formatCacheTime(weatherCachedAt)}
+                  </ThemedText>
+                )}
               </>
             )}
             </ThemedView>
@@ -560,7 +866,7 @@ export default function HomeScreen() {
                       {language === 'hi' ? 'राज्य' : 'STATE'}
                     </ThemedText>
                     <ThemedText type="smallBold" style={styles.selectorValue} numberOfLines={1} ellipsizeMode="tail">
-                      {formatState(farmState)}
+                      {liveLocation?.district ? `${liveLocation.district} (${formatState(farmState)})` : formatState(farmState)}
                     </ThemedText>
                   </View>
                 </View>
@@ -882,6 +1188,23 @@ export default function HomeScreen() {
             if (activeModal) saveProfileValue(activeModal, value);
           }}
           onClose={closeModal}
+          onUseLiveLocation={activeModal === 'state' ? handleDetectLocation : undefined}
+          isDetectingLocation={isDetectingLocation}
+        />
+
+        {/* 7-Day Weather Forecast & Disaster Alert Modal */}
+        <WeatherDisasterModal
+          visible={isDisasterModalOpen}
+          onClose={() => setIsDisasterModalOpen(false)}
+          disasterAlert={weatherData?.disasterAlert || null}
+          daily7d={weatherData?.daily7d}
+          currentTemp={weatherData?.temp}
+          stateName={liveLocation?.displayName || formatState(farmState)}
+          cropName={formatLabel(farmCrop)}
+          language={language}
+          onNavigateToChat={(msg) => {
+            router.push({ pathname: '/chat', params: { initialPrompt: msg } });
+          }}
         />
       </SafeAreaView>
     </ThemedView>
@@ -946,7 +1269,8 @@ const styles = StyleSheet.create({
   weatherCard: {
     borderRadius: Spacing.three,
     padding: Spacing.three,
-    gap: Spacing.two,
+    gap: 10,
+    borderWidth: 1,
   },
   weatherCenter: {
     justifyContent: 'center',
@@ -960,28 +1284,140 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.two,
     alignSelf: 'center',
   },
-  weatherRow: {
+  weatherCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 8,
   },
-  weatherDivider: {
-    height: 1,
-    width: '100%',
+  locationPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    flexShrink: 1,
+    maxWidth: '74%',
   },
-  weatherAdviceRow: {
+  liveGpsTag: {
+    paddingHorizontal: 5,
+    paddingVertical: 1.5,
+    borderRadius: 4,
+    marginLeft: 2,
+  },
+  forecastPillBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  weatherHeroRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  weatherIconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  metricsGrid: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  metricChip: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    gap: 8,
+  },
+  metricIconBox: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  disasterAlertCard: {
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 5,
+  },
+  alertCardTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  alertCardTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 6,
+  },
+  alertCardBottomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingLeft: 28,
+    gap: 6,
+  },
+  disasterAlertBadge: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  disasterRiskPill: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  advisoryCallout: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: Spacing.two,
+    paddingVertical: 9,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 8,
   },
-  leafIcon: {
-    fontSize: 18,
+  advisoryIconBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 1,
   },
-  weatherAdviceText: {
+  advisoryCalloutText: {
     flex: 1,
     fontSize: 12,
-    lineHeight: 16,
-    opacity: 0.85,
+    lineHeight: 17,
+  },
+  fullForecastBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
   },
   profileCard: {
     borderRadius: Spacing.three,

@@ -7,6 +7,7 @@ import {
   FlatList,
   Modal,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 import { ThemedText } from './themed-text';
@@ -23,6 +24,8 @@ interface SelectionModalProps {
   selectedValue?: string;
   onSelect: (value: string) => void;
   onClose: () => void;
+  onUseLiveLocation?: () => void;
+  isDetectingLocation?: boolean;
 }
 
 export function SelectionModal({
@@ -33,6 +36,8 @@ export function SelectionModal({
   selectedValue,
   onSelect,
   onClose,
+  onUseLiveLocation,
+  isDetectingLocation,
 }: SelectionModalProps) {
   const theme = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
@@ -95,6 +100,39 @@ export function SelectionModal({
               clearButtonMode="while-editing"
             />
           </View>
+
+          {/* GPS Live Location Quick Action */}
+          {onUseLiveLocation && (
+            <Pressable
+              onPress={onUseLiveLocation}
+              disabled={isDetectingLocation}
+              style={({ pressed }) => [
+                styles.gpsActionBtn,
+                { backgroundColor: theme.primary + '14', borderColor: theme.primary + '35' },
+                pressed && { backgroundColor: theme.primary + '25' },
+              ]}
+            >
+              <View style={[styles.gpsActionIconCircle, { backgroundColor: theme.primary }]}>
+                {isDetectingLocation ? (
+                  <ActivityIndicator size={12} color="#FFFFFF" />
+                ) : (
+                  <SymbolView
+                    name={{ ios: 'location.fill', android: 'my_location', web: 'my_location' } as any}
+                    size={14}
+                    tintColor="#FFFFFF"
+                  />
+                )}
+              </View>
+              <View style={{ flex: 1 }}>
+                <ThemedText style={{ fontSize: 13, fontWeight: '700', color: theme.primary }}>
+                  {isDetectingLocation ? 'वर्तमान लोकेशन पहचानी जा रही है...' : '📍 वर्तमान GPS लोकेशन का उपयोग करें'}
+                </ThemedText>
+                <ThemedText style={{ fontSize: 10.5, color: theme.textSecondary, marginTop: 1 }}>
+                  स्वचालित रूप से सटीक ज़िला और मौसम सेट करें
+                </ThemedText>
+              </View>
+            </Pressable>
+          )}
 
           {/* List */}
           <FlatList
@@ -208,6 +246,23 @@ const styles = StyleSheet.create({
       web: { outlineStyle: 'none' } as any,
       default: {},
     }),
+  },
+  gpsActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 10,
+    marginBottom: Spacing.two,
+  },
+  gpsActionIconCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalList: {
     marginTop: Spacing.one,
