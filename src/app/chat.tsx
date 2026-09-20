@@ -47,7 +47,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import * as Speech from 'expo-speech';
 import * as Clipboard from 'expo-clipboard';
-import { startRecording, stopRecording, transcribeAudio } from '@/services/transcription-service';
+import { startListeningSession, type ActiveListeningSession } from '@/services/speech-recognition-service';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -643,6 +643,8 @@ export default function ChatScreen() {
 
   const handleSendQueryRef = useRef<((queryText: string, autoSpeak?: boolean) => Promise<void>) | null>(null);
 
+  const chatListeningSessionRef = useRef<ActiveListeningSession | null>(null);
+
   const handleVoiceInput = async () => {
     if (isOffline) {
       Alert.alert(
@@ -653,36 +655,69 @@ export default function ChatScreen() {
       );
       return;
     }
+
     if (isRecording) {
       try {
-        const uri = await stopRecording();
         setIsRecording(false);
         setIsTranscribing(true);
         setErrorMsg(null);
-        
-        const transcribedText = await transcribeAudio(uri, language);
-        if (transcribedText.trim()) {
+
+        const transcribedText = await chatListeningSessionRef.current?.stop();
+        chatListeningSessionRef.current = null;
+        setIsTranscribing(false);
+
+        if (transcribedText && transcribedText.trim()) {
           setInputValue('');
           if (handleSendQueryRef.current) {
             await handleSendQueryRef.current(transcribedText.trim(), true);
           } else {
-            setInputValue(transcribedText);
+            setInputValue(transcribedText.trim());
           }
         }
       } catch (err: any) {
         console.error('Recording/transcription error:', err);
         setErrorMsg(err.message || 'Failed to process voice input.');
         setIsRecording(false);
-      } finally {
         setIsTranscribing(false);
       }
     } else {
       try {
         setErrorMsg(null);
-        await startRecording();
         setIsRecording(true);
+
+        const session = await startListeningSession(language, {
+          onInterimResult: (liveText) => {
+            setInputValue(liveText);
+          },
+          onStateChange: (st) => {
+            if (st === 'processing') {
+              setIsTranscribing(true);
+            }
+          },
+          onFinalResult: async (finalText) => {
+            setIsRecording(false);
+            setIsTranscribing(false);
+            chatListeningSessionRef.current = null;
+            if (finalText && finalText.trim()) {
+              setInputValue('');
+              if (handleSendQueryRef.current) {
+                await handleSendQueryRef.current(finalText.trim(), true);
+              } else {
+                setInputValue(finalText.trim());
+              }
+            }
+          },
+          onError: (err) => {
+            setIsRecording(false);
+            setIsTranscribing(false);
+            chatListeningSessionRef.current = null;
+            setErrorMsg(err);
+          },
+        });
+
+        chatListeningSessionRef.current = session;
       } catch (err: any) {
-        console.error('Failed to start recording:', err);
+        console.error('Failed to start voice listening:', err);
         setErrorMsg(err.message || 'Microphone access failed.');
         setIsRecording(false);
       }
@@ -1157,7 +1192,7 @@ export default function ChatScreen() {
               }),
             }
           ]}>
-            <View style={[styles.headerInfoRow, { flexShrink: 1 }]}>
+            <View style={styles.headerInfoRow}>
               <Pressable
                 onPress={() => router.back()}
                 style={({ pressed }) => [
@@ -1165,10 +1200,11 @@ export default function ChatScreen() {
                   { backgroundColor: theme.backgroundSelected, borderColor: theme.borderAccent },
                   pressed && { opacity: 0.7 }
                 ]}
+                accessibilityLabel="Back"
               >
                 <SymbolView
                   name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' } as any}
-                  size={18}
+                  size={16}
                   tintColor={theme.primary}
                 />
               </Pressable>
@@ -1176,20 +1212,26 @@ export default function ChatScreen() {
               <View style={[styles.avatarMini, { backgroundColor: theme.backgroundSelected, borderColor: theme.borderAccent }]}>
                 <SymbolView
                   name={{ ios: 'laurel.leading', android: 'spa', web: 'spa' } as any}
-                  size={16}
+                  size={15}
                   tintColor={theme.primary}
                 />
                 <View style={[styles.onlineDot, { backgroundColor: theme.success }]} />
               </View>
-              <View style={{ flexShrink: 1 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <ThemedText type="smallBold" numberOfLines={1}>Krishik Mitra AI</ThemedText>
+
+              <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+                <View style={styles.headerTitleRow}>
+                  <ThemedText style={styles.headerTitle} numberOfLines={1}>
+                    Krishik Mitra
+                  </ThemedText>
                   <View style={[styles.miniBadge, { backgroundColor: theme.accentLight }]}>
                     <ThemedText style={[styles.miniBadgeText, { color: theme.accent }]}>PRO</ThemedText>
                   </View>
                 </View>
-                <ThemedText type="small" numberOfLines={1} style={{ fontSize: 10, color: theme.textSecondary, fontWeight: '600', marginTop: 1 }}>
-                  Context: {farmState} • {farmCrop.split(' ')[0]}
+                <ThemedText
+                  numberOfLines={1}
+                  style={[styles.headerSubtitle, { color: theme.textSecondary }]}
+                >
+                  {farmState} • {farmCrop.split(' ')[0]}
                 </ThemedText>
               </View>
             </View>
@@ -1202,10 +1244,11 @@ export default function ChatScreen() {
                   { backgroundColor: theme.backgroundSelected, borderColor: theme.borderAccent },
                   pressed && { opacity: 0.8 }
                 ]}
+                accessibilityLabel="Chat History"
               >
                 <SymbolView
                   name={{ ios: 'line.horizontal.3', android: 'menu', web: 'menu' } as any}
-                  size={18}
+                  size={16}
                   tintColor={theme.primary}
                 />
               </Pressable>
@@ -1217,10 +1260,11 @@ export default function ChatScreen() {
                   { backgroundColor: theme.backgroundSelected, borderColor: theme.borderAccent },
                   pressed && { opacity: 0.8 }
                 ]}
+                accessibilityLabel="More Options"
               >
                 <SymbolView
                   name={{ ios: 'ellipsis.vertical', android: 'more_vert', web: 'more_vert' } as any}
-                  size={18}
+                  size={16}
                   tintColor={theme.primary}
                 />
               </Pressable>
@@ -1744,63 +1788,84 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     width: '100%',
-    paddingTop: Spacing.three,
+    paddingTop: Spacing.two + 4,
     paddingBottom: Spacing.two + 2,
-    paddingHorizontal: Spacing.three + 2,
+    paddingHorizontal: 12,
     borderBottomWidth: 1,
     zIndex: 10,
+    gap: 8,
   },
   headerInfoRow: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.two,
+    gap: 7,
+    minWidth: 0,
   },
   backButton: {
-    paddingVertical: Spacing.one,
-    paddingHorizontal: Spacing.two,
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  controlIconBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarMini: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
   },
+  headerTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  headerTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+  headerSubtitle: {
+    fontSize: 10.5,
+    fontWeight: '600',
+    marginTop: 1,
+  },
+  headerControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  controlIconBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   onlineDot: {
     position: 'absolute',
     bottom: -1,
     right: -1,
-    width: 9,
-    height: 9,
-    borderRadius: 5,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     borderWidth: 1.5,
     borderColor: '#FFFFFF',
   },
   miniBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 1.5,
-    borderRadius: 6,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 5,
   },
   miniBadgeText: {
-    fontSize: 9,
+    fontSize: 8.5,
     fontWeight: '800',
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
   },
   menuBackdrop: {
     ...StyleSheet.absoluteFill,
@@ -1922,11 +1987,6 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     paddingVertical: Spacing.one,
     paddingHorizontal: Spacing.three,
-  },
-  headerControls: {
-    flexDirection: 'row',
-    gap: Spacing.two,
-    flexShrink: 0,
   },
   messagesContainer: {
     flex: 1,

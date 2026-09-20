@@ -17,6 +17,8 @@ let nativeRecording: any = null;
 let webMediaRecorder: any = null; // Use any to prevent Web-only MediaRecorder TypeScript issues on native builds
 let webAudioChunks: Blob[] = [];
 
+let webCurrentStream: MediaStream | null = null;
+
 /**
  * Start recording audio. Resolves when recording successfully begins.
  */
@@ -27,6 +29,7 @@ export async function startRecording(): Promise<void> {
     }
 
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    webCurrentStream = stream;
     const mediaRecorder = new MediaRecorder(stream);
     
     webAudioChunks = [];
@@ -36,7 +39,8 @@ export async function startRecording(): Promise<void> {
       }
     };
 
-    mediaRecorder.start();
+    // Capture chunks every 250ms so ondataavailable is called continuously
+    mediaRecorder.start(250);
     webMediaRecorder = mediaRecorder;
   } else {
     const Audio = getAudioModule();
@@ -70,6 +74,11 @@ export async function stopRecording(): Promise<string> {
   if (Platform.OS === 'web') {
     return new Promise((resolve, reject) => {
       if (!webMediaRecorder) {
+        // Still clean up any remaining stream tracks
+        if (webCurrentStream) {
+          webCurrentStream.getTracks().forEach((track) => track.stop());
+          webCurrentStream = null;
+        }
         reject(new Error('No recording session in progress.'));
         return;
       }
@@ -79,14 +88,19 @@ export async function stopRecording(): Promise<string> {
         const audioUrl = URL.createObjectURL(audioBlob);
 
         // Stop all tracks to release microphone hardware
-        if (webMediaRecorder.stream) {
-          webMediaRecorder.stream.getTracks().forEach((track: any) => track.stop());
+        if (webCurrentStream) {
+          webCurrentStream.getTracks().forEach((track) => track.stop());
+          webCurrentStream = null;
         }
         webMediaRecorder = null;
         resolve(audioUrl);
       };
 
-      webMediaRecorder.stop();
+      if (webMediaRecorder.state !== 'inactive') {
+        webMediaRecorder.stop();
+      } else {
+        webMediaRecorder.onstop(null);
+      }
     });
   } else {
     if (!nativeRecording) {

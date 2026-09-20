@@ -22,9 +22,12 @@ import { ThemedText } from './themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth-context';
-import { startRecording, stopRecording, transcribeAudio } from '@/services/transcription-service';
 import { speakVernacular, stopSpeaking } from '@/services/voice-service';
 import { processVoiceQuery, type VoiceQueryResult } from '@/services/voice-query-router';
+import {
+  startListeningSession,
+  type ActiveListeningSession,
+} from '@/services/speech-recognition-service';
 import { useRouter } from 'expo-router';
 
 interface VoiceAssistantModalProps {
@@ -46,19 +49,23 @@ export function VoiceAssistantModal({
 
   const [state, setState] = useState<AssistantState>('idle');
   const [transcribedQuery, setTranscribedQuery] = useState('');
+  const [interimText, setInterimText] = useState('');
   const [result, setResult] = useState<VoiceQueryResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSpeakingAudio, setIsSpeakingAudio] = useState(false);
 
-  // Pulse animation for recording orb
+  const activeSessionRef = useRef<ActiveListeningSession | null>(null);
+
+  // Pulse & volume animation for recording orb
   const pulseScale = useSharedValue(1);
   const pulseOpacity = useSharedValue(0.6);
+  const volumeScale = useSharedValue(1);
 
   useEffect(() => {
     if (state === 'listening') {
       pulseScale.value = withRepeat(
         withSequence(
-          withTiming(1.25, { duration: 900 }),
+          withTiming(1.2, { duration: 900 }),
           withTiming(1, { duration: 900 })
         ),
         -1,
@@ -66,8 +73,8 @@ export function VoiceAssistantModal({
       );
       pulseOpacity.value = withRepeat(
         withSequence(
-          withTiming(0.2, { duration: 900 }),
-          withTiming(0.6, { duration: 900 })
+          withTiming(0.25, { duration: 900 }),
+          withTiming(0.65, { duration: 900 })
         ),
         -1,
         true
@@ -75,11 +82,12 @@ export function VoiceAssistantModal({
     } else {
       pulseScale.value = 1;
       pulseOpacity.value = 0.6;
+      volumeScale.value = 1;
     }
   }, [state]);
 
   const animatedOrbStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: pulseScale.value }],
+    transform: [{ scale: pulseScale.value * volumeScale.value }],
     opacity: pulseOpacity.value,
   }));
 
@@ -94,11 +102,13 @@ export function VoiceAssistantModal({
 
   const handleModalCleanup = () => {
     stopSpeaking();
-    if (state === 'listening') {
-      stopRecording().catch(() => {});
+    if (activeSessionRef.current) {
+      activeSessionRef.current.abort();
+      activeSessionRef.current = null;
     }
     setState('idle');
     setTranscribedQuery('');
+    setInterimText('');
     setResult(null);
     setErrorMessage(null);
     setIsSpeakingAudio(false);
@@ -107,34 +117,65 @@ export function VoiceAssistantModal({
   const beginListening = async () => {
     try {
       await stopSpeaking();
+      if (activeSessionRef.current) {
+        activeSessionRef.current.abort();
+        activeSessionRef.current = null;
+      }
+
       setIsSpeakingAudio(false);
       setErrorMessage(null);
       setResult(null);
       setTranscribedQuery('');
+      setInterimText('');
       setState('listening');
 
-      await startRecording();
+      const session = await startListeningSession(language, {
+        onInterimResult: (text) => {
+          setInterimText(text);
+        },
+        onVolumeChange: (vol) => {
+          volumeScale.value = withTiming(1 + vol * 0.45, { duration: 80 });
+        },
+        onStateChange: (newState) => {
+          if (newState === 'processing') {
+            setState('transcribing');
+          }
+        },
+        onFinalResult: (text) => {
+          const clean = text.trim();
+          if (clean.length > 0) {
+            setTranscribedQuery(clean);
+            handleExecuteQuery(clean);
+          }
+        },
+        onError: (errText) => {
+          setState('error');
+          setErrorMessage(errText);
+        },
+      });
+
+      activeSessionRef.current = session;
     } catch (err: any) {
-      console.error('[VoiceAssistant] Start recording error:', err);
+      console.error('[VoiceAssistant] Start listening error:', err);
       setState('error');
       setErrorMessage(
         language === 'hi'
-          ? 'माइक्रोफ़ोन चालू नहीं हो सका। कृपया अनुमति जांचें।'
-          : 'Could not access microphone. Please check permissions.'
+          ? 'माइक्रोफ़ोन चालू नहीं हो सका। कृपया ब्राउज़र में अनुमति जांचें।'
+          : 'Could not access microphone. Please check browser permissions.'
       );
     }
   };
 
   const finishListeningAndProcess = async () => {
-    if (state !== 'listening') return;
+    if (state !== 'listening' || !activeSessionRef.current) return;
 
     try {
       setState('transcribing');
-      const audioUri = await stopRecording();
+      const text = await activeSessionRef.current.stop();
+      activeSessionRef.current = null;
 
-      // Transcribe audio using Groq Whisper Large v3
-      const text = await transcribeAudio(audioUri, language);
-      if (!text || text.trim().length === 0) {
+      const bestText = (text || interimText).trim();
+      if (!bestText) {
         setState('error');
         setErrorMessage(
           language === 'hi'
@@ -144,10 +185,10 @@ export function VoiceAssistantModal({
         return;
       }
 
-      setTranscribedQuery(text.trim());
-      await handleExecuteQuery(text.trim());
+      setTranscribedQuery(bestText);
+      await handleExecuteQuery(bestText);
     } catch (err: any) {
-      console.error('[VoiceAssistant] Transcription/Processing error:', err);
+      console.error('[VoiceAssistant] Processing error:', err);
       setState('error');
       setErrorMessage(
         language === 'hi'
@@ -307,13 +348,42 @@ export function VoiceAssistantModal({
                 </View>
 
                 <ThemedText style={styles.stateTitle}>
-                  {language === 'hi' ? 'सुन रहे हैं... बोलिए' : 'Listening... Speak now'}
+                  {interimText
+                    ? (language === 'hi' ? 'आप बोल रहे हैं...' : 'Speaking...')
+                    : (language === 'hi' ? 'सुन रहे हैं... बोलिए' : 'Listening... Speak now')}
                 </ThemedText>
                 <ThemedText style={[styles.stateSubtitle, { color: theme.textSecondary }]}>
-                  {language === 'hi'
-                    ? 'जैसे ही बोलना समाप्त हो, नीचे बटन दबाएं'
-                    : 'Tap button when finished speaking'}
+                  {interimText
+                    ? (language === 'hi'
+                        ? 'रुकते ही उत्तर स्वतः आ जाएगा, या नीचे बटन दबाएं'
+                        : 'Pause speaking to auto-answer, or tap button below')
+                    : (language === 'hi'
+                        ? 'अपनी भाषा में बोलें या नीचे दिए सवाल चुनें'
+                        : 'Speak in your language or select a suggestion')}
                 </ThemedText>
+
+                {/* Live Speech Recognition Bubble */}
+                {interimText ? (
+                  <View
+                    style={[
+                      styles.liveSpeechBox,
+                      {
+                        backgroundColor: theme.primary + '14',
+                        borderColor: theme.primary + '40',
+                      },
+                    ]}
+                  >
+                    <View style={styles.liveSpeechHeaderRow}>
+                      <View style={[styles.liveBlinkingDot, { backgroundColor: theme.primary }]} />
+                      <ThemedText style={{ fontSize: 11, fontWeight: '700', color: theme.primary }}>
+                        {language === 'hi' ? 'लाइव आवाज़ पहचान:' : 'Live speech detected:'}
+                      </ThemedText>
+                    </View>
+                    <ThemedText style={{ fontSize: 14.5, fontWeight: '700', color: theme.text, marginTop: 4 }}>
+                      "{interimText}"
+                    </ThemedText>
+                  </View>
+                ) : null}
 
                 <Pressable
                   onPress={finishListeningAndProcess}
@@ -342,7 +412,10 @@ export function VoiceAssistantModal({
                     <Pressable
                       key={idx}
                       onPress={() => {
-                        stopRecording().catch(() => {});
+                        if (activeSessionRef.current) {
+                          activeSessionRef.current.abort();
+                          activeSessionRef.current = null;
+                        }
                         setTranscribedQuery(chip);
                         handleExecuteQuery(chip);
                       }}
@@ -665,6 +738,24 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
     marginTop: 4,
     textAlign: 'center',
+  },
+  liveSpeechBox: {
+    width: '100%',
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    marginTop: 14,
+    marginBottom: 4,
+  },
+  liveSpeechHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  liveBlinkingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   doneRecordingBtn: {
     flexDirection: 'row',

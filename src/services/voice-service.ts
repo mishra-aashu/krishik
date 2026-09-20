@@ -103,6 +103,9 @@ export async function speakVernacular(
  */
 export async function stopSpeaking(): Promise<void> {
   try {
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
     Speech.stop();
   } catch (err) {
     console.warn('[VoiceService] Speech.stop error:', err);
