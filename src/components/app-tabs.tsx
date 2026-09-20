@@ -1,17 +1,23 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { View } from 'react-native';
+import { usePathname } from 'expo-router';
 
 import { Colors } from '@/constants/theme';
+import { FloatingVoiceButton } from './floating-voice-button';
 
 export default function AppTabs() {
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+  const pathname = usePathname();
+  const isChatScreen = pathname === '/chat';
 
   return (
-    <NativeTabs
-      backgroundColor={colors.background}
-      indicatorColor={colors.primary}
-      labelStyle={{ selected: { color: colors.primary } }}>
+    <View style={{ flex: 1 }}>
+      <NativeTabs
+        backgroundColor={colors.background}
+        indicatorColor={colors.primary}
+        labelStyle={{ selected: { color: colors.primary } }}>
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
@@ -52,5 +58,7 @@ export default function AppTabs() {
         />
       </NativeTabs.Trigger>
     </NativeTabs>
+    {!isChatScreen && <FloatingVoiceButton />}
+  </View>
   );
 }

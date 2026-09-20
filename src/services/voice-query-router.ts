@@ -1,0 +1,154 @@
+import { sendMessageToGroq, type FarmProfile } from './chat-service';
+import { fetchWeatherData, getWeatherCondition } from './weather-service';
+import { fetchLiveMandiPrices, type MandiItem } from './mandi-service';
+import { LocalStorage } from '@/utils/storage';
+import { type LiveLocationData } from './location-service';
+
+export interface VoiceQueryResult {
+  text: string;
+  source: 'weather' | 'mandi' | 'ai';
+  title?: string;
+}
+
+const COMMODITY_MAP: Record<string, string[]> = {
+  'गेहूं': ['गेहूं', 'gehu', 'wheat', 'gehun'],
+  'धान': ['धान', 'चावल', 'dhan', 'paddy', 'rice', 'chawal'],
+  'सरसों': ['सरसों', 'sarso', 'sarson', 'mustard'],
+  'कपास': ['कपास', 'रूई', 'kapas', 'cotton'],
+  'गन्ना': ['गन्ना', 'ganna', 'sugarcane'],
+  'आलू': ['आलू', 'aaloo', 'aalu', 'potato'],
+  'मक्का': ['मक्का', 'makka', 'maize', 'corn'],
+  'चना': ['चना', 'chana', 'gram', 'chane'],
+};
+
+/**
+ * Routes user's spoken voice query to Weather, Mandi, or AI
+ * and formats a spoken-friendly vernacular answer.
+ */
+export async function processVoiceQuery(
+  query: string,
+  profile: FarmProfile,
+  language: 'hi' | 'en' = 'hi'
+): Promise<VoiceQueryResult> {
+  const lower = query.toLowerCase().trim();
+
+  // 1. Weather Intent Check
+  const isWeatherIntent =
+    lower.includes('मौसम') ||
+    lower.includes('बारिश') ||
+    lower.includes('पानी गिरेगा') ||
+    lower.includes('तापमान') ||
+    lower.includes('धूप') ||
+    lower.includes('weather') ||
+    lower.includes('rain') ||
+    lower.includes('temp');
+
+  if (isWeatherIntent) {
+    try {
+      let target: string | { latitude: number; longitude: number } = profile.state || 'Bihar';
+      const savedGpsStr = await LocalStorage.getItem('user_live_location');
+      if (savedGpsStr) {
+        try {
+          const gps: LiveLocationData = JSON.parse(savedGpsStr);
+          if (gps.latitude && gps.longitude) {
+            target = { latitude: gps.latitude, longitude: gps.longitude };
+          }
+        } catch {}
+      }
+
+      const weather = await fetchWeatherData(target);
+      const cond = getWeatherCondition(weather.weatherCode, weather.isDay);
+      const conditionName = language === 'hi' ? cond.hi : cond.en;
+      const rainProb = weather.daily7d && weather.daily7d.length > 0 ? weather.daily7d[0].precProb : 10;
+
+      let speechText = '';
+      if (language === 'hi') {
+        speechText = `आज आपके इलाके में ${conditionName} है। तापमान ${weather.temp} डिग्री सेल्सियस है और हवा में नमी ${weather.humidity} प्रतिशत है। `;
+        if (rainProb > 40) {
+          speechText += `आज वर्षा की संभावना लगभग ${rainProb} प्रतिशत बनी हुई है, इसलिए सतर्क रहें।`;
+        } else {
+          speechText += `आज बारिश की कोई बड़ी संभावना नहीं है, मौसम खेती के लिए अनुकूल है।`;
+        }
+      } else {
+        speechText = `Current weather in your area is ${conditionName} with a temperature of ${weather.temp}°C and ${weather.humidity}% humidity. Rain probability is around ${rainProb}%.`;
+      }
+
+      return {
+        text: speechText,
+        source: 'weather',
+        title: language === 'hi' ? 'मौसम रिपोर्ट' : 'Weather Report',
+      };
+    } catch (err) {
+      console.warn('[VoiceRouter] Weather fetch failed, falling back to AI:', err);
+    }
+  }
+
+  // 2. Mandi Price Intent Check
+  const isMandiIntent =
+    lower.includes('मंडी') ||
+    lower.includes('भाव') ||
+    lower.includes('रेट') ||
+    lower.includes('कीमत') ||
+    lower.includes('दाम') ||
+    lower.includes('mandi') ||
+    lower.includes('rate') ||
+    lower.includes('price');
+
+  if (isMandiIntent) {
+    try {
+      const stateName = profile.state || 'Bihar';
+      const prices = await fetchLiveMandiPrices(stateName);
+
+      if (prices && prices.length > 0) {
+        // Check if user asked for a specific commodity
+        let matchedItem: MandiItem | undefined;
+        for (const [standardName, keywords] of Object.entries(COMMODITY_MAP)) {
+          if (keywords.some((kw) => lower.includes(kw))) {
+            matchedItem = prices.find((p) => p.commodity.toLowerCase().includes(standardName));
+            if (matchedItem) break;
+          }
+        }
+
+        let speechText = '';
+        if (matchedItem) {
+          const rawName = matchedItem.commodity.split('(')[0].trim();
+          const cleanName = language === 'hi' ? (matchedItem.commodity.split('(')[1]?.replace(')', '').trim() || rawName) : rawName;
+          speechText = language === 'hi'
+            ? `आज ${stateName} की मंडी में ${cleanName} का भाव ${matchedItem.price} रुपये प्रति ${matchedItem.unit} चल रहा है।`
+            : `Today in ${stateName} Mandi, ${rawName} is trading at ₹${matchedItem.price} per ${matchedItem.unit}.`;
+        } else {
+          // Top 2 commodities
+          const p1 = prices[0];
+          const p2 = prices[1] || prices[0];
+          speechText = language === 'hi'
+            ? `आज ${stateName} की मंडी में ${p1.commodity.split('(')[0].trim()} का भाव ${p1.price} रुपये और ${p2.commodity.split('(')[0].trim()} का भाव ${p2.price} रुपये प्रति क्विंटल चल रहा है।`
+            : `Today in ${stateName} Mandi, ${p1.commodity.split('(')[0].trim()} is ₹${p1.price} and ${p2.commodity.split('(')[0].trim()} is ₹${p2.price} per quintal.`;
+        }
+
+        return {
+          text: speechText,
+          source: 'mandi',
+          title: language === 'hi' ? 'मंडी भाव' : 'Mandi Rates',
+        };
+      }
+    } catch (err) {
+      console.warn('[VoiceRouter] Mandi fetch failed, falling back to AI:', err);
+    }
+  }
+
+  // 3. Agricultural Advisory / Crop Pest / Disease / General AI
+  const prompt = [
+    {
+      role: 'user' as const,
+      content: `${query}\n\n[कृपया सरल, स्पष्ट और बातचीत की हिंदी भाषा में 2 से 3 वाक्यों में पहले सीधा उत्तर दें, फिर मुख्य उपाय बताएं ताकि किसान सुनकर आसानी से समझ सके।]`,
+    },
+  ];
+
+  const aiAnswer = await sendMessageToGroq(prompt, profile, 'fast');
+
+  return {
+    text: aiAnswer,
+    source: 'ai',
+    title: language === 'hi' ? 'कृषिक मित्र सलाह' : 'Krishik Mitra Advice',
+  };
+}

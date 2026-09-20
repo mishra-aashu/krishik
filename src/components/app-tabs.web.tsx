@@ -18,6 +18,7 @@ import { ThemedView } from './themed-view';
 
 import { Colors, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { FloatingVoiceButton } from './floating-voice-button';
 
 export default function AppTabs() {
   const { width } = useWindowDimensions();
@@ -115,6 +116,9 @@ export default function AppTabs() {
           </CustomTabList>
         </TabList>
       )}
+
+      {/* Floating Voice Assistant Action Button (Hidden inside /chat) */}
+      {!isChatScreen && <FloatingVoiceButton />}
     </Tabs>
   );
 }

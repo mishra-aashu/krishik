@@ -641,6 +641,8 @@ export default function ChatScreen() {
     };
   }, []);
 
+  const handleSendQueryRef = useRef<((queryText: string, autoSpeak?: boolean) => Promise<void>) | null>(null);
+
   const handleVoiceInput = async () => {
     if (isOffline) {
       Alert.alert(
@@ -660,7 +662,12 @@ export default function ChatScreen() {
         
         const transcribedText = await transcribeAudio(uri, language);
         if (transcribedText.trim()) {
-          setInputValue(transcribedText);
+          setInputValue('');
+          if (handleSendQueryRef.current) {
+            await handleSendQueryRef.current(transcribedText.trim(), true);
+          } else {
+            setInputValue(transcribedText);
+          }
         }
       } catch (err: any) {
         console.error('Recording/transcription error:', err);
@@ -1018,7 +1025,7 @@ export default function ChatScreen() {
     return 'Mitra is drafting agricultural advice...';
   };
 
-  const handleSendQuery = async (queryText: string) => {
+  const handleSendQuery = async (queryText: string, autoSpeak = false) => {
     if (isOffline) {
       Alert.alert(
         language === 'hi' ? 'कोई इंटरनेट कनेक्शन नहीं' : 'No Internet Connection',
@@ -1096,6 +1103,11 @@ export default function ChatScreen() {
 
       const finalMessages = [...newMessages, botMsg];
       await updateActiveSessionMessages(finalMessages);
+
+      // Auto-speak response aloud if query came via voice
+      if (autoSpeak) {
+        toggleSpeech(botMsg);
+      }
     } catch (err: any) {
       console.error(err);
       setErrorMsg(err.message || 'API connection failed. Please check your internet connection.');
@@ -1104,6 +1116,8 @@ export default function ChatScreen() {
       scrollToBottom();
     }
   };
+
+  handleSendQueryRef.current = handleSendQuery;
 
   const handleClearChat = async () => {
     await updateActiveSessionMessages([]);
