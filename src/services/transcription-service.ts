@@ -142,14 +142,13 @@ export async function transcribeAudio(
   const formData = new FormData();
   formData.append('model', 'whisper-large-v3');
 
-  // Inject prompts and language hints to help Whisper transcribe Indian farming terms accurately
-  if (lang === 'hi') {
+  // Inject prompts and language hints to help Whisper transcribe Indian farming terms accurately in Devanagari
+  if (lang === 'hi' || lang === 'hinglish') {
     formData.append('language', 'hi');
-    formData.append('prompt', 'किसान, खेती, फसल, खाद, यूरिया, कीट, कीटनाशक, सिंचाई, मिट्टी, मंडी भाव, मौसम');
-  } else if (lang === 'hinglish') {
-    formData.append('prompt', 'fasal, kheti, khad, urea, keet, keetnashak, sinchai, mitti, mandi bhav, mausam, kisan');
+    formData.append('prompt', 'किसान, खेती, फसल, खाद, यूरिया, कीट, कीटनाशक, सिंचाई, मिट्टी, मंडी भाव, मौसम, गेहूं, धान, रोग, बीमारी, इलाज');
   } else {
-    formData.append('language', 'en');
+    // Avoid forcing language='en' on Whisper as it translates Hindi audio to English text.
+    formData.append('prompt', 'farmer, agriculture, crop, wheat, paddy, urea, Hindi, Devanagari, किसान, खेती, फसल, खाद, बीमारी, इलाज');
   }
 
   if (Platform.OS === 'web') {

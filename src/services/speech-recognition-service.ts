@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import { startRecording, stopRecording, transcribeAudio } from './transcription-service';
+import { getSpeechRecognitionLang } from './multilingual-voice-engine';
 
 export interface SpeechRecognitionHandlers {
   onInterimResult?: (transcript: string) => void;
@@ -57,7 +58,7 @@ async function startWebSpeechSession(
     (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
   const recognition = new SpeechRecognitionClass();
-  recognition.lang = language === 'en' ? 'en-IN' : 'hi-IN';
+  recognition.lang = getSpeechRecognitionLang(language as any);
   recognition.continuous = true;
   recognition.interimResults = true;
   recognition.maxAlternatives = 1;

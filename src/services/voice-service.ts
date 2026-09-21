@@ -1,5 +1,6 @@
 import * as Speech from 'expo-speech';
 import { Platform } from 'react-native';
+import { getTTSLocaleForText } from './multilingual-voice-engine';
 
 export interface VoiceSpeakOptions {
   language?: 'hi' | 'en';
@@ -61,9 +62,8 @@ export async function speakVernacular(
     // Stop any ongoing speech first
     await stopSpeaking();
 
-    // Auto-detect Hindi (Devanagari) vs English (Latin) script to use matching voice engine
-    const containsDevanagari = /[\u0900-\u097F]/.test(clean);
-    let langCode = containsDevanagari ? 'hi-IN' : (options.language === 'en' ? 'en-IN' : (Platform.OS === 'web' ? 'en-IN' : 'en-US'));
+    // Auto-detect Hindi (Devanagari) vs English (Latin) vs Regional scripts for matching TTS voice
+    let langCode = getTTSLocaleForText(clean, options.language as any);
 
     const speechRate = options.rate ?? (Platform.OS === 'ios' ? 0.88 : 0.90);
     const speechPitch = options.pitch ?? 1.0;

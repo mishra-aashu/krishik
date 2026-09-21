@@ -3,6 +3,7 @@ import { fetchWeatherData, getWeatherCondition } from './weather-service';
 import { fetchLiveMandiPrices, type MandiItem } from './mandi-service';
 import { LocalStorage } from '@/utils/storage';
 import { type LiveLocationData } from './location-service';
+import { detectScriptAndLanguage } from './multilingual-voice-engine';
 
 export interface VoiceQueryResult {
   text: string;
@@ -137,10 +138,10 @@ export async function processVoiceQuery(
   }
 
   // 3. Agricultural Advisory / Crop Pest / Disease / General AI
+  const { containsDevanagari, script } = detectScriptAndLanguage(query);
   const isEnglishQuery =
-    language === 'en' ||
-    (!/[\u0900-\u097F]/.test(query) &&
-      /^(what|how|why|when|where|which|who|can|is|are|tell|give|explain)\b/i.test(lower));
+    (language === 'en' && !containsDevanagari) ||
+    (!containsDevanagari && script === 'latin' && /^(what|how|why|when|where|which|who|can|is|are|tell|give|explain)\b/i.test(lower));
 
   const prompt = [
     {

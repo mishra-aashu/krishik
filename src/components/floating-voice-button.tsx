@@ -16,7 +16,7 @@ export function FloatingVoiceButton({ language: propLanguage }: FloatingVoiceBut
   const theme = useTheme();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  let contextLang: 'hi' | 'en' = 'en';
+  let contextLang: 'hi' | 'en' = 'hi';
   try {
     const { language: currentLang } = useLanguage();
     if (currentLang === 'hi' || currentLang === 'en') {

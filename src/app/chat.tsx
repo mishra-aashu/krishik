@@ -402,7 +402,7 @@ export default function ChatScreen() {
   const { language: globalLang, setLanguage: setGlobalLanguage } = useLanguage();
 
   // Chat settings
-  const [language, setLanguageState] = useState<'hi' | 'en' | 'hinglish'>(globalLang || 'en');
+  const [language, setLanguageState] = useState<'hi' | 'en' | 'hinglish'>(globalLang || 'hi');
 
   useEffect(() => {
     if (globalLang && (globalLang === 'hi' || globalLang === 'en')) {
@@ -682,10 +682,10 @@ export default function ChatScreen() {
       }
     } else {
       try {
-        setErrorMsg(null);
-        setIsRecording(true);
+        const savedVoiceLang = await LocalStorage.getItem('krishik_voice_lang');
+        const activeVoiceLang = (savedVoiceLang === 'en' || language === 'en') ? 'en' : 'hi';
 
-        const session = await startListeningSession(language, {
+        const session = await startListeningSession(activeVoiceLang, {
           onInterimResult: (liveText) => {
             setInputValue(liveText);
           },
