@@ -17,13 +17,20 @@ export const CustomMarkdown = React.memo(function CustomMarkdown({ text }: Custo
   // ── Helpers ─────────────────────────────────────────────────────────────
   const cleanCellText = (txt: string) => {
     if (!txt) return '';
-    return txt
+    let res = txt
       .replace(/<br\s*\/?>/gi, '\n')
       .replace(/<\/?ul>/gi, '')
       .replace(/<li>/gi, '• ')
       .replace(/<\/li>/gi, '\n')
       .replace(/<\/?[a-z][a-z0-9]*[^<>]*>/gi, '')
       .trim();
+
+    // Auto-balance odd count of ** so markdown parser doesn't break
+    const stars = res.match(/\*\*/g);
+    if (stars && stars.length % 2 !== 0) {
+      res += '**';
+    }
+    return res;
   };
 
   // ── Inline Style Parser (bold, italic, code, links) ─────────────────────
@@ -257,12 +264,15 @@ export const CustomMarkdown = React.memo(function CustomMarkdown({ text }: Custo
     if (headers.length === 0 || body.length === 0) return null;
 
     const colCount = headers.length;
-    const needsScroll = isMobile && colCount > 3;
+    // On mobile (<600px), any multi-column table (2 or more columns) needs horizontal scroll
+    const needsScroll = isMobile ? colCount >= 2 : colCount > 4;
 
     const getColWidth = (colIdx: number) => {
       if (!needsScroll) return undefined;
-      if (colIdx === 0) return Math.max(110, headers[0].length * 10);
-      return Math.max(90, headers[colIdx].length * 9);
+      // First column (step/phase or title)
+      if (colIdx === 0) return Math.max(120, (headers[0]?.length || 6) * 13);
+      // Detailed content columns need ample width for readable sentences
+      return Math.max(180, (headers[colIdx]?.length || 8) * 14);
     };
 
     const tableContent = (
@@ -369,7 +379,7 @@ export const CustomMarkdown = React.memo(function CustomMarkdown({ text }: Custo
       const quoteText = trimmedLine.substring(1).trim();
       renderedElements.push(
         <View key={`quote-${i}`} style={[styles.blockquote, { borderLeftColor: theme.accent, backgroundColor: theme.backgroundElement }]}>
-          {renderInlineStyles(quoteText, `quote-text-${i}`, 'small', { fontStyle: 'italic', lineHeight: 21 })}
+          {renderInlineStyles(quoteText, `quote-text-${i}`, 'small', { fontStyle: 'italic', lineHeight: 22 })}
         </View>
       );
       continue;
@@ -381,48 +391,83 @@ export const CustomMarkdown = React.memo(function CustomMarkdown({ text }: Custo
       continue;
     }
 
-    // Headings
-    const headingMatch = trimmedLine.match(/^(#{1,6})\s+(.*)/);
+    // Headings: # Heading, ## Heading, ### Heading (with or without space)
+    const headingMatch = trimmedLine.match(/^(#{1,6})\s*(.*)/);
     if (headingMatch) {
       const level = headingMatch[1].length;
-      const headingText = headingMatch[2];
-      const fontSize = level === 1 ? 20 : level === 2 ? 18 : level === 3 ? 16 : 15;
+      let headingText = headingMatch[2].replace(/^\*\*|\*\*$/g, '').trim();
+      const fontSize = level === 1 ? 19 : level === 2 ? 17 : level === 3 ? 15.5 : 14.5;
       renderedElements.push(
-        <View key={`h-${level}-${i}`} style={[styles.headingContainer, { borderBottomColor: theme.border + '44' }]}>
-          {renderInlineStyles(headingText, `h-${level}-text-${i}`, 'smallBold', {
-            fontSize, color: theme.text, lineHeight: fontSize * 1.4,
-          })}
+        <View key={`h-${level}-${i}`} style={styles.headingContainer}>
+          <View style={[styles.headingAccentBar, { backgroundColor: theme.primary }]} />
+          <ThemedText
+            type="smallBold"
+            style={[
+              styles.headingTitle,
+              { fontSize, color: theme.text }
+            ]}
+          >
+            {headingText}
+          </ThemedText>
         </View>
       );
       continue;
     }
 
-    // Numbered list — detect section-title style ("1. **Title**")
-    const numberedMatch = trimmedLine.match(/^(\d+)\.\s(.*)/);
+    // Numbered list — detect structured items ("1. **Title:** Desc") or simple items
+    const numberedMatch = trimmedLine.match(/^(\d+)[\.\)]\s*(.*)/s);
     if (numberedMatch) {
       const num = numberedMatch[1];
-      const listText = numberedMatch[2];
-      // If the entire text is bold (**...**), render as a sub-heading
-      const isSectionTitle = /^\*\*[^*]+\*\*$/.test(listText.trim());
+      const listContent = numberedMatch[2].trim();
 
-      if (isSectionTitle) {
-        const titleText = listText.replace(/^\*\*/, '').replace(/\*\*$/, '');
+      const structuredMatch = listContent.match(/^\*\*([^*]+?)\*\*[:\s–—-]+(.*)/s) ||
+                             listContent.match(/^([^*:\n]{2,35})[:]\s*(.*)/s);
+
+      if (structuredMatch) {
+        const itemTitle = structuredMatch[1].trim().replace(/[:\-–—]+$/, '');
+        const itemDesc = structuredMatch[2].trim();
+
         renderedElements.push(
-          <View key={`num-heading-${i}`} style={styles.numberedHeading}>
-            <View style={[styles.numHeadingBadge, { backgroundColor: theme.primary }]}>
-              <ThemedText style={styles.numHeadingBadgeText}>{num}</ThemedText>
+          <View
+            key={`num-struct-${i}`}
+            style={[
+              styles.structuredCard,
+              {
+                backgroundColor: theme.backgroundElement + '70',
+                borderColor: theme.border,
+                borderLeftColor: theme.primary,
+              }
+            ]}
+          >
+            <View style={styles.structuredHeaderRow}>
+              <View style={[styles.numberedBadge, { backgroundColor: theme.primary }]}>
+                <ThemedText style={styles.numberedBadgeText}>{num}</ThemedText>
+              </View>
+              <ThemedText
+                type="smallBold"
+                style={[styles.structuredTitleText, { color: theme.text }]}
+              >
+                {itemTitle}
+              </ThemedText>
             </View>
-            <ThemedText type="smallBold" style={[styles.numHeadingText, { color: theme.text }]}>
-              {titleText}
-            </ThemedText>
+            {itemDesc ? (
+              <View style={styles.structuredBodyText}>
+                {renderInlineStyles(itemDesc, `num-desc-${i}`, 'small', {
+                  lineHeight: 22,
+                  color: theme.text,
+                })}
+              </View>
+            ) : null}
           </View>
         );
       } else {
         renderedElements.push(
           <View key={`num-${i}`} style={styles.listRow}>
-            <ThemedText type="smallBold" style={[styles.listNumber, { color: theme.primary }]}>{num}.</ThemedText>
+            <View style={[styles.numberedBadge, { backgroundColor: theme.primary }]}>
+              <ThemedText style={styles.numberedBadgeText}>{num}</ThemedText>
+            </View>
             <View style={styles.listTextContainer}>
-              {renderInlineStyles(listText, `num-text-${i}`, 'small', { lineHeight: 21 })}
+              {renderInlineStyles(listContent, `num-text-${i}`, 'small', { lineHeight: 22, color: theme.text })}
             </View>
           </View>
         );
@@ -430,24 +475,75 @@ export const CustomMarkdown = React.memo(function CustomMarkdown({ text }: Custo
       continue;
     }
 
-    // Bullet list
-    if (trimmedLine.startsWith('- ') || trimmedLine.startsWith('* ') || trimmedLine.startsWith('• ')) {
-      const bulletText = trimmedLine.substring(2);
-      renderedElements.push(
-        <View key={`bullet-${i}`} style={styles.listRow}>
-          <ThemedText type="small" style={[styles.bulletDot, { color: theme.primary }]}>•</ThemedText>
-          <View style={styles.listTextContainer}>
-            {renderInlineStyles(bulletText, `bullet-text-${i}`, 'small', { lineHeight: 21 })}
+    // Bullet list: - , * , • , +
+    const bulletMatch = trimmedLine.match(/^[-*•+]\s*(.*)/s);
+    if (bulletMatch) {
+      const bulletText = bulletMatch[1].trim();
+
+      // Check if bullet is a structured item like: **Title:** Description
+      const structuredMatch = bulletText.match(/^\*\*([^*]+?)\*\*[:\s–—-]+(.*)/s) ||
+                             bulletText.match(/^([^*:\n]{2,35})[:]\s*(.*)/s);
+
+      if (structuredMatch) {
+        const itemTitle = structuredMatch[1].trim().replace(/[:\-–—]+$/, '');
+        const itemDesc = structuredMatch[2].trim();
+
+        renderedElements.push(
+          <View
+            key={`bullet-struct-${i}`}
+            style={[
+              styles.structuredCard,
+              {
+                backgroundColor: theme.backgroundElement + '70',
+                borderColor: theme.border,
+                borderLeftColor: theme.primary,
+              }
+            ]}
+          >
+            <View style={styles.structuredHeaderRow}>
+              <View style={[styles.bulletDotBadge, { backgroundColor: theme.primary + '20' }]}>
+                <View style={[styles.bulletDotCore, { backgroundColor: theme.primary }]} />
+              </View>
+              <ThemedText
+                type="smallBold"
+                style={[styles.structuredTitleText, { color: theme.text }]}
+              >
+                {itemTitle}
+              </ThemedText>
+            </View>
+            {itemDesc ? (
+              <View style={styles.structuredBodyText}>
+                {renderInlineStyles(itemDesc, `bullet-desc-${i}`, 'small', {
+                  lineHeight: 22,
+                  color: theme.text,
+                })}
+              </View>
+            ) : null}
           </View>
-        </View>
-      );
+        );
+      } else {
+        renderedElements.push(
+          <View key={`bullet-${i}`} style={styles.listRow}>
+            <View style={[styles.bulletDotBadge, { backgroundColor: theme.primary + '20' }]}>
+              <View style={[styles.bulletDotCore, { backgroundColor: theme.primary }]} />
+            </View>
+            <View style={styles.listTextContainer}>
+              {renderInlineStyles(bulletText, `bullet-text-${i}`, 'small', { lineHeight: 22, color: theme.text })}
+            </View>
+          </View>
+        );
+      }
       continue;
     }
 
     // Paragraph
+    let paraText = trimmedLine;
+    if (paraText.startsWith('**') && paraText.endsWith('**') && paraText.length > 4) {
+      paraText = paraText.slice(2, -2);
+    }
     renderedElements.push(
       <View key={`p-${i}`} style={styles.paragraph}>
-        {renderInlineStyles(trimmedLine, `p-text-${i}`, 'small', { lineHeight: 21 })}
+        {renderInlineStyles(paraText, `p-text-${i}`, 'small', { lineHeight: 22, fontSize: 14.5, color: theme.text })}
       </View>
     );
   }
@@ -475,32 +571,82 @@ const styles = StyleSheet.create({
 
   // ── Headings ──
   headingContainer: {
-    marginTop: 16,
-    marginBottom: 8,
-    borderBottomWidth: 1,
-    paddingBottom: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 18,
+    marginBottom: 10,
+    gap: 8,
+  },
+  headingAccentBar: {
+    width: 4,
+    height: 18,
+    borderRadius: 2,
+  },
+  headingTitle: {
+    fontWeight: '700',
+    flex: 1,
+    letterSpacing: 0.1,
+  },
+
+  // ── Structured Cards (e.g. key-value points) ──
+  structuredCard: {
+    marginVertical: 4,
+    padding: 11,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderLeftWidth: 3.5,
+    gap: 4,
+  },
+  structuredHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  structuredTitleText: {
+    fontSize: 14,
+    fontWeight: '800',
+    flex: 1,
+  },
+  structuredBodyText: {
+    paddingLeft: 26,
   },
 
   // ── Lists ──
   listRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginVertical: 3,
-    paddingLeft: 4,
+    marginVertical: 4,
+    paddingLeft: 2,
+    gap: 8,
   },
-  bulletDot: {
-    width: 16,
-    fontSize: 16,
-    lineHeight: 21,
-    textAlign: 'center',
-    marginRight: 6,
+  bulletDotBadge: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 2,
+    flexShrink: 0,
   },
-  listNumber: {
-    width: 22,
-    fontSize: 13,
-    lineHeight: 21,
-    textAlign: 'right',
-    marginRight: 6,
+  bulletDotCore: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  numberedBadge: {
+    minWidth: 20,
+    height: 20,
+    borderRadius: 6,
+    paddingHorizontal: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 1,
+    flexShrink: 0,
+  },
+  numberedBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
   },
   listTextContainer: {
     flex: 1,
@@ -545,16 +691,22 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
   paragraph: {
-    marginVertical: 3,
+    marginVertical: 4,
   },
 
   // ── Table ──
   tableOuterContainer: {
     marginVertical: 10,
     borderWidth: 1,
-    borderRadius: 10,
+    borderRadius: 12,
     overflow: 'hidden',
     width: '100%',
+    maxWidth: '100%',
+    ...Platform.select({
+      web: {
+        overflowX: 'auto',
+      } as any,
+    }),
   },
   tableGrid: {
     flexDirection: 'column',
@@ -563,19 +715,18 @@ const styles = StyleSheet.create({
   tableHeaderRow: {
     flexDirection: 'row',
     alignItems: 'stretch',
-    minHeight: 40,
+    minHeight: 38,
   },
   tableHeaderCell: {
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 9,
     justifyContent: 'center',
   },
   tableHeaderText: {
     color: '#FFFFFF',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
   tableBodyRow: {
     flexDirection: 'row',
@@ -585,12 +736,12 @@ const styles = StyleSheet.create({
   },
   tableBodyCell: {
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 9,
     justifyContent: 'center',
   },
   tableCellText: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 13.5,
+    lineHeight: 20,
   },
 
   // ── Table Cell Content Styles ─────────────────────────────────────────

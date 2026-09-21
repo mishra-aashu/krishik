@@ -614,15 +614,18 @@ export default function ChatScreen() {
     };
   });
 
+  const chatListeningSessionRef = useRef<ActiveListeningSession | null>(null);
+
   // Stop reading aloud and recording when leaving the chat or if the app goes to the background
   useEffect(() => {
     const handleAppStateChange = (nextAppState: string) => {
       if (nextAppState === 'inactive' || nextAppState === 'background') {
         Speech.stop();
         if (isRecordingRef.current) {
-          stopRecording().catch((err) => {
-            console.warn('[Chat] Failed to stop recording on app state change:', err);
-          });
+          if (chatListeningSessionRef.current) {
+            chatListeningSessionRef.current.abort();
+            chatListeningSessionRef.current = null;
+          }
           setIsRecording(false);
         }
       }
@@ -633,17 +636,14 @@ export default function ChatScreen() {
     return () => {
       subscription.remove();
       Speech.stop();
-      if (isRecordingRef.current) {
-        stopRecording().catch((err) => {
-          console.warn('[Chat] Failed to stop recording on unmount:', err);
-        });
+      if (chatListeningSessionRef.current) {
+        chatListeningSessionRef.current.abort();
+        chatListeningSessionRef.current = null;
       }
     };
   }, []);
 
   const handleSendQueryRef = useRef<((queryText: string, autoSpeak?: boolean) => Promise<void>) | null>(null);
-
-  const chatListeningSessionRef = useRef<ActiveListeningSession | null>(null);
 
   const handleVoiceInput = async () => {
     if (isOffline) {

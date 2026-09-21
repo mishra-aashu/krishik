@@ -1,5 +1,8 @@
 import { supabase } from '@/lib/supabase';
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { Platform } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
 import { LocalStorage } from '@/utils/storage';
 
 interface AuthContextType {
@@ -35,6 +38,7 @@ interface AuthContextType {
     voiceResponse?: boolean
   ) => Promise<void>;
   resetPin: (phone: string, newPin: string) => Promise<boolean>;
+  signInWithGoogle: () => Promise<{ error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -152,7 +156,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       async (event, session) => {
         if (event === 'SIGNED_IN' && session?.user && mounted) {
           const profile = await loadProfile(session.user.id);
-          if (profile) applyProfile(session.user.id, profile);
+          if (profile) {
+            applyProfile(session.user.id, profile);
+          } else {
+            const meta = session.user.user_metadata || {};
+            const googleName = meta.full_name || meta.name || session.user.email?.split('@')[0] || 'Kisan';
+            const googleEmail = session.user.email || '';
+            const newProfile = {
+              id: session.user.id,
+              name: googleName,
+              phone: meta.phone || '',
+              email: googleEmail,
+              farm_state: farmState || 'Punjab',
+              farm_soil: farmSoil || 'Alluvial Soil (जलोढ़)',
+              farm_crop: farmCrop || 'Wheat (गेहूं)',
+              preferred_language: 'hi',
+              preferred_theme: 'light',
+              weather_alerts: true,
+              mandi_alerts: true,
+              pest_alerts: true,
+              voice_response: false,
+            };
+            try {
+              await supabase.from('profiles').upsert(newProfile);
+            } catch (err) {
+              console.warn('Upsert Google profile notice:', err);
+            }
+            applyProfile(session.user.id, newProfile);
+          }
         } else if (event === 'SIGNED_OUT' && mounted) {
           clearState();
         }
@@ -384,6 +415,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const signInWithGoogle = async (): Promise<{ error?: string }> => {
+    try {
+      if (Platform.OS === 'web') {
+        const redirectUrl = typeof window !== 'undefined' ? window.location.origin : undefined;
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: redirectUrl,
+          },
+        });
+        if (error) {
+          return { error: error.message };
+        }
+        return {};
+      } else {
+        const redirectUri = Linking.createURL('/');
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: redirectUri,
+            skipBrowserRedirect: true,
+          },
+        });
+        if (error) {
+          return { error: error.message };
+        }
+        if (data?.url) {
+          const res = await WebBrowser.openAuthSessionAsync(data.url, redirectUri);
+          if (res.type === 'success' && res.url) {
+            const parsedUrl = new URL(res.url);
+            const hash = parsedUrl.hash.substring(1);
+            const params = new URLSearchParams(hash);
+            const accessToken = params.get('access_token');
+            const refreshToken = params.get('refresh_token');
+            if (accessToken && refreshToken) {
+              await supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken,
+              });
+            }
+          }
+        }
+        return {};
+      }
+    } catch (err: any) {
+      console.warn('signInWithGoogle exception:', err);
+      return { error: err.message || 'Google Sign-In failed' };
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -400,6 +481,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logout,
         updateProfile,
         resetPin,
+        signInWithGoogle,
       }}
     >
       {children}

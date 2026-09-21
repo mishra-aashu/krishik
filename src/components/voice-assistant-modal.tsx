@@ -19,6 +19,7 @@ import Animated, {
   withSequence,
 } from 'react-native-reanimated';
 import { ThemedText } from './themed-text';
+import { CustomMarkdown } from './custom-markdown';
 import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth-context';
@@ -28,6 +29,14 @@ import {
   startListeningSession,
   type ActiveListeningSession,
 } from '@/services/speech-recognition-service';
+import {
+  getVoiceHistory,
+  saveVoiceHistoryItem,
+  deleteVoiceHistoryItem,
+  clearVoiceHistory,
+  type VoiceHistoryItem,
+} from '@/services/voice-history-service';
+import { LocalStorage } from '@/utils/storage';
 import { useRouter } from 'expo-router';
 
 interface VoiceAssistantModalProps {
@@ -38,6 +47,26 @@ interface VoiceAssistantModalProps {
 
 type AssistantState = 'idle' | 'listening' | 'transcribing' | 'answering' | 'error';
 
+function formatRelativeTime(timestamp: number, lang: 'hi' | 'en' = 'hi'): string {
+  const diffSec = Math.floor((Date.now() - timestamp) / 1000);
+  if (diffSec < 60) {
+    return lang === 'hi' ? 'अभी-अभी' : 'Just now';
+  }
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) {
+    return lang === 'hi' ? `${diffMin} मि. पहले` : `${diffMin}m ago`;
+  }
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) {
+    return lang === 'hi' ? `${diffHr} घं. पहले` : `${diffHr}h ago`;
+  }
+  const date = new Date(timestamp);
+  return date.toLocaleDateString(lang === 'hi' ? 'hi-IN' : 'en-IN', {
+    day: 'numeric',
+    month: 'short',
+  });
+}
+
 export function VoiceAssistantModal({
   visible,
   onClose,
@@ -47,12 +76,16 @@ export function VoiceAssistantModal({
   const router = useRouter();
   const { farmState, farmSoil, farmCrop } = useAuth();
 
+  const [currentLang, setCurrentLang] = useState<'hi' | 'en'>(language || 'hi');
   const [state, setState] = useState<AssistantState>('idle');
   const [transcribedQuery, setTranscribedQuery] = useState('');
   const [interimText, setInterimText] = useState('');
   const [result, setResult] = useState<VoiceQueryResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSpeakingAudio, setIsSpeakingAudio] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [historyItems, setHistoryItems] = useState<VoiceHistoryItem[]>([]);
+  const [playingHistoryId, setPlayingHistoryId] = useState<string | null>(null);
 
   const activeSessionRef = useRef<ActiveListeningSession | null>(null);
 
@@ -91,14 +124,35 @@ export function VoiceAssistantModal({
     opacity: pulseOpacity.value,
   }));
 
+  // Sync state with language prop
+  useEffect(() => {
+    if (language) {
+      setCurrentLang(language);
+    }
+  }, [language]);
+
   // Automatically start listening when modal opens
   useEffect(() => {
     if (visible) {
-      beginListening();
+      setShowHistory(false);
+      setPlayingHistoryId(null);
+      loadHistory();
+      const activeLang = language || currentLang || 'en';
+      setCurrentLang(activeLang);
+      beginListening(activeLang);
     } else {
       handleModalCleanup();
     }
-  }, [visible]);
+  }, [visible, language]);
+
+  const loadHistory = async () => {
+    try {
+      const items = await getVoiceHistory();
+      setHistoryItems(items);
+    } catch (err) {
+      console.warn('[VoiceAssistant] Error loading history:', err);
+    }
+  };
 
   const handleModalCleanup = () => {
     stopSpeaking();
@@ -112,9 +166,23 @@ export function VoiceAssistantModal({
     setResult(null);
     setErrorMessage(null);
     setIsSpeakingAudio(false);
+    setShowHistory(false);
+    setPlayingHistoryId(null);
   };
 
-  const beginListening = async () => {
+  const handleSwitchLanguage = async (newLang: 'hi' | 'en') => {
+    if (newLang === currentLang) return;
+    setCurrentLang(newLang);
+    await LocalStorage.setItem('krishik_voice_lang', newLang);
+
+    // If currently listening, restart listening in the new language
+    if (state === 'listening') {
+      beginListening(newLang);
+    }
+  };
+
+  const beginListening = async (overrideLang?: 'hi' | 'en') => {
+    const activeLang = overrideLang || currentLang;
     try {
       await stopSpeaking();
       if (activeSessionRef.current) {
@@ -129,7 +197,7 @@ export function VoiceAssistantModal({
       setInterimText('');
       setState('listening');
 
-      const session = await startListeningSession(language, {
+      const session = await startListeningSession(activeLang, {
         onInterimResult: (text) => {
           setInterimText(text);
         },
@@ -145,7 +213,7 @@ export function VoiceAssistantModal({
           const clean = text.trim();
           if (clean.length > 0) {
             setTranscribedQuery(clean);
-            handleExecuteQuery(clean);
+            handleExecuteQuery(clean, activeLang);
           }
         },
         onError: (errText) => {
@@ -159,7 +227,7 @@ export function VoiceAssistantModal({
       console.error('[VoiceAssistant] Start listening error:', err);
       setState('error');
       setErrorMessage(
-        language === 'hi'
+        activeLang === 'hi'
           ? 'माइक्रोफ़ोन चालू नहीं हो सका। कृपया ब्राउज़र में अनुमति जांचें।'
           : 'Could not access microphone. Please check browser permissions.'
       );
@@ -178,7 +246,7 @@ export function VoiceAssistantModal({
       if (!bestText) {
         setState('error');
         setErrorMessage(
-          language === 'hi'
+          currentLang === 'hi'
             ? 'आवाज़ साफ़ सुनाई नहीं दी। कृपया फिर से बोलें।'
             : 'Could not capture clear speech. Please speak again.'
         );
@@ -186,19 +254,20 @@ export function VoiceAssistantModal({
       }
 
       setTranscribedQuery(bestText);
-      await handleExecuteQuery(bestText);
+      await handleExecuteQuery(bestText, currentLang);
     } catch (err: any) {
       console.error('[VoiceAssistant] Processing error:', err);
       setState('error');
       setErrorMessage(
-        language === 'hi'
+        currentLang === 'hi'
           ? 'आवाज़ समझने में समस्या हुई। कृपया पुनः प्रयास करें।'
           : 'Failed to process voice input. Please try again.'
       );
     }
   };
 
-  const handleExecuteQuery = async (queryText: string) => {
+  const handleExecuteQuery = async (queryText: string, langToUse?: 'hi' | 'en') => {
+    const activeLang = langToUse || currentLang;
     try {
       setState('transcribing');
       const queryResult = await processVoiceQuery(
@@ -208,29 +277,118 @@ export function VoiceAssistantModal({
           soilType: farmSoil,
           crop: farmCrop,
         },
-        language
+        activeLang
       );
 
       setResult(queryResult);
       setState('answering');
 
-      // Automatically speak the response aloud in vernacular Hindi
-      playSpokenResponse(queryResult.text);
+      // Automatically speak the response aloud in vernacular Hindi / English
+      playSpokenResponse(queryResult.text, activeLang);
+
+      // Save to persistent voice history
+      saveVoiceHistoryItem({
+        query: queryText,
+        answer: queryResult.text,
+        source: queryResult.source,
+        title: queryResult.title,
+        language: activeLang,
+      })
+        .then(() => {
+          loadHistory();
+        })
+        .catch((e) => {
+          console.warn('[VoiceAssistant] Failed to save history:', e);
+        });
     } catch (err: any) {
       console.error('[VoiceAssistant] AI Query execution error:', err);
       setState('error');
       setErrorMessage(
-        language === 'hi'
+        activeLang === 'hi'
           ? 'उत्तर प्राप्त करने में त्रुटि हुई।'
           : 'Could not get response.'
       );
     }
   };
 
-  const playSpokenResponse = (textToSpeak: string) => {
+  const toggleHistoryView = () => {
+    stopSpeaking();
+    setIsSpeakingAudio(false);
+    setPlayingHistoryId(null);
+
+    if (!showHistory) {
+      if (activeSessionRef.current) {
+        activeSessionRef.current.abort();
+        activeSessionRef.current = null;
+      }
+      setShowHistory(true);
+      loadHistory();
+    } else {
+      setShowHistory(false);
+      beginListening();
+    }
+  };
+
+  const togglePlayHistoryAudio = (item: VoiceHistoryItem) => {
+    if (playingHistoryId === item.id) {
+      stopSpeaking();
+      setPlayingHistoryId(null);
+    } else {
+      stopSpeaking();
+      setPlayingHistoryId(item.id);
+      speakVernacular(item.answer, {
+        language: item.language,
+        onDone: () => setPlayingHistoryId(null),
+        onError: () => setPlayingHistoryId(null),
+      });
+    }
+  };
+
+  const handleDeleteHistoryItem = async (id: string) => {
+    if (playingHistoryId === id) {
+      stopSpeaking();
+      setPlayingHistoryId(null);
+    }
+    const updated = await deleteVoiceHistoryItem(id);
+    setHistoryItems(updated);
+  };
+
+  const handleClearAllHistory = async () => {
+    stopSpeaking();
+    setPlayingHistoryId(null);
+    await clearVoiceHistory();
+    setHistoryItems([]);
+  };
+
+  const handleOpenHistoryItem = (item: VoiceHistoryItem) => {
+    stopSpeaking();
+    setTranscribedQuery(item.query);
+    setResult({
+      text: item.answer,
+      source: item.source,
+      title: item.title,
+    });
+    setShowHistory(false);
+    setState('answering');
+    playSpokenResponse(item.answer);
+  };
+
+  const handleTransferHistoryToChat = (item: VoiceHistoryItem) => {
+    stopSpeaking();
+    onClose();
+    router.push({
+      pathname: '/chat',
+      params: {
+        initialPrompt: item.query,
+      },
+    });
+  };
+
+  const playSpokenResponse = (textToSpeak: string, langToUse?: 'hi' | 'en') => {
+    const activeLang = langToUse || currentLang;
     setIsSpeakingAudio(true);
     speakVernacular(textToSpeak, {
-      language,
+      language: activeLang,
       onDone: () => setIsSpeakingAudio(false),
       onError: () => setIsSpeakingAudio(false),
     });
@@ -241,7 +399,7 @@ export function VoiceAssistantModal({
       stopSpeaking();
       setIsSpeakingAudio(false);
     } else if (result?.text) {
-      playSpokenResponse(result.text);
+      playSpokenResponse(result.text, currentLang);
     }
   };
 
@@ -256,12 +414,20 @@ export function VoiceAssistantModal({
     });
   };
 
-  const SUGGESTION_CHIPS = [
-    language === 'hi' ? '🌾 गेहूं में पीला रतुआ का इलाज क्या है?' : 'Wheat yellow rust treatment?',
-    language === 'hi' ? '🌦️ आज का मौसम कैसा रहेगा?' : 'How is today weather?',
-    language === 'hi' ? '💰 मंडी में आज धान का क्या भाव है?' : 'What is paddy mandi rate?',
-    language === 'hi' ? '💧 खाद और यूरिया कब डालना चाहिए?' : 'When to apply urea fertilizer?',
-  ];
+  const SUGGESTION_CHIPS =
+    currentLang === 'hi'
+      ? [
+          '🌾 गेहूं में पीला रतुआ का इलाज क्या है?',
+          '🌦️ आज का मौसम कैसा रहेगा?',
+          '💰 मंडी में आज धान का क्या भाव है?',
+          '💧 खाद और यूरिया कब डालना चाहिए?',
+        ]
+      : [
+          '🌾 What is wheat yellow rust disease treatment?',
+          '🌦️ Today\'s weather and rain forecast?',
+          '💰 Current paddy and wheat mandi prices?',
+          '💧 When and how much urea fertilizer to use?',
+        ];
 
   return (
     <Modal
@@ -293,40 +459,355 @@ export function VoiceAssistantModal({
               </View>
               <View>
                 <ThemedText style={{ fontSize: 15, fontWeight: '800', color: theme.text }}>
-                  {language === 'hi' ? 'कृषिक आवाज़ साथी' : 'Krishik Voice Assistant'}
+                  {currentLang === 'hi' ? 'कृषिक आवाज़ साथी' : 'Krishik Voice Assistant'}
                 </ThemedText>
                 <ThemedText style={{ fontSize: 10.5, color: theme.textSecondary }}>
-                  {language === 'hi' ? 'अपनी भाषा में बोलकर पूछें' : 'Speak in your local language'}
+                  {currentLang === 'hi' ? 'अपनी भाषा में बोलकर पूछें' : 'Speak in your local language'}
                 </ThemedText>
               </View>
             </View>
 
-            <Pressable
-              onPress={() => {
-                stopSpeaking();
-                onClose();
-              }}
-              style={({ pressed }) => [
-                styles.closeButton,
-                { backgroundColor: theme.backgroundSelected },
-                pressed && { opacity: 0.8 },
-              ]}
-            >
-              <SymbolView
-                name={{ ios: 'xmark', android: 'close', web: 'close' } as any}
-                size={14}
-                tintColor={theme.textSecondary}
-              />
-            </Pressable>
+            <View style={styles.headerRightRow}>
+              <Pressable
+                onPress={toggleHistoryView}
+                style={({ pressed }) => [
+                  styles.historyHeaderBtn,
+                  {
+                    backgroundColor: showHistory ? theme.primary : theme.backgroundSelected,
+                    borderColor: showHistory ? theme.primary : theme.border,
+                  },
+                  pressed && { opacity: 0.8 },
+                ]}
+              >
+                <SymbolView
+                  name={{ ios: 'clock.arrow.circlepath', android: 'history', web: 'history' } as any}
+                  size={13}
+                  tintColor={showHistory ? '#FFFFFF' : theme.text}
+                />
+                <ThemedText
+                  style={{
+                    fontSize: 11,
+                    fontWeight: '700',
+                    color: showHistory ? '#FFFFFF' : theme.text,
+                  }}
+                >
+                  {currentLang === 'hi' ? 'इतिहास' : 'History'}
+                  {historyItems.length > 0 ? ` (${historyItems.length})` : ''}
+                </ThemedText>
+              </Pressable>
+
+              <Pressable
+                onPress={() => {
+                  stopSpeaking();
+                  onClose();
+                }}
+                style={({ pressed }) => [
+                  styles.closeButton,
+                  { backgroundColor: theme.backgroundSelected },
+                  pressed && { opacity: 0.8 },
+                ]}
+              >
+                <SymbolView
+                  name={{ ios: 'xmark', android: 'close', web: 'close' } as any}
+                  size={14}
+                  tintColor={theme.textSecondary}
+                />
+              </Pressable>
+            </View>
           </View>
 
           <ScrollView
             contentContainerStyle={styles.scrollBody}
             showsVerticalScrollIndicator={false}
           >
-            {/* 1. STATE: LISTENING */}
+            {showHistory ? (
+              <View style={styles.historyContainer}>
+                {/* History Header Controls */}
+                <View style={styles.historySubheader}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <ThemedText style={{ fontSize: 13.5, fontWeight: '800', color: theme.text }}>
+                      {currentLang === 'hi' ? 'पिछली बातचीत' : 'Voice History'}
+                    </ThemedText>
+                    {historyItems.length > 0 && (
+                      <View style={[styles.countBadge, { backgroundColor: theme.primary + '18' }]}>
+                        <ThemedText style={{ fontSize: 10.5, fontWeight: '800', color: theme.primary }}>
+                          {historyItems.length}
+                        </ThemedText>
+                      </View>
+                    )}
+                  </View>
+
+                  <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                    {historyItems.length > 0 && (
+                      <Pressable
+                        onPress={handleClearAllHistory}
+                        style={({ pressed }) => [
+                          styles.clearHistoryBtn,
+                          { borderColor: theme.border },
+                          pressed && { opacity: 0.7 },
+                        ]}
+                      >
+                        <ThemedText style={{ fontSize: 11, fontWeight: '600', color: theme.error }}>
+                          {currentLang === 'hi' ? 'साफ़ करें' : 'Clear'}
+                        </ThemedText>
+                      </Pressable>
+                    )}
+
+                    <Pressable
+                      onPress={toggleHistoryView}
+                      style={({ pressed }) => [
+                        styles.backToMicBtn,
+                        { backgroundColor: theme.primary },
+                        pressed && { opacity: 0.85 },
+                      ]}
+                    >
+                      <SymbolView
+                        name={{ ios: 'mic.fill', android: 'mic', web: 'mic' } as any}
+                        size={12}
+                        tintColor="#FFFFFF"
+                      />
+                      <ThemedText style={{ fontSize: 11.5, fontWeight: '700', color: '#FFFFFF' }}>
+                        {currentLang === 'hi' ? 'नया सवाल' : 'New Query'}
+                      </ThemedText>
+                    </Pressable>
+                  </View>
+                </View>
+
+                {historyItems.length === 0 ? (
+                  <View style={styles.emptyHistoryBox}>
+                    <View style={[styles.emptyHistoryIcon, { backgroundColor: theme.primary + '14' }]}>
+                      <SymbolView
+                        name={{ ios: 'clock.arrow.circlepath', android: 'history', web: 'history' } as any}
+                        size={28}
+                        tintColor={theme.primary}
+                      />
+                    </View>
+                    <ThemedText style={{ fontSize: 15, fontWeight: '700', color: theme.text, marginTop: 8 }}>
+                      {currentLang === 'hi' ? 'कोई आवाज़ इतिहास नहीं है' : 'No Voice History Yet'}
+                    </ThemedText>
+                    <ThemedText style={{ fontSize: 12, color: theme.textSecondary, textAlign: 'center', marginTop: 4, paddingHorizontal: 20 }}>
+                      {currentLang === 'hi'
+                        ? 'आप जो भी सवाल आवाज़ से पूछेंगे, वे यहाँ सुरक्षित रहेंगे ताकि आप उन्हें कभी भी दोबारा सुन सकें।'
+                        : 'Questions you ask by voice will be saved here so you can re-listen at any time.'}
+                    </ThemedText>
+                    <Pressable
+                      onPress={toggleHistoryView}
+                      style={({ pressed }) => [
+                        styles.emptyAskBtn,
+                        { backgroundColor: theme.primary },
+                        pressed && { opacity: 0.88 },
+                      ]}
+                    >
+                      <SymbolView
+                        name={{ ios: 'mic.fill', android: 'mic', web: 'mic' } as any}
+                        size={15}
+                        tintColor="#FFFFFF"
+                      />
+                      <ThemedText style={{ fontSize: 13, fontWeight: '700', color: '#FFFFFF' }}>
+                        {currentLang === 'hi' ? 'बोलकर सवाल पूछें' : 'Ask Question Now'}
+                      </ThemedText>
+                    </Pressable>
+                  </View>
+                ) : (
+                  <View style={styles.historyList}>
+                    {historyItems.map((item) => {
+                      const isPlaying = playingHistoryId === item.id;
+                      return (
+                        <View
+                          key={item.id}
+                          style={[
+                            styles.historyCard,
+                            {
+                              backgroundColor: theme.background,
+                              borderColor: isPlaying ? theme.primary : theme.border,
+                            },
+                          ]}
+                        >
+                          {/* Top Question Row */}
+                          <View style={styles.historyCardHeader}>
+                            <View style={styles.historyQueryRow}>
+                              <View style={[styles.historyMicBadge, { backgroundColor: theme.primary + '18' }]}>
+                                <SymbolView
+                                  name={{ ios: 'waveform', android: 'graphic_eq', web: 'graphic_eq' } as any}
+                                  size={13}
+                                  tintColor={theme.primary}
+                                />
+                              </View>
+                              <ThemedText style={styles.historyQueryText} numberOfLines={2}>
+                                {item.query}
+                              </ThemedText>
+                            </View>
+
+                            <Pressable
+                              onPress={() => handleDeleteHistoryItem(item.id)}
+                              style={({ pressed }) => [
+                                styles.deleteItemBtn,
+                                pressed && { opacity: 0.7 },
+                              ]}
+                            >
+                              <SymbolView
+                                name={{ ios: 'trash', android: 'delete', web: 'delete' } as any}
+                                size={13}
+                                tintColor={theme.textSecondary}
+                              />
+                            </Pressable>
+                          </View>
+
+                          {/* Meta line: Time and Source */}
+                          <View style={styles.historyMetaRow}>
+                            <View style={[styles.historySourcePill, { backgroundColor: theme.primary + '12' }]}>
+                              <ThemedText style={{ fontSize: 10, fontWeight: '700', color: theme.primary }}>
+                                {item.source === 'weather'
+                                  ? (currentLang === 'hi' ? '🌦️ मौसम' : '🌦️ Weather')
+                                  : item.source === 'mandi'
+                                  ? (currentLang === 'hi' ? '💰 मंडी भाव' : '💰 Mandi')
+                                  : (currentLang === 'hi' ? '🌾 कृषि सलाह' : '🌾 Agri Advice')}
+                              </ThemedText>
+                            </View>
+                            <ThemedText style={{ fontSize: 10.5, color: theme.textSecondary }}>
+                              {formatRelativeTime(item.timestamp, currentLang)}
+                            </ThemedText>
+                          </View>
+
+                          {/* Answer Snippet with CustomMarkdown */}
+                          <View style={styles.historyAnswerBox}>
+                            <CustomMarkdown text={item.answer} />
+                          </View>
+
+                          {/* History Card Actions */}
+                          <View style={styles.historyCardActions}>
+                            <Pressable
+                              onPress={() => togglePlayHistoryAudio(item)}
+                              style={({ pressed }) => [
+                                styles.historyAudioBtn,
+                                {
+                                  backgroundColor: isPlaying ? theme.primary : theme.backgroundSelected,
+                                  borderColor: isPlaying ? theme.primary : theme.border,
+                                },
+                                pressed && { opacity: 0.8 },
+                              ]}
+                            >
+                              <SymbolView
+                                name={{
+                                  ios: isPlaying ? 'speaker.wave.3.fill' : 'speaker.wave.2',
+                                  android: isPlaying ? 'volume_up' : 'volume_up',
+                                  web: isPlaying ? 'volume_up' : 'volume_up',
+                                } as any}
+                                size={13}
+                                tintColor={isPlaying ? '#FFFFFF' : theme.primary}
+                              />
+                              <ThemedText
+                                style={{
+                                  fontSize: 11,
+                                  fontWeight: '700',
+                                  color: isPlaying ? '#FFFFFF' : theme.text,
+                                }}
+                              >
+                                {isPlaying
+                                  ? (currentLang === 'hi' ? 'बोल रहे हैं...' : 'Playing...')
+                                  : (currentLang === 'hi' ? 'आवाज़ सुनें' : 'Listen')}
+                              </ThemedText>
+                            </Pressable>
+
+                            <Pressable
+                              onPress={() => handleOpenHistoryItem(item)}
+                              style={({ pressed }) => [
+                                styles.historyExpandBtn,
+                                { backgroundColor: theme.backgroundSelected, borderColor: theme.border },
+                                pressed && { opacity: 0.8 },
+                              ]}
+                            >
+                              <ThemedText style={{ fontSize: 11, fontWeight: '700', color: theme.text }}>
+                                {currentLang === 'hi' ? 'पूरा देखें' : 'View Full'}
+                              </ThemedText>
+                            </Pressable>
+
+                            <Pressable
+                              onPress={() => handleTransferHistoryToChat(item)}
+                              style={({ pressed }) => [
+                                styles.historyChatBtn,
+                                { backgroundColor: theme.backgroundSelected, borderColor: theme.border },
+                                pressed && { opacity: 0.8 },
+                              ]}
+                            >
+                              <SymbolView
+                                name={{ ios: 'bubble.left.and.bubble.right', android: 'chat', web: 'chat' } as any}
+                                size={12}
+                                tintColor={theme.primary}
+                              />
+                              <ThemedText style={{ fontSize: 11, fontWeight: '700', color: theme.primary }}>
+                                {currentLang === 'hi' ? 'चैट में' : 'In Chat'}
+                              </ThemedText>
+                            </Pressable>
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </View>
+                )}
+              </View>
+            ) : (
+              <>
+                {/* 1. STATE: LISTENING */}
             {state === 'listening' && (
               <View style={styles.centerSection}>
+                {/* Bilingual Language Switcher Pill */}
+                <View
+                  style={[
+                    styles.langSwitcherPill,
+                    {
+                      backgroundColor: theme.backgroundSelected,
+                      borderColor: theme.border,
+                    },
+                  ]}
+                >
+                  <Pressable
+                    onPress={() => handleSwitchLanguage('hi')}
+                    style={({ pressed }) => [
+                      styles.langTabBtn,
+                      currentLang === 'hi' && [
+                        styles.langTabBtnActive,
+                        { backgroundColor: theme.primary },
+                      ],
+                      pressed && { opacity: 0.85 },
+                    ]}
+                  >
+                    <ThemedText style={{ fontSize: 13 }}>🇮🇳</ThemedText>
+                    <ThemedText
+                      style={[
+                        styles.langTabLabel,
+                        { color: currentLang === 'hi' ? '#FFFFFF' : theme.textSecondary },
+                        currentLang === 'hi' && styles.langTabLabelActive,
+                      ]}
+                    >
+                      हिंदी में बोलें
+                    </ThemedText>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={() => handleSwitchLanguage('en')}
+                    style={({ pressed }) => [
+                      styles.langTabBtn,
+                      currentLang === 'en' && [
+                        styles.langTabBtnActive,
+                        { backgroundColor: theme.primary },
+                      ],
+                      pressed && { opacity: 0.85 },
+                    ]}
+                  >
+                    <ThemedText style={{ fontSize: 13 }}>🌐</ThemedText>
+                    <ThemedText
+                      style={[
+                        styles.langTabLabel,
+                        { color: currentLang === 'en' ? '#FFFFFF' : theme.textSecondary },
+                        currentLang === 'en' && styles.langTabLabelActive,
+                      ]}
+                    >
+                      Speak in English
+                    </ThemedText>
+                  </Pressable>
+                </View>
+
                 <View style={styles.micOrbWrapper}>
                   <Animated.View
                     style={[
@@ -349,17 +830,17 @@ export function VoiceAssistantModal({
 
                 <ThemedText style={styles.stateTitle}>
                   {interimText
-                    ? (language === 'hi' ? 'आप बोल रहे हैं...' : 'Speaking...')
-                    : (language === 'hi' ? 'सुन रहे हैं... बोलिए' : 'Listening... Speak now')}
+                    ? (currentLang === 'hi' ? 'आप बोल रहे हैं...' : 'Speaking...')
+                    : (currentLang === 'hi' ? 'सुन रहे हैं... बोलिए' : 'Listening... Speak now')}
                 </ThemedText>
                 <ThemedText style={[styles.stateSubtitle, { color: theme.textSecondary }]}>
                   {interimText
-                    ? (language === 'hi'
+                    ? (currentLang === 'hi'
                         ? 'रुकते ही उत्तर स्वतः आ जाएगा, या नीचे बटन दबाएं'
                         : 'Pause speaking to auto-answer, or tap button below')
-                    : (language === 'hi'
+                    : (currentLang === 'hi'
                         ? 'अपनी भाषा में बोलें या नीचे दिए सवाल चुनें'
-                        : 'Speak in your language or select a suggestion')}
+                        : 'Speak clearly into mic or select a question below')}
                 </ThemedText>
 
                 {/* Live Speech Recognition Bubble */}
@@ -376,7 +857,7 @@ export function VoiceAssistantModal({
                     <View style={styles.liveSpeechHeaderRow}>
                       <View style={[styles.liveBlinkingDot, { backgroundColor: theme.primary }]} />
                       <ThemedText style={{ fontSize: 11, fontWeight: '700', color: theme.primary }}>
-                        {language === 'hi' ? 'लाइव आवाज़ पहचान:' : 'Live speech detected:'}
+                        {currentLang === 'hi' ? 'लाइव आवाज़ पहचान:' : 'Live speech detected:'}
                       </ThemedText>
                     </View>
                     <ThemedText style={{ fontSize: 14.5, fontWeight: '700', color: theme.text, marginTop: 4 }}>
@@ -399,14 +880,14 @@ export function VoiceAssistantModal({
                     tintColor="#FFFFFF"
                   />
                   <ThemedText style={styles.doneRecordingText}>
-                    {language === 'hi' ? 'बोलना पूरा हुआ ›' : 'Done Speaking ›'}
+                    {currentLang === 'hi' ? 'बोलना पूरा हुआ ›' : 'Done Speaking ›'}
                   </ThemedText>
                 </Pressable>
 
                 {/* Prompt Suggestions */}
                 <View style={styles.suggestionsContainer}>
                   <ThemedText style={[styles.suggestionHeader, { color: theme.textSecondary }]}>
-                    {language === 'hi' ? 'उदाहरण के लिए ऐसे पूछें:' : 'Example questions:'}
+                    {currentLang === 'hi' ? 'उदाहरण के लिए ऐसे पूछें:' : 'Example questions:'}
                   </ThemedText>
                   {SUGGESTION_CHIPS.map((chip, idx) => (
                     <Pressable
@@ -417,7 +898,7 @@ export function VoiceAssistantModal({
                           activeSessionRef.current = null;
                         }
                         setTranscribedQuery(chip);
-                        handleExecuteQuery(chip);
+                        handleExecuteQuery(chip, currentLang);
                       }}
                       style={({ pressed }) => [
                         styles.suggestionChip,
@@ -431,6 +912,45 @@ export function VoiceAssistantModal({
                     </Pressable>
                   ))}
                 </View>
+
+                {/* Recent Voice Queries Quick Access */}
+                {historyItems.length > 0 && (
+                  <View style={styles.recentQueriesContainer}>
+                    <View style={styles.recentQueriesHeader}>
+                      <ThemedText style={[styles.suggestionHeader, { color: theme.textSecondary }]}>
+                        {currentLang === 'hi' ? 'हाल ही में पूछे गए सवाल:' : 'Recently asked questions:'}
+                      </ThemedText>
+                      <Pressable onPress={toggleHistoryView}>
+                        <ThemedText style={{ fontSize: 11, fontWeight: '700', color: theme.primary }}>
+                          {currentLang === 'hi' ? 'सभी इतिहास ›' : 'View history ›'}
+                        </ThemedText>
+                      </Pressable>
+                    </View>
+                    {historyItems.slice(0, 2).map((item) => (
+                      <Pressable
+                        key={item.id}
+                        onPress={() => handleOpenHistoryItem(item)}
+                        style={({ pressed }) => [
+                          styles.recentQueryChip,
+                          { backgroundColor: theme.background, borderColor: theme.border },
+                          pressed && { backgroundColor: theme.backgroundSelected },
+                        ]}
+                      >
+                        <SymbolView
+                          name={{ ios: 'clock.arrow.circlepath', android: 'history', web: 'history' } as any}
+                          size={12}
+                          tintColor={theme.primary}
+                        />
+                        <ThemedText style={{ fontSize: 12, color: theme.text, flex: 1 }} numberOfLines={1}>
+                          {item.query}
+                        </ThemedText>
+                        <ThemedText style={{ fontSize: 10, color: theme.textSecondary }}>
+                          {formatRelativeTime(item.timestamp, currentLang)}
+                        </ThemedText>
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
               </View>
             )}
 
@@ -442,10 +962,10 @@ export function VoiceAssistantModal({
                 </View>
 
                 <ThemedText style={styles.stateTitle}>
-                  {language === 'hi' ? 'समझ रहे हैं...' : 'Processing speech...'}
+                  {currentLang === 'hi' ? 'समझ रहे हैं...' : 'Processing speech...'}
                 </ThemedText>
                 <ThemedText style={[styles.stateSubtitle, { color: theme.textSecondary }]}>
-                  {language === 'hi'
+                  {currentLang === 'hi'
                     ? 'सटीक कृषि सलाह तैयार की जा रही है'
                     : 'Preparing localized agricultural advice'}
                 </ThemedText>
@@ -453,7 +973,7 @@ export function VoiceAssistantModal({
                 {transcribedQuery ? (
                   <View style={[styles.recognizedQueryBox, { backgroundColor: theme.background, borderColor: theme.border }]}>
                     <ThemedText style={{ fontSize: 11, color: theme.textSecondary, fontWeight: '600' }}>
-                      {language === 'hi' ? 'आपका सवाल:' : 'Your Question:'}
+                      {currentLang === 'hi' ? 'आपका सवाल:' : 'Your Question:'}
                     </ThemedText>
                     <ThemedText style={{ fontSize: 14, fontWeight: '700', color: theme.text, marginTop: 3 }}>
                       "{transcribedQuery}"
@@ -488,7 +1008,7 @@ export function VoiceAssistantModal({
                         tintColor={theme.primary}
                       />
                       <ThemedText style={{ fontSize: 11, fontWeight: '700', color: theme.primary }}>
-                        {result.title || (language === 'hi' ? 'कृषिक सलाह' : 'Advice')}
+                        {result.title || (currentLang === 'hi' ? 'कृषिक सलाह' : 'Advice')}
                       </ThemedText>
                     </View>
 
@@ -521,22 +1041,22 @@ export function VoiceAssistantModal({
                         }}
                       >
                         {isSpeakingAudio
-                          ? (language === 'hi' ? 'बोल रहे हैं...' : 'Speaking...')
-                          : (language === 'hi' ? 'फिर से सुनें' : 'Listen')}
+                          ? (currentLang === 'hi' ? 'बोल रहे हैं...' : 'Speaking...')
+                          : (currentLang === 'hi' ? 'फिर से सुनें' : 'Listen')}
                       </ThemedText>
                     </Pressable>
                   </View>
 
-                  {/* Main Answer Text (Formatted clearly for reading) */}
-                  <ThemedText style={styles.answerContentText}>
-                    {result.text}
-                  </ThemedText>
+                  {/* Main Answer Text (Formatted beautifully with CustomMarkdown) */}
+                  <View style={styles.markdownWrapper}>
+                    <CustomMarkdown text={result.text} />
+                  </View>
                 </View>
 
                 {/* Bottom Voice Controls */}
                 <View style={styles.answeringActionsRow}>
                   <Pressable
-                    onPress={beginListening}
+                    onPress={() => beginListening(currentLang)}
                     style={({ pressed }) => [
                       styles.actionButton,
                       { backgroundColor: theme.primary },
@@ -549,7 +1069,7 @@ export function VoiceAssistantModal({
                       tintColor="#FFFFFF"
                     />
                     <ThemedText style={styles.actionBtnText}>
-                      {language === 'hi' ? 'और पूछें' : 'Ask More'}
+                      {currentLang === 'hi' ? 'और पूछें' : 'Ask More'}
                     </ThemedText>
                   </Pressable>
 
@@ -567,7 +1087,7 @@ export function VoiceAssistantModal({
                       tintColor={theme.primary}
                     />
                     <ThemedText style={[styles.actionBtnTextSecondary, { color: theme.primary }]}>
-                      {language === 'hi' ? 'पूरी चैट देखें' : 'View Full Chat'}
+                      {currentLang === 'hi' ? 'पूरी चैट देखें' : 'View Full Chat'}
                     </ThemedText>
                   </Pressable>
                 </View>
@@ -585,14 +1105,14 @@ export function VoiceAssistantModal({
                   />
                 </View>
                 <ThemedText style={[styles.errorTitle, { color: theme.error }]}>
-                  {language === 'hi' ? 'क्षमा करें' : 'Notice'}
+                  {currentLang === 'hi' ? 'क्षमा करें' : 'Notice'}
                 </ThemedText>
                 <ThemedText style={[styles.stateSubtitle, { color: theme.textSecondary }]}>
-                  {errorMessage || (language === 'hi' ? 'कुछ गड़बड़ हुई' : 'Something went wrong')}
+                  {errorMessage || (currentLang === 'hi' ? 'कुछ गड़बड़ हुई' : 'Something went wrong')}
                 </ThemedText>
 
                 <Pressable
-                  onPress={beginListening}
+                  onPress={() => beginListening(currentLang)}
                   style={({ pressed }) => [
                     styles.retryBtn,
                     { backgroundColor: theme.primary },
@@ -605,10 +1125,12 @@ export function VoiceAssistantModal({
                     tintColor="#FFFFFF"
                   />
                   <ThemedText style={styles.doneRecordingText}>
-                    {language === 'hi' ? 'पुनः प्रयास करें' : 'Try Again'}
+                    {currentLang === 'hi' ? 'पुनः प्रयास करें' : 'Try Again'}
                   </ThemedText>
                 </Pressable>
               </View>
+            )}
+              </>
             )}
           </ScrollView>
         </Animated.View>
@@ -678,6 +1200,44 @@ const styles = StyleSheet.create({
   centerSection: {
     alignItems: 'center',
     paddingVertical: Spacing.two,
+  },
+  langSwitcherPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 3,
+    borderRadius: 24,
+    borderWidth: 1,
+    marginBottom: Spacing.two,
+    alignSelf: 'center',
+  },
+  langTabBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+  },
+  langTabBtnActive: {
+    ...Platform.select({
+      web: {
+        boxShadow: '0 2px 8px rgba(22, 163, 74, 0.3)',
+      },
+      default: {
+        shadowColor: '#16A34A',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 3,
+      },
+    }),
+  },
+  langTabLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  langTabLabelActive: {
+    fontWeight: '800',
   },
   micOrbWrapper: {
     width: 100,
@@ -819,7 +1379,9 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 16,
     borderWidth: 1,
-    gap: 10,
+    gap: 12,
+    width: '100%',
+    overflow: 'hidden',
   },
   answerCardHeader: {
     flexDirection: 'row',
@@ -839,6 +1401,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 9,
     borderRadius: 12,
     borderWidth: 1,
+  },
+  markdownWrapper: {
+    width: '100%',
   },
   answerContentText: {
     fontSize: 14.5,
@@ -881,5 +1446,172 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
     marginTop: 4,
+  },
+  headerRightRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  historyHeaderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  historyContainer: {
+    gap: 12,
+  },
+  historySubheader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  countBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 8,
+  },
+  clearHistoryBtn: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  backToMicBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+  },
+  emptyHistoryBox: {
+    alignItems: 'center',
+    paddingVertical: 32,
+    paddingHorizontal: 16,
+    gap: 6,
+  },
+  emptyHistoryIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  emptyAskBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 18,
+    marginTop: 16,
+  },
+  historyList: {
+    gap: 12,
+  },
+  historyCard: {
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    gap: 8,
+    overflow: 'hidden',
+  },
+  historyCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  historyQueryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  historyMicBadge: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  historyQueryText: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    flex: 1,
+  },
+  deleteItemBtn: {
+    padding: 4,
+  },
+  historyMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  historySourcePill: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  historyAnswerBox: {
+    paddingVertical: 2,
+  },
+  historyCardActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 4,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.06)',
+  },
+  historyAudioBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  historyExpandBtn: {
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  historyChatBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  recentQueriesContainer: {
+    width: '100%',
+    marginTop: 18,
+    gap: 8,
+  },
+  recentQueriesHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  recentQueryChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
   },
 });

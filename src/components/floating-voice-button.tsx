@@ -5,15 +5,27 @@ import { ThemedText } from './themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
 import { VoiceAssistantModal } from './voice-assistant-modal';
+import { useLanguage } from '@/context/language-context';
 import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 
 interface FloatingVoiceButtonProps {
   language?: 'hi' | 'en';
 }
 
-export function FloatingVoiceButton({ language = 'hi' }: FloatingVoiceButtonProps) {
+export function FloatingVoiceButton({ language: propLanguage }: FloatingVoiceButtonProps) {
   const theme = useTheme();
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  let contextLang: 'hi' | 'en' = 'en';
+  try {
+    const { language: currentLang } = useLanguage();
+    if (currentLang === 'hi' || currentLang === 'en') {
+      contextLang = currentLang;
+    }
+  } catch {
+    // If used outside LanguageProvider fallback
+  }
+  const language = propLanguage || contextLang;
 
   // Subtle pulsing glow
   const glowScale = useSharedValue(1);
@@ -62,7 +74,7 @@ export function FloatingVoiceButton({ language = 'hi' }: FloatingVoiceButtonProp
             />
           </View>
           <ThemedText style={styles.fabLabel}>
-            {language === 'hi' ? 'बोलकर पूछें' : 'Voice'}
+            {language === 'hi' ? 'बोलकर पूछें' : 'Ask by Voice'}
           </ThemedText>
         </Pressable>
       </Animated.View>

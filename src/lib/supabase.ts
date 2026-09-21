@@ -44,12 +44,14 @@ const ExpoSSRSafeStorage = {
   },
 };
 
+import { Platform } from 'react-native';
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     storage: ExpoSSRSafeStorage,
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: false,
+    detectSessionInUrl: Platform.OS === 'web',
   },
 });
 

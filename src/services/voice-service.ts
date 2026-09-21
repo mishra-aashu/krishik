@@ -61,7 +61,10 @@ export async function speakVernacular(
     // Stop any ongoing speech first
     await stopSpeaking();
 
-    const langCode = options.language === 'en' ? 'en-US' : 'hi-IN';
+    // Auto-detect Hindi (Devanagari) vs English (Latin) script to use matching voice engine
+    const containsDevanagari = /[\u0900-\u097F]/.test(clean);
+    let langCode = containsDevanagari ? 'hi-IN' : (options.language === 'en' ? 'en-IN' : (Platform.OS === 'web' ? 'en-IN' : 'en-US'));
+
     const speechRate = options.rate ?? (Platform.OS === 'ios' ? 0.88 : 0.90);
     const speechPitch = options.pitch ?? 1.0;
 

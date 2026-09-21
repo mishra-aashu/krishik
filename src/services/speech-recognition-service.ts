@@ -31,7 +31,7 @@ export function isWebSpeechSupported(): boolean {
  * 2. On other platforms / fallback: Uses microphone recording and Groq Whisper Large v3.
  */
 export async function startListeningSession(
-  language: 'hi' | 'en' = 'hi',
+  language: 'hi' | 'en' | 'hinglish' = 'hi',
   handlers: SpeechRecognitionHandlers = {}
 ): Promise<ActiveListeningSession> {
   const isWeb = Platform.OS === 'web' && typeof window !== 'undefined';
@@ -50,14 +50,14 @@ export async function startListeningSession(
  * Web Speech API implementation with live interim feedback and volume analyser
  */
 async function startWebSpeechSession(
-  language: 'hi' | 'en',
+  language: 'hi' | 'en' | 'hinglish',
   handlers: SpeechRecognitionHandlers
 ): Promise<ActiveListeningSession> {
   const SpeechRecognitionClass =
     (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
   const recognition = new SpeechRecognitionClass();
-  recognition.lang = language === 'hi' ? 'hi-IN' : 'en-IN';
+  recognition.lang = language === 'en' ? 'en-IN' : 'hi-IN';
   recognition.continuous = true;
   recognition.interimResults = true;
   recognition.maxAlternatives = 1;
@@ -215,7 +215,7 @@ async function startWebSpeechSession(
  * Fallback session using MediaRecorder / Native audio + Groq Whisper
  */
 async function startFallbackSession(
-  language: 'hi' | 'en',
+  language: 'hi' | 'en' | 'hinglish',
   handlers: SpeechRecognitionHandlers
 ): Promise<ActiveListeningSession> {
   await startRecording();

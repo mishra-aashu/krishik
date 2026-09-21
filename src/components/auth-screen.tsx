@@ -50,10 +50,39 @@ interface AuthScreenProps {
 }
 
 export function AuthScreen({ onLoginSuccess, onBack }: AuthScreenProps) {
-  const { login, register } = useAuth();
+  const { login, register, signInWithGoogle } = useAuth();
   const theme = useTheme();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 820;
+
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
+  const handleGoogleSignIn = async () => {
+    setIsGoogleLoading(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+    try {
+      const res = await signInWithGoogle();
+      if (res?.error) {
+        setErrorMsg(
+          lang === 'hi'
+            ? `गूगल लॉगिन त्रुटि: ${res.error}`
+            : `Google Sign-In notice: ${res.error}`
+        );
+      } else {
+        if (Platform.OS !== 'web') {
+          onLoginSuccess();
+        }
+      }
+    } catch (e: any) {
+      setErrorMsg(e?.message || 'Google sign-in failed');
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
+
+  // Set to true if you want to re-enable Phone & PIN authentication
+  const SHOW_PHONE_AUTH = false;
 
   // Background slideshow crossfade animation
   const [bgIndex, setBgIndex] = useState(0);
@@ -472,7 +501,126 @@ export function AuthScreen({ onLoginSuccess, onBack }: AuthScreenProps) {
                   borderColor: theme.dark ? 'rgba(255, 255, 255, 0.30)' : 'rgba(255, 255, 255, 0.95)'
                 }
               ]}>
-                {/* Mode Selector Tabs */}
+                {successMsg && (
+                  <View style={[styles.errorBox, { backgroundColor: '#10B9811A', borderColor: '#10B981' }]}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.one }}>
+                      <SymbolView
+                        name={{ ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check' } as any}
+                        size={14}
+                        tintColor="#10B981"
+                      />
+                      <ThemedText type="small" style={{ color: '#10B981', fontWeight: '700' }}>
+                        {successMsg}
+                      </ThemedText>
+                    </View>
+                  </View>
+                )}
+
+                {errorMsg && (
+                  <View style={[styles.errorBox, { backgroundColor: theme.error + '1A', borderColor: theme.error }]}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.one }}>
+                      <SymbolView
+                        name={{ ios: 'exclamationmark.triangle.fill', android: 'warning', web: 'warning' } as any}
+                        size={14}
+                        tintColor={theme.error}
+                      />
+                      <ThemedText type="small" style={{ color: theme.error, fontWeight: '600' }}>
+                        {errorMsg}
+                      </ThemedText>
+                    </View>
+                  </View>
+                )}
+
+                {/* ═══════════════════════════════════════════════════════════════════
+                    GOOGLE AUTHENTICATION SECTION (PRIMARY LOGIN)
+                    ═══════════════════════════════════════════════════════════════════ */}
+                <View style={styles.googleAuthSection}>
+                  <View style={styles.googleHeaderBadge}>
+                    <ThemedText type="smallBold" style={[styles.googleSectionTitle, { color: theme.dark ? '#ffffff' : '#051C0C' }]}>
+                      {lang === 'hi' ? 'कृषिक मित्र में लॉगिन करें' : 'Sign in to Krishik Mitra'}
+                    </ThemedText>
+                    <ThemedText style={[styles.googleSectionSub, { color: theme.dark ? 'rgba(255,255,255,0.72)' : 'rgba(10,35,18,0.72)' }]}>
+                      {lang === 'hi'
+                        ? 'अपने गूगल अकाउंट से एक क्लिक में लॉगिन करें और खेती-बाड़ी, मौसम व मंडी भाव की सटीक जानकारी पाएं।'
+                        : 'Sign in with your Google account to access personalized farm advisory, weather alerts & live mandi rates.'}
+                    </ThemedText>
+                  </View>
+
+                  {/* Google Sign-In Button */}
+                  <Pressable
+                    onPress={handleGoogleSignIn}
+                    disabled={isGoogleLoading || isLoading}
+                    style={({ pressed }) => [
+                      styles.googleBtn,
+                      {
+                        backgroundColor: theme.dark ? '#1F2937' : '#FFFFFF',
+                        borderColor: theme.dark ? 'rgba(255,255,255,0.22)' : '#D1D5DB',
+                      },
+                      pressed && { opacity: 0.88, transform: [{ scale: 0.985 }] },
+                      (isGoogleLoading || isLoading) && { opacity: 0.7 }
+                    ]}
+                  >
+                    {isGoogleLoading ? (
+                      <ActivityIndicator size="small" color={theme.primary} />
+                    ) : (
+                      <View style={styles.googleBtnContent}>
+                        <Image
+                          source={{ uri: 'https://cdn-icons-png.flaticon.com/512/2991/2991148.png' }}
+                          style={styles.googleLogoIcon}
+                          resizeMode="contain"
+                        />
+                        <ThemedText
+                          type="smallBold"
+                          style={[
+                            styles.googleBtnText,
+                            { color: theme.dark ? '#FFFFFF' : '#1F2937' }
+                          ]}
+                        >
+                          {lang === 'hi' ? 'Google से आगे बढ़ें' : 'Continue with Google'}
+                        </ThemedText>
+                      </View>
+                    )}
+                  </Pressable>
+
+                  {/* Terms & Conditions Agreement */}
+                  <View style={styles.termsAgreementRow}>
+                    <Pressable
+                      onPress={() => setAgreedToTerms(!agreedToTerms)}
+                      style={[
+                        styles.checkboxSquare,
+                        agreedToTerms && { backgroundColor: '#166534', borderColor: '#166534' }
+                      ]}
+                    >
+                      {agreedToTerms && (
+                        <SymbolView
+                          name={{ ios: 'checkmark', android: 'check', web: 'check' } as any}
+                          size={13}
+                          tintColor="#ffffff"
+                        />
+                      )}
+                    </Pressable>
+                    <View style={styles.termsTextWrap}>
+                      <ThemedText type="small" style={{ fontSize: 12, color: theme.dark ? '#ffffff' : '#051C0C' }}>
+                        {lang === 'hi' ? 'मैं ' : 'I agree to '}
+                      </ThemedText>
+                      <Pressable onPress={() => setTermsModalVisible(true)}>
+                        <ThemedText type="smallBold" style={{ fontSize: 12, color: theme.dark ? '#86efac' : '#166534', textDecorationLine: 'underline' }}>
+                          {lang === 'hi' ? 'सेवा की शर्तों एवं गोपनीयता नीति' : 'Terms & Privacy Policy'}
+                        </ThemedText>
+                      </Pressable>
+                      <ThemedText type="small" style={{ fontSize: 12, color: theme.dark ? '#ffffff' : '#051C0C' }}>
+                        {lang === 'hi' ? ' से सहमत हूँ।' : '.'}
+                      </ThemedText>
+                    </View>
+                  </View>
+                </View>
+
+                {/* ═══════════════════════════════════════════════════════════════════
+                    PHONE & PIN AUTHENTICATION FORM (COMMENTED OUT / DISABLED FOR GOOGLE LOGIN)
+                    Set SHOW_PHONE_AUTH = true to re-enable Phone & PIN login.
+                    ═══════════════════════════════════════════════════════════════════ */}
+                {SHOW_PHONE_AUTH && (
+                  <>
                 <View style={[styles.modeTabs, { backgroundColor: theme.dark ? 'rgba(0, 0, 0, 0.45)' : 'rgba(0, 0, 0, 0.08)' }]}>
                   {/* Sliding Active Pill Background */}
                   <Animated.View
@@ -617,15 +765,15 @@ export function AuthScreen({ onLoginSuccess, onBack }: AuthScreenProps) {
                           )}
                         </Pressable>
                         <View style={styles.termsTextWrap}>
-                          <ThemedText type="small" style={{ fontSize: 12, color: theme.dark ? '#ffffff' : '#051C0C', fontWeight: '600' }}>
+                          <ThemedText type="small" style={{ fontSize: 12, color: theme.dark ? '#ffffff' : '#051C0C' }}>
                             {lang === 'hi' ? 'मैं ' : 'I agree to '}
                           </ThemedText>
                           <Pressable onPress={() => setTermsModalVisible(true)}>
-                            <ThemedText type="smallBold" style={{ fontSize: 12, color: theme.dark ? '#86efac' : '#166534', textDecorationLine: 'underline', fontWeight: '700' }}>
+                            <ThemedText type="smallBold" style={{ fontSize: 12, color: theme.dark ? '#86efac' : '#166534', textDecorationLine: 'underline' }}>
                               {lang === 'hi' ? 'सेवा की शर्तों एवं गोपनीयता नीति' : 'Terms & Privacy Policy'}
                             </ThemedText>
                           </Pressable>
-                          <ThemedText type="small" style={{ fontSize: 12, color: theme.dark ? '#ffffff' : '#051C0C', fontWeight: '600' }}>
+                          <ThemedText type="small" style={{ fontSize: 12, color: theme.dark ? '#ffffff' : '#051C0C' }}>
                             {lang === 'hi' ? ' से सहमत हूँ।' : '.'}
                           </ThemedText>
                         </View>
@@ -783,13 +931,12 @@ export function AuthScreen({ onLoginSuccess, onBack }: AuthScreenProps) {
                             </View>
                           </View>
 
-                          <View style={styles.signupNavBtns}>
+                          <View style={{ flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.one }}>
                             <Pressable
                               onPress={() => setStep(1)}
-                              style={({ pressed }) => [
+                              style={[
                                 styles.backBtn,
-                                { borderColor: theme.dark ? 'rgba(255,255,255,0.35)' : 'rgba(11,41,20,0.25)', backgroundColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' },
-                                pressed && { opacity: 0.8 }
+                                { borderColor: theme.dark ? 'rgba(255,255,255,0.3)' : 'rgba(11,41,20,0.25)' }
                               ]}
                             >
                               <ThemedText type="smallBold" style={{ color: theme.dark ? '#ffffff' : '#051C0C' }}>{t.btnBack}</ThemedText>
@@ -817,6 +964,8 @@ export function AuthScreen({ onLoginSuccess, onBack }: AuthScreenProps) {
                     </View>
                   )}
                 </Animated.View>
+                  </>
+                )}
               </View>
 
               {/* Demo Bypass / Skip for now Button */}
@@ -1462,5 +1611,66 @@ const styles = StyleSheet.create({
         elevation: 6,
       }
     })
+  },
+
+  // ── Google Sign In Section ──
+  googleAuthSection: {
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+    gap: 16,
+    alignItems: 'center',
+    width: '100%',
+  },
+  googleHeaderBadge: {
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 4,
+  },
+  googleSectionTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  googleSectionSub: {
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: 'center',
+  },
+  googleBtn: {
+    width: '100%',
+    height: 50,
+    borderRadius: 14,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 4,
+    ...Platform.select({
+      web: {
+        cursor: 'pointer',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+      } as any,
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 2,
+      },
+    }),
+  },
+  googleBtnContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  googleLogoIcon: {
+    width: 22,
+    height: 22,
+  },
+  googleBtnText: {
+    fontSize: 14.5,
+    fontWeight: '700',
+    letterSpacing: 0.1,
   },
 });

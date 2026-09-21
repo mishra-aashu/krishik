@@ -137,10 +137,17 @@ export async function processVoiceQuery(
   }
 
   // 3. Agricultural Advisory / Crop Pest / Disease / General AI
+  const isEnglishQuery =
+    language === 'en' ||
+    (!/[\u0900-\u097F]/.test(query) &&
+      /^(what|how|why|when|where|which|who|can|is|are|tell|give|explain)\b/i.test(lower));
+
   const prompt = [
     {
       role: 'user' as const,
-      content: `${query}\n\n[कृपया सरल, स्पष्ट और बातचीत की हिंदी भाषा में 2 से 3 वाक्यों में पहले सीधा उत्तर दें, फिर मुख्य उपाय बताएं ताकि किसान सुनकर आसानी से समझ सके।]`,
+      content: isEnglishQuery
+        ? `${query}\n\n[Please provide a direct, simple, conversational response in English. First give a direct 2-3 sentence answer, then highlight key practical steps so a farmer listening to audio can easily understand.]`
+        : `${query}\n\n[कृपया सरल, स्पष्ट और बातचीत की हिंदी भाषा में 2 से 3 वाक्यों में पहले सीधा उत्तर दें, फिर मुख्य उपाय बताएं ताकि किसान सुनकर आसानी से समझ सके।]`,
     },
   ];
 
@@ -149,6 +156,6 @@ export async function processVoiceQuery(
   return {
     text: aiAnswer,
     source: 'ai',
-    title: language === 'hi' ? 'कृषिक मित्र सलाह' : 'Krishik Mitra Advice',
+    title: isEnglishQuery ? 'Krishik Mitra Advice' : 'कृषिक मित्र सलाह',
   };
 }
