@@ -285,10 +285,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'flex-end',
+    alignItems: 'center',
   },
   modalCard: {
     maxHeight: '88%',
     minHeight: '60%',
+    width: '100%',
+    maxWidth: 680,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderWidth: 1,
