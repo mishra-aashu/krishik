@@ -25,9 +25,21 @@ export default function TabLayout() {
   );
 }
 
+import { useState, useRef, useEffect } from 'react';
+import { IntroPillOverlay } from '@/components/intro-pill-overlay';
+
 function AppContent() {
   const colorScheme = useColorScheme();
   const { isAuthenticated, isLoading, register } = useAuth();
+  const [showLoginIntro, setShowLoginIntro] = useState(false);
+  const prevAuth = useRef(isAuthenticated);
+
+  useEffect(() => {
+    if (!prevAuth.current && isAuthenticated) {
+      setShowLoginIntro(true);
+    }
+    prevAuth.current = isAuthenticated;
+  }, [isAuthenticated]);
 
   const [fontsLoaded, fontError] = useFonts({
     'Pravah-Regular': require('../../assets/fonts/Mukta-Regular.ttf'),
@@ -54,12 +66,15 @@ function AppContent() {
   return (
     <NavThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <AnimatedSplashOverlay />
+      {showLoginIntro && (
+        <IntroPillOverlay onFinish={() => setShowLoginIntro(false)} />
+      )}
       {isAuthenticated ? (
         <AppTabs />
       ) : (
         <HomeScreen
           onExploreDemo={handleExploreDemo}
-          onLoginSuccess={() => {}}
+          onLoginSuccess={() => setShowLoginIntro(true)}
         />
       )}
     </NavThemeProvider>

@@ -344,11 +344,11 @@ export default function ProfileScreen() {
                 tintColor={'#15803D'}
               />
             </View>
-            <View style={{ flex: 1, marginLeft: 8 }}>
-              <ThemedText style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700' }}>
+            <View style={{ marginLeft: 10, alignItems: 'center' }}>
+              <ThemedText style={{ color: '#FFFFFF', fontSize: 12.5, fontWeight: '700', textAlign: 'center' }}>
                 {successMsg}
               </ThemedText>
-              <ThemedText style={{ color: '#DCFCE7', fontSize: 10, fontWeight: '500' }}>
+              <ThemedText style={{ color: '#DCFCE7', fontSize: 10.5, fontWeight: '500', textAlign: 'center', marginTop: 1 }}>
                 {lang === 'hi' ? 'आपकी प्राथमिकताएं अपडेट हो गईं ✓' : 'Your preferences have been updated ✓'}
               </ThemedText>
             </View>
@@ -1203,21 +1203,23 @@ const styles = StyleSheet.create({
   floatingToastContainer: {
     position: 'absolute',
     top: 54,
-    left: 16,
-    right: 16,
+    left: 0,
+    right: 0,
     zIndex: 9999,
     alignItems: 'center',
+    paddingHorizontal: 16,
   },
   floatingToast: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    width: '100%',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 16,
+    maxWidth: 480,
     ...Platform.select({
       web: {
-        boxShadow: '0px 4px 16px rgba(0, 0, 0, 0.2)',
+        boxShadow: '0px 4px 16px rgba(0, 0, 0, 0.25)',
       } as any,
       default: {
         elevation: 8,

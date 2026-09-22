@@ -60,7 +60,7 @@ export function FloatingVoiceButton({ language: propLanguage }: FloatingVoiceBut
           onPress={() => setIsModalOpen(true)}
           style={({ pressed }) => [
             styles.fabButton,
-            { backgroundColor: theme.primary },
+            { backgroundColor: theme.dark ? '#059669' : theme.primary },
             pressed && styles.fabPressed,
           ]}
           accessibilityLabel={language === 'hi' ? 'आवाज़ से पूछें' : 'Ask by Voice'}

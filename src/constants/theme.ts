@@ -49,41 +49,41 @@ export const Colors = {
   },
   dark: {
     dark: true,
-    // Surfaces — luxurious deep obsidian forest
+    // Surfaces — luxurious deep midnight obsidian slate
     text: '#F8FAFC',                  // Crisp Ice White
     textSecondary: '#94A3B8',         // Refined Slate Secondary
-    background: '#0B120E',            // Deep Obsidian Forest (#0B120E)
-    backgroundElement: '#131E17',     // Elevated Card Obsidian (#131E17)
-    backgroundSelected: '#1C2E24',    // Highlight Surface (#1C2E24)
-    // Brand — bright emerald & gold
-    primary: '#10B981',               // Electric Vibrant Emerald (Green 500)
-    primaryDark: '#059669',           // Rich Emerald Accent
-    primaryLight: 'rgba(16, 185, 129, 0.15)', // Soft Emerald Tint
+    background: '#0B131F',            // Deep Midnight Obsidian Slate (#0B131F)
+    backgroundElement: '#1E293B',     // Elevated Card Charcoal Slate (#1E293B)
+    backgroundSelected: 'rgba(52, 211, 153, 0.12)', // Highlight Surface
+    // Brand — soothing soft sage emerald & harvest gold
+    primary: '#34D399',               // Soft Soothing Sage Emerald (Green 400 - Eye Friendly)
+    primaryDark: '#059669',           // Deep Forest Emerald
+    primaryLight: 'rgba(52, 211, 153, 0.12)', // Soft Sage Tint
     accent: '#F59E0B',                // Rich Warm Golden Harvest (Amber 500)
     accentLight: 'rgba(245, 158, 11, 0.15)', // Golden Soft Glow
     accentGlow: 'rgba(245, 158, 11, 0.25)',
     // Chrome & Surfaces
-    border: '#1F3127',                // Dark Emerald-tinted Border
-    borderAccent: 'rgba(16, 185, 129, 0.35)',
-    glassBackground: 'rgba(19, 30, 23, 0.82)', // Obsidian Glass Backdrop
-    glassBorder: 'rgba(16, 185, 129, 0.25)',
+    border: 'rgba(255, 255, 255, 0.1)', // Refined Subtle Slate Border
+    borderAccent: 'rgba(52, 211, 153, 0.25)',
+    glassBackground: 'rgba(15, 23, 42, 0.88)', // Pristine Slate 900 Glass Backdrop
+    glassBorder: 'rgba(255, 255, 255, 0.12)',
     cardShadow: 'rgba(0, 0, 0, 0.45)',
-    cardGlow: 'rgba(16, 185, 129, 0.18)',
+    cardGlow: 'rgba(52, 211, 153, 0.15)',
     // Navigation & Tabs
-    tabActive: '#10B981',
-    tabInactive: '#64748B',
-    tabActiveBg: '#1C2E24',
-    tabGlow: 'rgba(16, 185, 129, 0.3)',
+    tabActive: '#34D399',
+    tabInactive: '#94A3B8',
+    tabActiveBg: 'rgba(52, 211, 153, 0.12)',
+    tabGlow: 'rgba(52, 211, 153, 0.2)',
     // Chat
     chatUser: '#163E2D',              // Rich Emerald Dark User Bubble
-    chatBot: '#131E17',               // Obsidian Bot Bubble with Emerald Border
-    chatBotBorder: '#1F3127',
+    chatBot: '#1E293B',               // Charcoal Slate Bot Bubble
+    chatBotBorder: 'rgba(255, 255, 255, 0.1)',
     // States & Feedback
     success: '#34D399',               // Mint Green
     warning: '#FBBF24',               // Warm Gold
     error: '#F87171',                 // Coral Red
-    card: '#131E17',
-    onPrimary: '#FFFFFF',
+    card: '#1E293B',
+    onPrimary: '#064E3B',
     onAccent: '#FFFFFF',
   },
 } as const;

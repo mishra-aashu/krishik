@@ -154,8 +154,8 @@ export function TabButton({ iconName, label, isFocused, isMobile, ...props }: Ta
           isMobile ? styles.mobileTabButton : styles.desktopTabButton,
           isMobile
             ? (isFocused
-                ? [styles.mobileTabButtonActive, { backgroundColor: theme.backgroundSelected, borderColor: theme.borderAccent }]
-                : { backgroundColor: 'transparent', borderColor: 'transparent' })
+                ? [styles.mobileTabButtonActive, { backgroundColor: theme.primary + '18' }]
+                : { backgroundColor: 'transparent' })
             : (isFocused
                 ? [
                     styles.desktopTabButtonActive,
@@ -189,7 +189,6 @@ export function TabButton({ iconName, label, isFocused, isMobile, ...props }: Ta
           style={!isFocused ? { opacity: 0.75 } : undefined}
         />
         <ThemedText 
-          type={isMobile ? "code" : "small"} 
           style={[
             isMobile ? styles.mobileTabButtonText : styles.desktopTabButtonText,
             { color: textColor, fontWeight: isFocused ? '700' : '500' },
@@ -198,9 +197,6 @@ export function TabButton({ iconName, label, isFocused, isMobile, ...props }: Ta
         >
           {label}
         </ThemedText>
-        {isMobile && isFocused && (
-          <View style={[styles.activeIndicatorDot, { backgroundColor: theme.accent }]} />
-        )}
       </View>
     </Pressable>
   );
@@ -235,27 +231,29 @@ export function CustomTabList({ children, isMobile, ...props }: CustomTabListPro
         isMobile && isChatScreen && { display: 'none' }
       ]}
     >
-      <ThemedView 
+      <View 
         style={[
-          isMobile ? styles.mobileInnerContainer : styles.desktopInnerContainer,
-          {
-            backgroundColor: theme.glassBackground,
-            borderColor: theme.borderAccent,
-            ...Platform.select({
-              web: {
-                backdropFilter: 'blur(16px)',
-                WebkitBackdropFilter: 'blur(16px)',
-                boxShadow: `0 8px 32px ${theme.cardShadow}`,
-              } as any,
-              default: {
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.12,
-                shadowRadius: 12,
-                elevation: 4,
-              },
-            }),
-          }
+          isMobile ? styles.mobileInnerContainer : [
+            styles.desktopInnerContainer,
+            {
+              backgroundColor: theme.glassBackground,
+              borderColor: theme.borderAccent,
+              ...Platform.select({
+                web: {
+                  backdropFilter: 'blur(16px)',
+                  WebkitBackdropFilter: 'blur(16px)',
+                  boxShadow: `0 8px 32px ${theme.cardShadow}`,
+                } as any,
+                default: {
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.12,
+                  shadowRadius: 12,
+                  elevation: 4,
+                },
+              }),
+            }
+          ]
         ]}
       >
         {!isMobile && (
@@ -276,7 +274,7 @@ export function CustomTabList({ children, isMobile, ...props }: CustomTabListPro
         <View style={isMobile ? styles.mobileButtonsRow : styles.desktopButtonsRow}>
           {children}
         </View>
-      </ThemedView>
+      </View>
     </View>
   );
 }

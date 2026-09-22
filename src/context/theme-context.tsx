@@ -60,3 +60,11 @@ export function useThemeContext() {
   }
   return context;
 }
+
+export function useTheme() {
+  const context = useContext(ThemeContext);
+  if (context && context.theme) {
+    return context.theme;
+  }
+  return Colors.dark;
+}

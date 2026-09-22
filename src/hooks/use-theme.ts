@@ -4,16 +4,16 @@
  */
 
 import { useThemeContext } from '@/context/theme-context';
+import { Colors } from '@/constants/theme';
 
 export function useTheme() {
   try {
-    const { theme } = useThemeContext();
-    return theme;
+    const context = useThemeContext();
+    if (context && context.theme) {
+      return context.theme;
+    }
   } catch (e) {
-    const { Colors } = require('@/constants/theme');
-    const { useColorScheme } = require('./use-color-scheme');
-    const scheme = useColorScheme();
-    const themeName = scheme === 'dark' ? 'dark' : 'light';
-    return Colors[themeName];
+    // Fallback if rendered outside ThemeProvider
   }
+  return Colors.dark;
 }

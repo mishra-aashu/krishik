@@ -29,6 +29,7 @@ import { fetchLiveMandiPrices, type MandiItem } from '@/services/mandi-service';
 import OfflineNotice from '@/components/offline-notice';
 import { AppLogo } from '@/components/app-logo';
 import { WeatherDisasterModal } from '@/components/weather-disaster-modal';
+import { KrishikRadioModal } from '@/components/krishik-radio-modal';
 
 import cropsData from '@/constants/crops.json';
 import { SelectionModal } from '@/components/selection-modal';
@@ -73,6 +74,7 @@ export default function HomeScreen() {
   const [weatherError, setWeatherError] = useState<string | null>(null);
   const [weatherCachedAt, setWeatherCachedAt] = useState<Date | null>(null);
   const [isDisasterModalOpen, setIsDisasterModalOpen] = useState(false);
+  const [isRadioModalOpen, setIsRadioModalOpen] = useState(false);
   const [liveLocation, setLiveLocation] = useState<LiveLocationData | null>(null);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
 
@@ -515,12 +517,12 @@ export default function HomeScreen() {
           <View style={styles.header}>
             <View style={styles.logoContainer}>
               <AppLogo size="small" showText={false} />
-              <View>
-                <ThemedText type="smallBold" style={{ color: theme.primary, fontSize: 16 }}>
-                  {language === 'hi' ? 'नमस्ते' : 'Welcome'}, {userName}
+              <View style={{ flex: 1, flexShrink: 1 }}>
+                <ThemedText style={{ color: theme.textSecondary, fontSize: 11.5, fontWeight: '600' }}>
+                  {language === 'hi' ? 'नमस्ते 👋' : 'Welcome 👋'}
                 </ThemedText>
-                <ThemedText type="small" style={{ fontSize: 10, color: theme.textSecondary, fontWeight: '600' }}>
-                  Krishik Mitra • AI for Agriculture
+                <ThemedText numberOfLines={1} type="smallBold" style={{ color: theme.primary, fontSize: 17, fontWeight: '800', marginTop: 1 }}>
+                  {userName}
                 </ThemedText>
               </View>
             </View>
@@ -534,10 +536,10 @@ export default function HomeScreen() {
             >
               <SymbolView
                 name={{ ios: 'globe', android: 'language', web: 'language' } as any}
-                size={14}
+                size={15}
                 tintColor={theme.primary}
               />
-              <ThemedText style={{ color: theme.text, fontSize: 11, fontWeight: '700' }}>
+              <ThemedText style={{ color: theme.text, fontSize: 12.5, fontWeight: '700' }}>
                 {language === 'hi' ? 'Hindi' : 'English'}
               </ThemedText>
             </PressableScale>
@@ -615,39 +617,21 @@ export default function HomeScreen() {
                   >
                     <SymbolView
                       name={{ ios: 'mappin.circle.fill', android: 'location_on', web: 'location_on' } as any}
-                      size={14}
+                      size={15}
                       tintColor={theme.primary}
                     />
-                    <ThemedText style={{ fontSize: 13, fontWeight: '700', color: theme.text }} numberOfLines={1}>
+                    <ThemedText style={{ fontSize: 14.5, fontWeight: '700', color: theme.text }} numberOfLines={1}>
                       {liveLocation?.displayName || formatState(farmState)}
                     </ThemedText>
                     {isDetectingLocation ? (
-                      <ActivityIndicator size={11} color={theme.primary} style={{ marginLeft: 2 }} />
+                      <ActivityIndicator size={12} color={theme.primary} style={{ marginLeft: 2 }} />
                     ) : (
                       <View style={[styles.liveGpsTag, { backgroundColor: theme.primary }]}>
-                        <ThemedText style={{ fontSize: 8.5, fontWeight: '800', color: '#FFFFFF' }}>
+                        <ThemedText style={{ fontSize: 9.5, fontWeight: '800', color: theme.onPrimary }}>
                           LIVE
                         </ThemedText>
                       </View>
                     )}
-                  </Pressable>
-
-                  <Pressable
-                    onPress={() => setIsDisasterModalOpen(true)}
-                    style={({ pressed }) => [
-                      styles.forecastPillBtn,
-                      { backgroundColor: theme.primary + '14', borderColor: theme.primary + '33' },
-                      pressed && { backgroundColor: theme.primary + '28' }
-                    ]}
-                  >
-                    <SymbolView
-                      name={{ ios: 'calendar', android: 'calendar_today', web: 'calendar_today' } as any}
-                      size={12}
-                      tintColor={theme.primary}
-                    />
-                    <ThemedText style={{ color: theme.primary, fontSize: 11.5, fontWeight: '700' }}>
-                      {language === 'hi' ? '7-दिन ›' : '7-Day ›'}
-                    </ThemedText>
                   </Pressable>
                 </View>
 
@@ -659,10 +643,10 @@ export default function HomeScreen() {
                   return (
                     <View style={styles.weatherHeroRow}>
                       <View style={{ flex: 1 }}>
-                        <ThemedText style={{ fontSize: 38, fontWeight: '800', lineHeight: 44, color: theme.text }}>
+                        <ThemedText style={{ fontSize: 44, fontWeight: '800', lineHeight: 50, color: theme.text }}>
                           {weatherData.temp}°C
                         </ThemedText>
-                        <ThemedText style={{ fontSize: 14.5, fontWeight: '600', color: theme.textSecondary, marginTop: 2 }}>
+                        <ThemedText style={{ fontSize: 16, fontWeight: '600', color: theme.textSecondary, marginTop: 2 }}>
                           {language === 'hi' ? cond.hi : cond.en}
                         </ThemedText>
                       </View>
@@ -670,7 +654,7 @@ export default function HomeScreen() {
                       <View style={[styles.weatherIconCircle, { backgroundColor: isNight ? '#6366F115' : theme.accent + '18' }]}>
                         <SymbolView
                           name={cond.icon as any}
-                          size={34}
+                          size={38}
                           tintColor={isNight ? '#818CF8' : theme.accent}
                         />
                       </View>
@@ -681,38 +665,38 @@ export default function HomeScreen() {
                 {/* 3. Structured Metrics Grid: 2 Side-by-Side Clean Cards */}
                 <View style={styles.metricsGrid}>
                   {weatherData.daily7d && weatherData.daily7d.length > 0 && (
-                    <View style={[styles.metricChip, { backgroundColor: theme.card, borderColor: theme.border }]}>
+                    <View style={[styles.metricChip, { backgroundColor: theme.dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.035)' }]}>
                       <View style={[styles.metricIconBox, { backgroundColor: theme.primary + '15' }]}>
                         <SymbolView
                           name={{ ios: 'thermometer.medium', android: 'thermostat', web: 'thermostat' } as any}
-                          size={13}
+                          size={15}
                           tintColor={theme.primary}
                         />
                       </View>
                       <View style={{ flex: 1 }}>
-                        <ThemedText style={{ fontSize: 10, color: theme.textSecondary, fontWeight: '600' }}>
+                        <ThemedText style={{ fontSize: 11.5, color: theme.textSecondary, fontWeight: '600' }}>
                           {language === 'hi' ? 'आज का तापमान' : 'Today Range'}
                         </ThemedText>
-                        <ThemedText style={{ fontSize: 12.5, fontWeight: '700', color: theme.text, marginTop: 1 }}>
+                        <ThemedText style={{ fontSize: 14.5, fontWeight: '700', color: theme.text, marginTop: 1 }}>
                           {weatherData.daily7d[0].minTemp}° - {weatherData.daily7d[0].maxTemp}°C
                         </ThemedText>
                       </View>
                     </View>
                   )}
 
-                  <View style={[styles.metricChip, { backgroundColor: theme.card, borderColor: theme.border }]}>
+                  <View style={[styles.metricChip, { backgroundColor: theme.dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.035)' }]}>
                     <View style={[styles.metricIconBox, { backgroundColor: '#0284C718' }]}>
                       <SymbolView
                         name={{ ios: 'humidity', android: 'water_drop', web: 'water_drop' } as any}
-                        size={13}
+                        size={15}
                         tintColor="#0284C7"
                       />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <ThemedText style={{ fontSize: 10, color: theme.textSecondary, fontWeight: '600' }}>
+                      <ThemedText style={{ fontSize: 11.5, color: theme.textSecondary, fontWeight: '600' }}>
                         {language === 'hi' ? 'हवा में नमी' : 'Humidity'}
                       </ThemedText>
-                      <ThemedText style={{ fontSize: 12.5, fontWeight: '700', color: theme.text, marginTop: 1 }}>
+                      <ThemedText style={{ fontSize: 14.5, fontWeight: '700', color: theme.text, marginTop: 1 }}>
                         {weatherData.humidity}% RH
                       </ThemedText>
                     </View>
@@ -725,49 +709,62 @@ export default function HomeScreen() {
                     onPress={() => setIsDisasterModalOpen(true)}
                     style={({ pressed }) => [
                       styles.disasterAlertCard,
-                      { backgroundColor: theme.error + '10', borderColor: theme.error + '35' },
-                      pressed && { opacity: 0.85 }
+                      {
+                        backgroundColor: theme.dark ? 'rgba(239, 68, 68, 0.12)' : '#FEF2F2',
+                        borderColor: theme.dark ? 'rgba(239, 68, 68, 0.35)' : '#FCA5A5',
+                      },
+                      pressed && { opacity: 0.9 }
                     ]}
                   >
-                    <View style={styles.alertCardTopRow}>
-                      <View style={styles.alertCardTitleRow}>
-                        <View style={[styles.disasterAlertBadge, { backgroundColor: theme.error }]}>
+                    {/* Top Row: Category Tag on Left, Risk Pill on Right */}
+                    <View style={styles.disasterHeaderRow}>
+                      <View style={styles.disasterTagLeft}>
+                        <View style={[styles.disasterIconCircle, { backgroundColor: theme.error }]}>
                           <SymbolView
                             name={{ ios: 'exclamationmark.triangle.fill', android: 'warning', web: 'warning' } as any}
-                            size={12}
+                            size={11}
                             tintColor="#FFFFFF"
                           />
                         </View>
-                        <ThemedText style={{ fontSize: 13, fontWeight: '700', color: theme.error, flex: 1 }} numberOfLines={1}>
-                          {(language === 'hi' ? weatherData.disasterAlert.titleHi : weatherData.disasterAlert.titleEn).replace(/^[^\w\s\u0900-\u097F]+/, '').trim()}
+                        <ThemedText style={styles.disasterTagText}>
+                          {language === 'hi' ? 'आपदा चेतावनी' : 'DISASTER ALERT'}
                         </ThemedText>
                       </View>
-                      <View style={[styles.disasterRiskPill, { backgroundColor: theme.error }]}>
-                        <ThemedText style={{ fontSize: 9.5, color: '#FFFFFF', fontWeight: '800' }}>
+
+                      <View style={[styles.disasterRiskBadge, { backgroundColor: theme.error }]}>
+                        <ThemedText style={styles.disasterRiskText}>
                           {weatherData.disasterAlert.probability}% {language === 'hi' ? 'खतरा' : 'RISK'}
                         </ThemedText>
                       </View>
                     </View>
 
-                    <View style={styles.alertCardBottomRow}>
-                      <ThemedText style={{ fontSize: 11, color: theme.textSecondary, flex: 1 }}>
-                        {language === 'hi' ? '48-घंटे का अलर्ट • विवरण व बचाव सलाह देखें' : '48h Alert • Tap to view forecast & advisory'}
+                    {/* Main Title: Full width, bold, 0 truncation */}
+                    <ThemedText style={[styles.disasterTitleText, { color: theme.dark ? '#FCA5A5' : '#991B1B' }]}>
+                      {(language === 'hi' ? weatherData.disasterAlert.titleHi : weatherData.disasterAlert.titleEn).replace(/^(48h|48-घंटे में|48-घंटे)\s*/i, '').replace(/^[^\w\s\u0900-\u097F]+/, '').trim()}
+                    </ThemedText>
+
+                    {/* Footer Action Row */}
+                    <View style={styles.disasterFooterRow}>
+                      <ThemedText style={[styles.disasterFooterText, { color: theme.dark ? '#F87171' : '#B91C1C' }]}>
+                        {language === 'hi' ? '48h का पूर्वानुमान व फसल सुरक्षा सलाह देखें' : '48h forecast & crop protection guide'}
                       </ThemedText>
-                      <SymbolView
-                        name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any}
-                        size={13}
-                        tintColor={theme.error}
-                      />
+                      <View style={[styles.disasterArrowBox, { backgroundColor: theme.error + '20' }]}>
+                        <SymbolView
+                          name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any}
+                          size={12}
+                          tintColor={theme.error}
+                        />
+                      </View>
                     </View>
                   </Pressable>
                 )}
 
                 {/* 5. Smart Farm Advisory Callout */}
-                <View style={[styles.advisoryCallout, { backgroundColor: theme.card, borderColor: theme.border }]}>
+                <View style={[styles.advisoryCallout, { backgroundColor: theme.dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.035)' }]}>
                   <View style={[styles.advisoryIconBadge, { backgroundColor: theme.accent + '20' }]}>
                     <SymbolView
                       name={{ ios: 'lightbulb.fill', android: 'lightbulb', web: 'lightbulb' } as any}
-                      size={14}
+                      size={15}
                       tintColor={theme.accent}
                     />
                   </View>
@@ -788,21 +785,26 @@ export default function HomeScreen() {
                   onPress={() => setIsDisasterModalOpen(true)}
                   style={({ pressed }) => [
                     styles.fullForecastBtn,
-                    { backgroundColor: theme.primary + '12', borderColor: theme.primary + '28' },
-                    pressed && { backgroundColor: theme.primary + '22' }
+                    {
+                      backgroundColor: theme.dark ? 'rgba(52, 211, 153, 0.12)' : '#ECFDF5',
+                      borderColor: theme.primary + '35',
+                    },
+                    pressed && { opacity: 0.88 }
                   ]}
                 >
-                  <SymbolView
-                    name={{ ios: 'calendar', android: 'calendar_today', web: 'calendar_today' } as any}
-                    size={14}
-                    tintColor={theme.primary}
-                  />
-                  <ThemedText style={{ color: theme.primary, fontSize: 12.5, fontWeight: '700', flex: 1 }}>
-                    {language === 'hi' ? '7 दिनों का विस्तृत मौसम व कृषि सलाह देखें' : 'View Full 7-Day Weather & Crop Forecast'}
+                  <View style={[styles.advisoryIconBadge, { backgroundColor: theme.primary + '20' }]}>
+                    <SymbolView
+                      name={{ ios: 'calendar', android: 'calendar_today', web: 'calendar_today' } as any}
+                      size={14}
+                      tintColor={theme.primary}
+                    />
+                  </View>
+                  <ThemedText numberOfLines={1} style={{ color: theme.text, fontSize: 13.5, fontWeight: '700', flex: 1, textAlign: 'center' }}>
+                    {language === 'hi' ? '7-दिवसीय मौसम पूर्वानुमान' : '7-Day Weather Forecast'}
                   </ThemedText>
                   <SymbolView
                     name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any}
-                    size={14}
+                    size={16}
                     tintColor={theme.primary}
                   />
                 </Pressable>
@@ -851,7 +853,7 @@ export default function HomeScreen() {
                 onPress={() => openModal('state')}
                 style={({ pressed }) => [
                   styles.selectorButton,
-                  { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+                  { backgroundColor: theme.dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.035)' },
                   pressed && { backgroundColor: theme.backgroundSelected }
                 ]}
               >
@@ -882,7 +884,7 @@ export default function HomeScreen() {
                 onPress={() => openModal('soil')}
                 style={({ pressed }) => [
                   styles.selectorButton,
-                  { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+                  { backgroundColor: theme.dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.035)' },
                   pressed && { backgroundColor: theme.backgroundSelected }
                 ]}
               >
@@ -913,7 +915,7 @@ export default function HomeScreen() {
                 onPress={() => openModal('crop')}
                 style={({ pressed }) => [
                   styles.selectorButton,
-                  { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+                  { backgroundColor: theme.dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.035)' },
                   pressed && { backgroundColor: theme.backgroundSelected }
                 ]}
               >
@@ -945,101 +947,154 @@ export default function HomeScreen() {
           {/* Quick Actions / Shortcuts */}
           <Animated.View entering={FadeInDown.duration(300).delay(250)}>
             <ThemedText type="smallBold" style={styles.sectionTitle}>
-            {language === 'hi' ? 'त्वरित परामर्श' : 'Quick Advisories'}
-          </ThemedText>
-          <View style={styles.advisoryGrid}>
-            <PressableScale
-              onPress={() => handleQuickAdvice(
-                'Pest',
-                language === 'hi' 
-                  ? `मेरी ${formatLabel(farmCrop)} की फसल में रोग / कीड़ों की समस्या है। लक्षण बताएं और इलाज की सलाह दें।`
-                  : `I have disease/pest issues in my ${formatLabel(farmCrop)} crop. Show symptoms and suggest treatments.`
-              )}
-              style={({ pressed }) => [
-                styles.advisoryCard,
-                { backgroundColor: theme.card, borderColor: theme.border },
-                pressed && styles.pressedCard
-              ]}
-            >
-              <SymbolView
-                name={{ ios: 'ladybug.fill', android: 'bug_report', web: 'bug_report' } as any}
-                size={28}
-                tintColor={theme.primary}
-              />
-              <ThemedText type="smallBold" style={styles.advisoryTitle}>
-                {language === 'hi' ? 'कीट नियंत्रण' : 'Pest Control'}
-              </ThemedText>
-            </PressableScale>
+              {language === 'hi' ? 'त्वरित परामर्श' : 'Quick Advisories'}
+            </ThemedText>
 
-            <PressableScale
-              onPress={() => handleQuickAdvice(
-                'Watering',
-                language === 'hi'
-                  ? `मेरी ${formatLabel(farmCrop)} की फसल में खाद और सिंचाई की सही मात्रा और समय क्या है?`
-                  : `What is the correct dosage and time for watering and fertilizing my ${formatLabel(farmCrop)} crop?`
-              )}
-              style={({ pressed }) => [
-                styles.advisoryCard,
-                { backgroundColor: theme.card, borderColor: theme.border },
-                pressed && styles.pressedCard
-              ]}
-            >
-              <SymbolView
-                name={{ ios: 'drop.fill', android: 'water_drop', web: 'water_drop' } as any}
-                size={28}
-                tintColor={theme.primary}
-              />
-              <ThemedText type="smallBold" style={styles.advisoryTitle}>
-                {language === 'hi' ? 'सिंचाई व उर्वरक' : 'Water & Fertilizer'}
-              </ThemedText>
-            </PressableScale>
+            <View style={styles.advisoryGrid}>
+              {/* 1. Pest Control */}
+              <PressableScale
+                onPress={() => handleQuickAdvice(
+                  'Pest',
+                  language === 'hi' 
+                    ? `मेरी ${formatLabel(farmCrop)} की फसल में रोग / कीड़ों की समस्या है। लक्षण बताएं और इलाज की सलाह दें।`
+                    : `I have disease/pest issues in my ${formatLabel(farmCrop)} crop. Show symptoms and suggest treatments.`
+                )}
+                style={({ pressed }) => [
+                  styles.advisoryCard,
+                  { backgroundColor: theme.dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.035)' },
+                  pressed && styles.pressedCard
+                ]}
+              >
+                <View style={[styles.advisoryIconCircle, { backgroundColor: theme.primary + '15' }]}>
+                  <SymbolView
+                    name={{ ios: 'ladybug.fill', android: 'bug_report', web: 'bug_report' } as any}
+                    size={22}
+                    tintColor={theme.primary}
+                  />
+                </View>
+                <ThemedText style={styles.advisoryTitle}>
+                  {language === 'hi' ? 'कीट नियंत्रण' : 'Pest Control'}
+                </ThemedText>
+              </PressableScale>
 
-            <PressableScale
-              onPress={() => handleQuickAdvice(
-                'Organic',
-                language === 'hi'
-                  ? `जैविक खेती के तरीके बताएं जो मैं अपने खेत में इस्तेमाल कर सकूं।`
-                  : `Tell me organic farming methods I can use in my farm.`
-              )}
-              style={({ pressed }) => [
-                styles.advisoryCard,
-                { backgroundColor: theme.card, borderColor: theme.border },
-                pressed && styles.pressedCard
-              ]}
-            >
-              <SymbolView
-                name={{ ios: 'sprout.fill', android: 'sprout', web: 'sprout' } as any}
-                size={28}
-                tintColor={theme.primary}
-              />
-              <ThemedText type="smallBold" style={styles.advisoryTitle}>
-                {language === 'hi' ? 'जैविक खेती' : 'Organic Farming'}
-              </ThemedText>
-            </PressableScale>
+              {/* 2. Water & Fertilizer */}
+              <PressableScale
+                onPress={() => handleQuickAdvice(
+                  'Watering',
+                  language === 'hi'
+                    ? `मेरी ${formatLabel(farmCrop)} की फसल में खाद और सिंचाई की सही मात्रा और समय क्या है?`
+                    : `What is the correct dosage and time for watering and fertilizing my ${formatLabel(farmCrop)} crop?`
+                )}
+                style={({ pressed }) => [
+                  styles.advisoryCard,
+                  { backgroundColor: theme.dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.035)' },
+                  pressed && styles.pressedCard
+                ]}
+              >
+                <View style={[styles.advisoryIconCircle, { backgroundColor: '#0284C718' }]}>
+                  <SymbolView
+                    name={{ ios: 'drop.fill', android: 'water_drop', web: 'water_drop' } as any}
+                    size={22}
+                    tintColor="#0284C7"
+                  />
+                </View>
+                <ThemedText style={styles.advisoryTitle}>
+                  {language === 'hi' ? 'सिंचाई व उर्वरक' : 'Water & Fertilizer'}
+                </ThemedText>
+              </PressableScale>
 
+              {/* 3. Organic Farming */}
+              <PressableScale
+                onPress={() => handleQuickAdvice(
+                  'Organic',
+                  language === 'hi'
+                    ? `जैविक खेती के तरीके बताएं जो मैं अपने खेत में इस्तेमाल कर सकूं।`
+                    : `Tell me organic farming methods I can use in my farm.`
+                )}
+                style={({ pressed }) => [
+                  styles.advisoryCard,
+                  { backgroundColor: theme.dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.035)' },
+                  pressed && styles.pressedCard
+                ]}
+              >
+                <View style={[styles.advisoryIconCircle, { backgroundColor: '#10B98118' }]}>
+                  <SymbolView
+                    name={{ ios: 'leaf.fill', android: 'eco', web: 'eco' } as any}
+                    size={22}
+                    tintColor="#10B981"
+                  />
+                </View>
+                <ThemedText style={styles.advisoryTitle}>
+                  {language === 'hi' ? 'जैविक खेती' : 'Organic Farming'}
+                </ThemedText>
+              </PressableScale>
+
+              {/* 4. Govt Schemes */}
+              <PressableScale
+                onPress={() => handleQuickAdvice(
+                  'Schemes',
+                  language === 'hi'
+                    ? `किसानों के लिए प्रमुख सरकारी योजनाएं क्या हैं और आवेदन कैसे करें?`
+                    : `What are the key government schemes for farmers and how to apply?`
+                )}
+                style={({ pressed }) => [
+                  styles.advisoryCard,
+                  { backgroundColor: theme.dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.035)' },
+                  pressed && styles.pressedCard
+                ]}
+              >
+                <View style={[styles.advisoryIconCircle, { backgroundColor: '#F59E0B18' }]}>
+                  <SymbolView
+                    name={{ ios: 'scroll.fill', android: 'description', web: 'description' } as any}
+                    size={22}
+                    tintColor="#F59E0B"
+                  />
+                </View>
+                <ThemedText style={styles.advisoryTitle}>
+                  {language === 'hi' ? 'सरकारी योजनाएं' : 'Govt Schemes'}
+                </ThemedText>
+              </PressableScale>
+            </View>
+
+            {/* Featured Krishik Radio FM Hero Banner */}
             <PressableScale
-              onPress={() => handleQuickAdvice(
-                'Schemes',
-                language === 'hi'
-                  ? `किसानों के लिए प्रमुख सरकारी योजनाएं क्या हैं और आवेदन कैसे करें?`
-                  : `What are the key government schemes for farmers and how to apply?`
-              )}
+              onPress={() => setIsRadioModalOpen(true)}
               style={({ pressed }) => [
-                styles.advisoryCard,
-                { backgroundColor: theme.card, borderColor: theme.border },
-                pressed && styles.pressedCard
+                styles.radioBannerCard,
+                { backgroundColor: theme.dark ? 'rgba(16, 185, 129, 0.12)' : '#ECFDF5', borderColor: theme.primary + '35' },
+                pressed && { opacity: 0.9 }
               ]}
             >
+              <View style={[styles.radioBannerIconCircle, { backgroundColor: theme.primary }]}>
+                <SymbolView
+                  name={{ ios: 'radio.fill', android: 'radio', web: 'radio' } as any}
+                  size={20}
+                  tintColor={theme.onPrimary}
+                />
+              </View>
+              
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <ThemedText style={{ fontSize: 14.5, fontWeight: '800', color: theme.text }}>
+                    {language === 'hi' ? 'किसान रेडियो FM 📻' : 'Krishik Radio FM 📻'}
+                  </ThemedText>
+                  <View style={[styles.liveFmBadge, { backgroundColor: theme.primary }]}>
+                    <ThemedText style={{ fontSize: 9, fontWeight: '800', color: theme.onPrimary }}>
+                      LIVE FM
+                    </ThemedText>
+                  </View>
+                </View>
+                <ThemedText style={{ fontSize: 11.5, color: theme.textSecondary, marginTop: 1 }}>
+                  {language === 'hi' ? 'कृषि समाचार, मौसम बुलेटिन व संगीत सुनें' : 'Listen to farm bulletins, weather & music'}
+                </ThemedText>
+              </View>
+
               <SymbolView
-                name={{ ios: 'scroll.fill', android: 'description', web: 'description' } as any}
-                size={28}
+                name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any}
+                size={16}
                 tintColor={theme.primary}
               />
-              <ThemedText type="smallBold" style={styles.advisoryTitle}>
-                {language === 'hi' ? 'सरकारी योजनाएं' : 'Govt Schemes'}
-              </ThemedText>
             </PressableScale>
-          </View>
           </Animated.View>
 
           {/* Mandi Prices Tracker */}
@@ -1206,6 +1261,17 @@ export default function HomeScreen() {
             router.push({ pathname: '/chat', params: { initialPrompt: msg } });
           }}
         />
+
+        {/* Krishik Radio FM & AI Bulletin Modal */}
+        <KrishikRadioModal
+          visible={isRadioModalOpen}
+          onClose={() => setIsRadioModalOpen(false)}
+          weatherContext={{
+            temp: weatherData?.temp,
+            state: farmState,
+            crop: farmCrop,
+          }}
+        />
       </SafeAreaView>
     </ThemedView>
   );
@@ -1239,6 +1305,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
+    flex: 1,
+    flexShrink: 1,
+    marginRight: 8,
   },
   logoIcon: {
     width: 44,
@@ -1297,7 +1366,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: 14,
-    borderWidth: 1,
+    borderWidth: 0,
     flexShrink: 1,
     maxWidth: '74%',
   },
@@ -1314,7 +1383,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: 14,
-    borderWidth: 1,
+    borderWidth: 0,
   },
   weatherHeroRow: {
     flexDirection: 'row',
@@ -1340,7 +1409,7 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     paddingHorizontal: 12,
     borderRadius: 14,
-    borderWidth: 1,
+    borderWidth: 0,
     gap: 8,
   },
   metricIconBox: {
@@ -1351,42 +1420,68 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   disasterAlertCard: {
-    paddingVertical: 9,
-    paddingHorizontal: 12,
-    borderRadius: 12,
+    borderRadius: 16,
+    padding: 12,
     borderWidth: 1,
-    gap: 5,
-  },
-  alertCardTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     gap: 8,
   },
-  alertCardTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    gap: 6,
-  },
-  alertCardBottomRow: {
+  disasterHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingLeft: 28,
+  },
+  disasterTagLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 6,
   },
-  disasterAlertBadge: {
+  disasterIconCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  disasterTagText: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+    color: '#EF4444',
+  },
+  disasterRiskBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  disasterRiskText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
+  },
+  disasterTitleText: {
+    fontSize: 15,
+    fontWeight: '800',
+    lineHeight: 21,
+  },
+  disasterFooterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 2,
+    gap: 8,
+  },
+  disasterFooterText: {
+    fontSize: 12,
+    fontWeight: '600',
+    flex: 1,
+  },
+  disasterArrowBox: {
     width: 22,
     height: 22,
     borderRadius: 11,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  disasterRiskPill: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
   },
   advisoryCallout: {
     flexDirection: 'row',
@@ -1394,7 +1489,7 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     paddingHorizontal: 10,
     borderRadius: 12,
-    borderWidth: 1,
+    borderWidth: 0,
     gap: 8,
   },
   advisoryIconBadge: {
@@ -1407,8 +1502,8 @@ const styles = StyleSheet.create({
   },
   advisoryCalloutText: {
     flex: 1,
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: 13.5,
+    lineHeight: 19,
   },
   fullForecastBtn: {
     flexDirection: 'row',
@@ -1417,7 +1512,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 12,
-    borderWidth: 1,
+    borderWidth: 0,
   },
   profileCard: {
     borderRadius: Spacing.three,
@@ -1442,7 +1537,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
     borderRadius: Spacing.two,
-    borderWidth: 1,
+    borderWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -1472,41 +1567,64 @@ const styles = StyleSheet.create({
   advisoryGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Spacing.two,
+    gap: 10,
     justifyContent: 'space-between',
+    marginBottom: 10,
   },
   advisoryCard: {
-    borderRadius: Spacing.three,
-    paddingVertical: Spacing.three,
-    paddingHorizontal: Spacing.two,
-    borderWidth: 1,
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: Spacing.one,
+    gap: 8,
     ...Platform.select({
       web: {
-        width: 'calc(50% - 4px)',
+        width: 'calc(50% - 5px)',
         transition: 'transform 0.2s ease',
         cursor: 'pointer',
       } as any,
       default: {
-        width: '47%',
-        flexGrow: 1,
+        width: '48%',
       }
     })
+  },
+  advisoryIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   pressedCard: {
     opacity: 0.8,
     transform: [{ scale: 0.98 }],
   },
-  advisoryIcon: {
-    fontSize: 24,
-  },
   advisoryTitle: {
     fontSize: 13,
     fontWeight: '700',
     textAlign: 'center',
-    marginTop: Spacing.half,
+  },
+  radioBannerCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: 12,
+  },
+  radioBannerIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  liveFmBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 6,
   },
   mandiHeaderRow: {
     flexDirection: 'row',

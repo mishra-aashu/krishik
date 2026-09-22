@@ -425,51 +425,149 @@ export function generateWeatherAdvisory(
   language: 'hi' | 'en'
 ): string {
   const isHindi = language === 'hi';
-  
-  // Rain/Thunderstorm conditions
-  const isRainy = (code >= 61 && code <= 65) || (code >= 80 && code <= 82) || code >= 95;
-  const isDrizzle = code === 51 || code === 53 || code === 55;
-  
-  if (isRainy) {
+  const cleanCrop = (cropName || 'Crop').split('(')[0].trim();
+  const cLower = cleanCrop.toLowerCase();
+
+  // Weather Condition Categories
+  const isThunderstorm = code >= 95;
+  const isHeavyRain = (code >= 63 && code <= 65) || (code >= 81 && code <= 82);
+  const isLightRain = (code >= 61 && code <= 62) || code === 80;
+  const isDrizzle = code >= 51 && code <= 55;
+  const isFog = code === 45 || code === 48;
+  const isCloudy = code === 2 || code === 3;
+  const isClear = code === 0 || code === 1;
+
+  // 1. THUNDERSTORM / HEAVY RAIN ALERTS (Highest Priority)
+  if (isThunderstorm || isHeavyRain) {
+    if (cLower.includes('wheat') || cLower.includes('गेहूं')) {
+      return isHindi
+        ? `${stateName} में आंधी/भारी बारिश। गेहूं की फसल को गिरने (Lodging) से बचाने हेतु सिंचाई तुरंत रोकें।`
+        : `Heavy rain & wind in ${stateName}. Postpone Wheat irrigation to prevent stalk lodging.`;
+    }
+    if (cLower.includes('paddy') || cLower.includes('rice') || cLower.includes('धान')) {
+      return isHindi
+        ? `${stateName} में मूसलाधार बारिश। धान के खेतों में अत्यधिक जलभराव से बचाव हेतु निकासी (Drainage) खोलें।`
+        : `Torrential rain in ${stateName}. Ensure field drainage to protect Paddy roots.`;
+    }
+    if (cLower.includes('mustard') || cLower.includes('सरसों')) {
+      return isHindi
+        ? `${stateName} में भारी बारिश। सरसों के खेत से पानी निकालें; फली टूटने व सड़न का खतरा।`
+        : `Heavy rain in ${stateName}. Drain excess water from Mustard fields to prevent pod rot.`;
+    }
+    if (cLower.includes('potato') || cLower.includes('आलू')) {
+      return isHindi
+        ? `${stateName} में तेज बारिश। आलू की मेंड़ों पर जलभराव न होने दें; कंद गलने का डर।`
+        : `Heavy rain in ${stateName}. Keep Potato ridges clear of waterlogging to prevent tuber rot.`;
+    }
+    if (cLower.includes('cotton') || cLower.includes('कपास')) {
+      return isHindi
+        ? `${stateName} में आंधी/बारिश। कपास की चुनी हुई रुई को ढकें व सिंचाई व स्प्रे टालें।`
+        : `Storm/rain in ${stateName}. Protect harvested Cotton and suspend field spraying.`;
+    }
     return isHindi
-      ? `${stateName} में आंधी/बारिश की संभावना। ${cropName} में जल निकासी रखें।`
-      : `Rain/thunderstorm expected in ${stateName}. Ensure drainage for ${cropName}.`;
-  }
-  
-  if (isDrizzle) {
-    return isHindi
-      ? `${stateName} में हल्की बूंदाबांदी। आवश्यकतानुसार ही सिंचाई करें।`
-      : `Light drizzle in ${stateName}. Irrigate ${cropName} only if needed.`;
+      ? `${stateName} में आंधी/भारी बारिश की संभावना। ${cleanCrop} में जल निकासी की व्यवस्था करें।`
+      : `Heavy rain/storm in ${stateName}. Ensure proper drainage for ${cleanCrop}.`;
   }
 
-  // Extreme temperatures
-  if (temp > 35) {
+  // 2. DRIZZLE / LIGHT RAIN
+  if (isLightRain || isDrizzle) {
     return isHindi
-      ? `तापमान अधिक है (${temp}°C)। ${cropName} में शाम को हल्की सिंचाई करें।`
-      : `High temp (${temp}°C). Apply light evening irrigation for ${cropName}.`;
-  }
-  
-  if (temp < 15) {
-    return isHindi
-      ? `तापमान ${temp}°C है। ${cropName} को पाले से बचाने हेतु नमी रखें।`
-      : `Temp ${temp}°C. Maintain soil moisture to protect ${cropName} from frost.`;
+      ? `${stateName} में बूंदाबांदी (${humidity}% नमी)। ${cleanCrop} में कीटनाशक छिड़काव रोकें व सिंचाई स्थगित रखें।`
+      : `Light rain in ${stateName} (${humidity}% RH). Postpone spraying and irrigation for ${cleanCrop}.`;
   }
 
-  // High humidity
-  if (humidity > 75) {
+  // 3. EXTREME HEAT (> 36°C)
+  if (temp >= 36) {
+    if (cLower.includes('wheat') || cLower.includes('गेहूं')) {
+      return isHindi
+        ? `तपिश (${temp}°C)। गेहूं में दाना भराव प्रभावित हो सकता है; शाम को हल्की सिंचाई करें।`
+        : `Extreme heat (${temp}°C). Apply light evening irrigation for Wheat to protect grain filling.`;
+    }
+    if (cLower.includes('paddy') || cLower.includes('rice') || cLower.includes('धान')) {
+      return isHindi
+        ? `तेज धूप व ${temp}°C तापमान। धान के खेत में 2-3 सेमी नमी/पानी बनाए रखें।`
+        : `High heat (${temp}°C). Maintain 2-3 cm standing water in Paddy field.`;
+    }
+    if (cLower.includes('sugarcane') || cLower.includes('गन्ना')) {
+      return isHindi
+        ? `तीव्र तापमान (${temp}°C) से गन्ने में कंसुआ कीट का खतरा। 10-12 दिन पर सिंचाई करें।`
+        : `High temp (${temp}°C). Irrigate Sugarcane every 10-12 days to control shoot borer.`;
+    }
     return isHindi
-      ? `अधिक आर्द्रता (${humidity}%)। ${cropName} में फफूंद/कीट की जांच करें।`
-      : `High humidity (${humidity}%). Inspect ${cropName} for fungal pests.`;
+      ? `उच्च तापमान (${temp}°C)। ${cleanCrop} की जड़ों में नमी हेतु शाम को हल्की सिंचाई करें।`
+      : `High temp (${temp}°C). Irrigate ${cleanCrop} in the evening to protect roots.`;
   }
 
-  // Standard sunny/clear or cloudy weather
-  if (code === 0) {
+  // 4. LOW TEMPERATURE / FROST THREAT (< 12°C)
+  if (temp <= 12) {
+    if (cLower.includes('mustard') || cLower.includes('सरसों')) {
+      return isHindi
+        ? `ठंड (${temp}°C) से सरसों में पाला (Frost) का अंदेशा। खेत की मेड़ों पर शाम को धुआं या हल्की सिंचाई करें।`
+        : `Cold temp (${temp}°C): Frost threat for Mustard. Apply evening light irrigation.`;
+    }
+    if (cLower.includes('potato') || cLower.includes('आलू')) {
+      return isHindi
+        ? `कम तापमान (${temp}°C)। आलू में पाले से बचाव हेतु शाम को सिंचाई करें व पुआल से ढकें।`
+        : `Cold temp (${temp}°C). Irrigate Potato fields in evening to prevent frost damage.`;
+    }
     return isHindi
-      ? `${stateName} में मौसम साफ़ है। ${cropName} में खाद/निराई हेतु उत्तम समय।`
-      : `Clear weather in ${stateName}. Good for ${cropName} crop maintenance.`;
+      ? `तापमान गिरकर ${temp}°C हुआ। ${cleanCrop} को पाले से बचाने हेतु खेत में नमी रखें।`
+      : `Low temp (${temp}°C). Maintain soil moisture to protect ${cleanCrop} from frost.`;
   }
 
+  // 5. HIGH HUMIDITY (> 75% RH) + SPECIFIC CROP DISEASES
+  if (humidity >= 75) {
+    if (cLower.includes('wheat') || cLower.includes('गेहूं')) {
+      return isHindi
+        ? `उच्च नमी (${humidity}%) व ${temp}°C: गेहूं में पीला रतुआ (Yellow Rust) व फफूंद का खतरा। पत्तियों के निचले भाग की जांच करें।`
+        : `High humidity (${humidity}%) & ${temp}°C: Yellow Rust & fungal risk in Wheat. Inspect leaf undersides.`;
+    }
+    if (cLower.includes('potato') || cLower.includes('आलू')) {
+      return isHindi
+        ? `उच्च आर्द्रता (${humidity}%) व ${temp}°C: आलू में पछेती झुलसा (Late Blight) का खतरा। पत्तियों पर काले धब्बों की जांच करें।`
+        : `High humidity (${humidity}%) & ${temp}°C: High Late Blight threat for Potato. Check leaves for dark spots.`;
+    }
+    if (cLower.includes('mustard') || cLower.includes('सरसों')) {
+      return isHindi
+        ? `आर्द्रता (${humidity}%): सरसों की फसल में माहू (Aphid) व सफेद रतुआ का प्रकोप हो सकता है। फूलों की जांच करें।`
+        : `High humidity (${humidity}%): Aphid (माहू) & White Rust risk for Mustard. Inspect flower heads.`;
+    }
+    if (cLower.includes('paddy') || cLower.includes('rice') || cLower.includes('धान')) {
+      return isHindi
+        ? `अधिक नमी (${humidity}%): धान में शीथ ब्लाइट व पत्ती लपेटक की संभावना। जल स्तर नियंत्रित करें।`
+        : `High humidity (${humidity}%): Risk of Sheath Blight in Paddy. Manage field water level.`;
+    }
+    if (cLower.includes('cotton') || cLower.includes('कपास')) {
+      return isHindi
+        ? `उच्च नमी (${humidity}%): कपास में गुलाबी सुंडी व चूसक कीटों का खतरा। कीट ट्रैप स्थापित करें।`
+        : `High humidity (${humidity}%): Pink Bollworm & sucking pest threat in Cotton. Set up pheromone traps.`;
+    }
+    if (cLower.includes('tomato') || cLower.includes('टमाटर') || cLower.includes('chili') || cLower.includes('मिर्च')) {
+      return isHindi
+        ? `अधिक आर्द्रता (${humidity}%): ${cleanCrop} में पत्ती मरोड़ा (Leaf Curl) व फफूंद जनित रोग का अंदेशा। नीम तेल का छिड़काव करें।`
+        : `High humidity (${humidity}%): Leaf Curl & fungal rot threat in ${cleanCrop}. Spray neem oil.`;
+    }
+    return isHindi
+      ? `हवा में अधिक नमी (${humidity}%) व ${temp}°C: ${cleanCrop} में फफूंद व कीटों का अंदेशा। खेत का निरीक्षण करें।`
+      : `High humidity (${humidity}%) & ${temp}°C: Risk of fungal pests in ${cleanCrop}. Inspect field.`;
+  }
+
+  // 6. CLEAR / FAVORABLE WEATHER
+  if (isClear) {
+    return isHindi
+      ? `${stateName} में मौसम साफ़ (${temp}°C, ${humidity}% नमी)। ${cleanCrop} में निराई-गुड़ाई, खाद व कीटनाशक हेतु सर्वोत्तम समय।`
+      : `Clear weather in ${stateName} (${temp}°C, ${humidity}% RH). Ideal for ${cleanCrop} weeding & fertilization.`;
+  }
+
+  // 7. FOG / CLOUDY
+  if (isFog || isCloudy) {
+    return isHindi
+      ? `${stateName} में धुंध/बदली (${temp}°C)। ${cleanCrop} में धूप की कमी से कीट पनप सकते हैं; निगरानी रखें।`
+      : `Cloudy/foggy weather in ${stateName} (${temp}°C). Monitor ${cleanCrop} for pest development.`;
+  }
+
+  // 8. GENERAL DEFAULT
   return isHindi
-    ? `मौसम अनुकूल है (${temp}°C)। ${cropName} की सामान्य देखरेख रखें।`
-    : `Favorable weather (${temp}°C). Maintain your ${cropName} crop.`;
+    ? `मौसम अनुकूल है (${temp}°C, ${humidity}% नमी)। ${cleanCrop} की सामान्य देखभाल व पोषण प्रबंधन जारी रखें।`
+    : `Favorable weather (${temp}°C, ${humidity}% RH). Maintain normal care for your ${cleanCrop} crop.`;
 }
