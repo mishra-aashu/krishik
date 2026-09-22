@@ -48,6 +48,24 @@ import Animated, {
 import * as Speech from 'expo-speech';
 import * as Clipboard from 'expo-clipboard';
 import { startListeningSession, type ActiveListeningSession } from '@/services/speech-recognition-service';
+import { SelectionModal } from '@/components/selection-modal';
+import cropsData from '@/constants/crops.json';
+import { getLiveGPSLocation } from '@/services/location-service';
+
+const STATES = [
+  'Uttar Pradesh', 'Punjab', 'Haryana', 'Madhya Pradesh', 
+  'Maharashtra', 'Rajasthan', 'Gujarat', 'Bihar', 'West Bengal',
+  'Karnataka', 'Andhra Pradesh', 'Telangana', 'Tamil Nadu',
+  'Odisha', 'Jharkhand', 'Chhattisgarh', 'Assam', 'Himachal Pradesh',
+  'Uttarakhand', 'Kerala'
+];
+
+const SOILS = [
+  'Alluvial Soil (जलोढ़)', 'Black Soil (काली मिट्टी)', 'Red Soil (लाल मिट्टी)', 
+  'Sandy Soil (बलुई मिट्टी)', 'Clayey Soil (चिकनी मिट्टी)', 'Loamy Soil (दोमट)'
+];
+
+const CROPS = cropsData.map(c => c.name);
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -398,8 +416,51 @@ export default function ChatScreen() {
   const isOffline = netInfo.isConnected === false;
 
   // Profile context from global auth context
-  const { farmState, farmSoil, farmCrop } = useAuth();
+  const { farmState, farmSoil, farmCrop, updateProfile, userName } = useAuth();
   const { language: globalLang, setLanguage: setGlobalLanguage } = useLanguage();
+
+  // Farm profile selection modal controls directly from Chat
+  const [activeModal, setActiveModal] = useState<'state' | 'soil' | 'crop' | null>(null);
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
+
+  const handleSelectConfig = async (val: string) => {
+    if (!val) return;
+    try {
+      if (activeModal === 'state') {
+        await updateProfile(userName, val, farmSoil, farmCrop);
+      } else if (activeModal === 'soil') {
+        await updateProfile(userName, farmState, val, farmCrop);
+      } else if (activeModal === 'crop') {
+        await updateProfile(userName, farmState, farmSoil, val);
+      }
+    } catch (err) {
+      console.warn('Failed to update config from chat:', err);
+    } finally {
+      setActiveModal(null);
+    }
+  };
+
+  const handleDetectLocation = async () => {
+    setIsDetectingLocation(true);
+    try {
+      const loc = await getLiveGPSLocation();
+      if (loc && loc.state) {
+        const matchedState = STATES.find(s => 
+          s.toLowerCase() === loc.state?.toLowerCase() || 
+          loc.state?.toLowerCase().includes(s.toLowerCase()) ||
+          s.toLowerCase().includes(loc.state?.toLowerCase() || '')
+        );
+        if (matchedState && matchedState !== farmState) {
+          await updateProfile(userName, matchedState, farmSoil, farmCrop);
+        }
+        setActiveModal(null);
+      }
+    } catch (err) {
+      console.warn('GPS error in chat:', err);
+    } finally {
+      setIsDetectingLocation(false);
+    }
+  };
 
   // Chat settings
   const [language, setLanguageState] = useState<'hi' | 'en' | 'hinglish'>(globalLang || 'hi');
@@ -1297,24 +1358,80 @@ export default function ChatScreen() {
                 </ThemedText>
                 
                 <ThemedText type="small" style={[styles.welcomeSub, { color: theme.textSecondary }]}>
-                  I'm configured with your farm profile in <ThemedText type="smallBold" style={{ color: theme.primary }}>{farmState}</ThemedText> growing <ThemedText type="smallBold" style={{ color: theme.accent }}>{farmCrop.split(' ')[0]}</ThemedText> on <ThemedText type="smallBold" style={{ color: theme.text }}>{farmSoil.split(' ')[0]}</ThemedText> soil.
+                  {language === 'hi'
+                    ? 'मैं आपकी कृषि प्रोफ़ाइल '
+                    : "I'm configured with your farm profile in "}
+                  <ThemedText
+                    type="smallBold"
+                    style={{ color: theme.primary, textDecorationLine: 'underline' }}
+                    onPress={() => setActiveModal('state')}
+                  >
+                    {farmState}
+                  </ThemedText>
+                  {language === 'hi' ? ' (फसल: ' : ' growing '}
+                  <ThemedText
+                    type="smallBold"
+                    style={{ color: theme.accent, textDecorationLine: 'underline' }}
+                    onPress={() => setActiveModal('crop')}
+                  >
+                    {farmCrop.split(' ')[0]}
+                  </ThemedText>
+                  {language === 'hi' ? ', मिट्टी: ' : ' on '}
+                  <ThemedText
+                    type="smallBold"
+                    style={{ color: theme.text, textDecorationLine: 'underline' }}
+                    onPress={() => setActiveModal('soil')}
+                  >
+                    {farmSoil.split(' ')[0]}
+                  </ThemedText>
+                  {language === 'hi' ? ') के साथ तैयार हूँ।' : ' soil.'}
                 </ThemedText>
 
-                {/* Profile Context Chips */}
+                {/* Profile Context Chips (Directly Interactive Dropdowns) */}
                 <View style={styles.contextChipsRow}>
-                  <View style={[styles.chipItem, { backgroundColor: theme.backgroundSelected, borderColor: theme.borderAccent }]}>
+                  <Pressable
+                    onPress={() => setActiveModal('state')}
+                    style={({ pressed }) => [
+                      styles.chipItem,
+                      { backgroundColor: theme.backgroundSelected, borderColor: theme.borderAccent },
+                      pressed && { opacity: 0.75, transform: [{ scale: 0.97 }] }
+                    ]}
+                  >
                     <SymbolView name={{ ios: 'location.fill', android: 'location_on', web: 'location_on' } as any} size={11} tintColor={theme.primary} />
                     <ThemedText style={[styles.chipText, { color: theme.primary }]}>{farmState}</ThemedText>
-                  </View>
-                  <View style={[styles.chipItem, { backgroundColor: theme.accentLight, borderColor: 'rgba(217,119,6,0.25)' }]}>
+                    <SymbolView name={{ ios: 'chevron.down', android: 'arrow_drop_down', web: 'arrow_drop_down' } as any} size={10} tintColor={theme.primary} />
+                  </Pressable>
+
+                  <Pressable
+                    onPress={() => setActiveModal('crop')}
+                    style={({ pressed }) => [
+                      styles.chipItem,
+                      { backgroundColor: theme.accentLight, borderColor: 'rgba(217,119,6,0.35)' },
+                      pressed && { opacity: 0.75, transform: [{ scale: 0.97 }] }
+                    ]}
+                  >
                     <SymbolView name={{ ios: 'leaf.fill', android: 'eco', web: 'eco' } as any} size={11} tintColor={theme.accent} />
                     <ThemedText style={[styles.chipText, { color: theme.accent }]}>{farmCrop.split(' ')[0]}</ThemedText>
-                  </View>
-                  <View style={[styles.chipItem, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+                    <SymbolView name={{ ios: 'chevron.down', android: 'arrow_drop_down', web: 'arrow_drop_down' } as any} size={10} tintColor={theme.accent} />
+                  </Pressable>
+
+                  <Pressable
+                    onPress={() => setActiveModal('soil')}
+                    style={({ pressed }) => [
+                      styles.chipItem,
+                      { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+                      pressed && { opacity: 0.75, transform: [{ scale: 0.97 }] }
+                    ]}
+                  >
                     <SymbolView name={{ ios: 'square.3.layers.3d', android: 'layers', web: 'layers' } as any} size={11} tintColor={theme.textSecondary} />
                     <ThemedText style={[styles.chipText, { color: theme.textSecondary }]}>{farmSoil.split(' ')[0]}</ThemedText>
-                  </View>
+                    <SymbolView name={{ ios: 'chevron.down', android: 'arrow_drop_down', web: 'arrow_drop_down' } as any} size={10} tintColor={theme.textSecondary} />
+                  </Pressable>
                 </View>
+
+                <ThemedText type="code" style={{ fontSize: 10, color: theme.textSecondary, opacity: 0.85, marginTop: 4, textAlign: 'center' }}>
+                  {language === 'hi' ? 'किसी भी बटन को दबाकर राज्य, फसल या मिट्टी बदलें' : 'Tap any button above to change farm settings directly'}
+                </ThemedText>
 
                 <View style={styles.presetContainer}>
                   <ThemedText type="code" style={[styles.presetHeader, { color: theme.textSecondary }]}>SUGGESTED QUESTIONS:</ThemedText>
@@ -1757,6 +1874,35 @@ export default function ChatScreen() {
           </View>
         </View>
       )}
+
+      {/* Interactive Selection Modal for direct farm profile changes from Chat */}
+      <SelectionModal
+        visible={activeModal !== null}
+        title={
+          activeModal === 'state'
+            ? (language === 'hi' ? 'राज्य का चयन करें' : 'Select State')
+            : activeModal === 'crop'
+            ? (language === 'hi' ? 'फसल का चयन करें' : 'Select Primary Crop')
+            : (language === 'hi' ? 'मिट्टी का प्रकार चुनें' : 'Select Soil Type')
+        }
+        placeholder={
+          activeModal === 'state'
+            ? (language === 'hi' ? 'राज्य खोजें...' : 'Search state...')
+            : activeModal === 'crop'
+            ? (language === 'hi' ? 'फसल खोजें...' : 'Search crop...')
+            : (language === 'hi' ? 'मिट्टी खोजें...' : 'Search soil...')
+        }
+        list={
+          activeModal === 'state' ? STATES : activeModal === 'crop' ? CROPS : SOILS
+        }
+        selectedValue={
+          activeModal === 'state' ? farmState : activeModal === 'crop' ? farmCrop : farmSoil
+        }
+        onSelect={handleSelectConfig}
+        onClose={() => setActiveModal(null)}
+        onUseLiveLocation={activeModal === 'state' ? handleDetectLocation : undefined}
+        isDetectingLocation={isDetectingLocation}
+      />
     </ThemedView>
   );
 }

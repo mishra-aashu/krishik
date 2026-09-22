@@ -1702,9 +1702,14 @@ export default function CommunityScreen() {
               <ScrollView contentContainerStyle={styles.modalForm} showsVerticalScrollIndicator={false}>
                 {/* Selected Board Header */}
                 {selectedCommunity && (
-                  <View style={[styles.commBannerPill, { backgroundColor: theme.backgroundSelected }]}>
+                  <View style={[styles.commBannerPill, { backgroundColor: theme.backgroundSelected, flexDirection: 'row', alignItems: 'center', gap: 6 }]}>
+                    <SymbolView
+                      name={{ ios: 'megaphone.fill', android: 'campaign', web: 'campaign' } as any}
+                      size={12}
+                      tintColor={theme.primary}
+                    />
                     <ThemedText type="code" style={{ color: theme.primary, fontWeight: '700' }}>
-                      📢 {language === 'hi' ? 'पोस्टिंग स्थान' : 'Posting in'}: {language === 'hi' ? selectedCommunity.name.hi : selectedCommunity.name.en}
+                      {language === 'hi' ? 'पोस्टिंग स्थान' : 'Posting in'}: {language === 'hi' ? selectedCommunity.name.hi : selectedCommunity.name.en}
                     </ThemedText>
                   </View>
                 )}

@@ -131,7 +131,7 @@ export const CommunityService = {
       desc_hi: descHi,
       category,
       creator_phone: creatorPhone,
-      avatar: avatar || '🌱',
+      avatar: avatar || 'leaf',
       created_at: new Date().toISOString(),
     };
 

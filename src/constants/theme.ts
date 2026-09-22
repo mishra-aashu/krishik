@@ -49,41 +49,41 @@ export const Colors = {
   },
   dark: {
     dark: true,
-    // Surfaces — luxurious deep midnight obsidian slate
-    text: '#F8FAFC',                  // Crisp Ice White
-    textSecondary: '#94A3B8',         // Refined Slate Secondary
-    background: '#0B131F',            // Deep Midnight Obsidian Slate (#0B131F)
-    backgroundElement: '#1E293B',     // Elevated Card Charcoal Slate (#1E293B)
-    backgroundSelected: 'rgba(52, 211, 153, 0.12)', // Highlight Surface
-    // Brand — soothing soft sage emerald & harvest gold
-    primary: '#34D399',               // Soft Soothing Sage Emerald (Green 400 - Eye Friendly)
-    primaryDark: '#059669',           // Deep Forest Emerald
-    primaryLight: 'rgba(52, 211, 153, 0.12)', // Soft Sage Tint
+    // Surfaces — luxurious True OLED Pure Black (Zero blue tint)
+    text: '#FFFFFF',                  // Pure Crisp White
+    textSecondary: '#A1A1AA',         // Refined Muted Zinc Secondary
+    background: '#000000',            // True OLED Pitch Black (#000000)
+    backgroundElement: '#121215',     // Pure Charcoal Dark Card (#121215)
+    backgroundSelected: 'rgba(255, 255, 255, 0.08)', // Highlight Surface
+    // Brand — crisp minimalist white & harvest gold in dark mode
+    primary: '#FFFFFF',               // Pure White Primary Accent
+    primaryDark: '#E4E4E7',           // Zinc White Accent
+    primaryLight: 'rgba(255, 255, 255, 0.08)', // Soft White Tint
     accent: '#F59E0B',                // Rich Warm Golden Harvest (Amber 500)
     accentLight: 'rgba(245, 158, 11, 0.15)', // Golden Soft Glow
     accentGlow: 'rgba(245, 158, 11, 0.25)',
     // Chrome & Surfaces
-    border: 'rgba(255, 255, 255, 0.1)', // Refined Subtle Slate Border
-    borderAccent: 'rgba(52, 211, 153, 0.25)',
-    glassBackground: 'rgba(15, 23, 42, 0.88)', // Pristine Slate 900 Glass Backdrop
+    border: 'rgba(255, 255, 255, 0.12)', // Subtle Pure Neutral Border
+    borderAccent: 'rgba(255, 255, 255, 0.25)',
+    glassBackground: 'rgba(9, 9, 11, 0.92)', // Pure Black Glass Backdrop
     glassBorder: 'rgba(255, 255, 255, 0.12)',
-    cardShadow: 'rgba(0, 0, 0, 0.45)',
-    cardGlow: 'rgba(52, 211, 153, 0.15)',
+    cardShadow: 'rgba(0, 0, 0, 0.65)',
+    cardGlow: 'rgba(255, 255, 255, 0.1)',
     // Navigation & Tabs
-    tabActive: '#34D399',
-    tabInactive: '#94A3B8',
-    tabActiveBg: 'rgba(52, 211, 153, 0.12)',
-    tabGlow: 'rgba(52, 211, 153, 0.2)',
+    tabActive: '#FFFFFF',             // Pure White Active Tab
+    tabInactive: '#A1A1AA',           // Muted Zinc Inactive Tab
+    tabActiveBg: 'rgba(255, 255, 255, 0.08)',
+    tabGlow: 'rgba(255, 255, 255, 0.15)',
     // Chat
-    chatUser: '#163E2D',              // Rich Emerald Dark User Bubble
-    chatBot: '#1E293B',               // Charcoal Slate Bot Bubble
-    chatBotBorder: 'rgba(255, 255, 255, 0.1)',
+    chatUser: '#18181B',              // Pure Charcoal User Bubble
+    chatBot: '#121215',               // True Dark Bot Bubble
+    chatBotBorder: 'rgba(255, 255, 255, 0.12)',
     // States & Feedback
     success: '#34D399',               // Mint Green
     warning: '#FBBF24',               // Warm Gold
     error: '#F87171',                 // Coral Red
-    card: '#1E293B',
-    onPrimary: '#064E3B',
+    card: '#121215',
+    onPrimary: '#000000',             // Pure Black text/icon on White pills
     onAccent: '#FFFFFF',
   },
 } as const;

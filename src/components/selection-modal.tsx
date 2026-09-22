@@ -125,7 +125,7 @@ export function SelectionModal({
               </View>
               <View style={{ flex: 1 }}>
                 <ThemedText style={{ fontSize: 13, fontWeight: '700', color: theme.primary }}>
-                  {isDetectingLocation ? 'वर्तमान लोकेशन पहचानी जा रही है...' : '📍 वर्तमान GPS लोकेशन का उपयोग करें'}
+                  {isDetectingLocation ? 'वर्तमान लोकेशन पहचानी जा रही है...' : 'वर्तमान GPS लोकेशन का उपयोग करें'}
                 </ThemedText>
                 <ThemedText style={{ fontSize: 10.5, color: theme.textSecondary, marginTop: 1 }}>
                   स्वचालित रूप से सटीक ज़िला और मौसम सेट करें

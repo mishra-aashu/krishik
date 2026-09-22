@@ -60,7 +60,7 @@ export function FloatingVoiceButton({ language: propLanguage }: FloatingVoiceBut
           onPress={() => setIsModalOpen(true)}
           style={({ pressed }) => [
             styles.fabButton,
-            { backgroundColor: theme.dark ? '#059669' : theme.primary },
+            { backgroundColor: theme.dark ? '#FFFFFF' : theme.primary },
             pressed && styles.fabPressed,
           ]}
           accessibilityLabel={language === 'hi' ? 'आवाज़ से पूछें' : 'Ask by Voice'}
@@ -70,10 +70,10 @@ export function FloatingVoiceButton({ language: propLanguage }: FloatingVoiceBut
             <SymbolView
               name={{ ios: 'mic.fill', android: 'mic', web: 'mic' } as any}
               size={18}
-              tintColor="#FFFFFF"
+              tintColor={theme.dark ? '#0F172A' : '#FFFFFF'}
             />
           </View>
-          <ThemedText style={styles.fabLabel}>
+          <ThemedText style={[styles.fabLabel, { color: theme.dark ? '#0F172A' : '#FFFFFF' }]}>
             {language === 'hi' ? 'बोलकर पूछें' : 'Ask by Voice'}
           </ThemedText>
         </Pressable>

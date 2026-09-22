@@ -524,7 +524,7 @@ export default function SoilCalculator({ language, theme, formatLabel }: SoilCal
             {/* Suggested Crops */}
             <View style={{ padding: Spacing.two, borderRadius: Spacing.one, backgroundColor: theme.backgroundElement, borderWidth: 1, borderColor: theme.border }}>
               <ThemedText type="code" style={{ fontSize: 10, color: theme.textSecondary, marginBottom: 4 }}>
-                {language === 'hi' ? '🌾 उपयुक्त फसलें' : '🌾 SUGGESTED CROPS'}
+                {language === 'hi' ? 'उपयुक्त फसलें' : 'SUGGESTED CROPS'}
               </ThemedText>
               <ThemedText type="small" style={{ color: theme.text }}>
                 {language === 'hi' ? visualAnalysis.suggestedCropsHi : visualAnalysis.suggestedCropsEn}

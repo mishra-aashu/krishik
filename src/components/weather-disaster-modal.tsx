@@ -54,25 +54,25 @@ export function WeatherDisasterModal({
       <View style={styles.overlay}>
         <View style={[styles.modalCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
           {/* Header Bar */}
-          <View style={[styles.headerBar, { backgroundColor: theme.primary + '14', borderBottomColor: theme.border }]}>
+          <View style={[styles.headerBar, { backgroundColor: theme.card, borderBottomColor: theme.border }]}>
             <View style={styles.headerTitleRow}>
               <View style={[styles.alertIconBadge, { backgroundColor: theme.primary }]}>
                 <SymbolView
                   name={{ ios: 'calendar', android: 'calendar_today', web: 'calendar_today' } as any}
                   size={16}
-                  tintColor="#FFFFFF"
+                  tintColor={theme.onPrimary}
                 />
               </View>
-              <View style={{ flex: 1 }}>
-                <ThemedText type="smallBold" style={{ fontSize: 16, color: theme.text }}>
+              <View style={{ flex: 1, minWidth: 0, marginRight: 8 }}>
+                <ThemedText numberOfLines={1} type="smallBold" style={{ fontSize: 15, color: theme.text }}>
                   {isHindi ? '7-दिवसीय मौसम पूर्वानुमान' : '7-Day Weather Forecast'}
                 </ThemedText>
-                <ThemedText type="code" style={{ fontSize: 11, color: theme.textSecondary }}>
+                <ThemedText numberOfLines={1} type="code" style={{ fontSize: 11, color: theme.textSecondary }}>
                   {stateName} • {cropName}
                 </ThemedText>
               </View>
             </View>
-            <Pressable onPress={onClose} style={styles.closeBtn}>
+            <Pressable onPress={onClose} style={styles.closeBtn} hitSlop={8}>
               <SymbolView
                 name={{ ios: 'xmark.circle.fill', android: 'cancel', web: 'cancel' } as any}
                 size={22}
@@ -91,7 +91,7 @@ export function WeatherDisasterModal({
                     size={18}
                     tintColor={theme.error}
                   />
-                  <ThemedText type="smallBold" style={{ fontSize: 14, color: theme.error, flex: 1 }}>
+                  <ThemedText numberOfLines={2} type="smallBold" style={{ fontSize: 14, color: theme.error, flex: 1, minWidth: 0 }}>
                     {alertTitle}
                   </ThemedText>
                   <View style={[styles.probChip, { backgroundColor: theme.error }]}>
@@ -110,7 +110,7 @@ export function WeatherDisasterModal({
                     {actionItems.map((item, idx) => (
                       <View key={`act-${idx}`} style={styles.actionRow}>
                         <View style={[styles.actionDot, { backgroundColor: theme.error }]} />
-                        <ThemedText type="small" style={{ flex: 1, fontSize: 12, color: theme.text }}>
+                        <ThemedText type="small" style={{ flex: 1, minWidth: 0, fontSize: 12, color: theme.text }}>
                           {item}
                         </ThemedText>
                       </View>
@@ -128,7 +128,7 @@ export function WeatherDisasterModal({
                   size={18}
                   tintColor={theme.primary}
                 />
-                <ThemedText type="smallBold" style={{ fontSize: 15, color: theme.text }}>
+                <ThemedText numberOfLines={1} type="smallBold" style={{ fontSize: 15, color: theme.text, flex: 1, minWidth: 0 }}>
                   {isHindi ? '7 दिनों का दैनिक मौसम व कृषि सलाह' : '7-Day Daily Forecast & Farm Advisory'}
                 </ThemedText>
               </View>
@@ -154,14 +154,15 @@ export function WeatherDisasterModal({
                         <View style={styles.dateCol}>
                           <ThemedText
                             type="smallBold"
+                            numberOfLines={1}
                             style={{
-                              fontSize: 14,
+                              fontSize: 13.5,
                               color: dIdx === 0 ? theme.primary : theme.text,
                             }}
                           >
                             {isHindi ? day.dayNameHi : day.dayNameEn}
                           </ThemedText>
-                          <ThemedText type="code" style={{ fontSize: 10, color: theme.textSecondary }}>
+                          <ThemedText type="code" numberOfLines={1} style={{ fontSize: 9.5, color: theme.textSecondary }}>
                             {day.dateFormatted}
                           </ThemedText>
                         </View>
@@ -169,10 +170,15 @@ export function WeatherDisasterModal({
                         <View style={styles.conditionCol}>
                           <SymbolView
                             name={cond.icon as any}
-                            size={20}
+                            size={18}
                             tintColor={isRain ? theme.primary : theme.accent}
                           />
-                          <ThemedText type="small" style={{ fontSize: 12, color: theme.text }}>
+                          <ThemedText
+                            type="small"
+                            numberOfLines={1}
+                            ellipsizeMode="tail"
+                            style={{ fontSize: 12, color: theme.text, flexShrink: 1 }}
+                          >
                             {isHindi ? cond.hi : cond.en}
                           </ThemedText>
                         </View>
@@ -181,20 +187,20 @@ export function WeatherDisasterModal({
                           <View style={{ alignItems: 'flex-end' }}>
                             {dIdx === 0 && currentTemp !== undefined ? (
                               <>
-                                <ThemedText type="smallBold" style={{ fontSize: 13.5, color: theme.primary }}>
+                                <ThemedText type="smallBold" numberOfLines={1} style={{ fontSize: 13, color: theme.primary }}>
                                   {currentTemp}°C <ThemedText type="code" style={{ fontSize: 9, color: theme.textSecondary }}>({isHindi ? 'अभी' : 'Now'})</ThemedText>
                                 </ThemedText>
-                                <ThemedText type="code" style={{ fontSize: 9.5, color: theme.textSecondary }}>
-                                  {isHindi ? `उच्च ${day.maxTemp}° • कम ${day.minTemp}°` : `H: ${day.maxTemp}° • L: ${day.minTemp}°`}
+                                <ThemedText type="code" numberOfLines={1} style={{ fontSize: 9, color: theme.textSecondary }}>
+                                  {isHindi ? `H:${day.maxTemp}° • L:${day.minTemp}°` : `H:${day.maxTemp}° • L:${day.minTemp}°`}
                                 </ThemedText>
                               </>
                             ) : (
                               <>
-                                <ThemedText type="smallBold" style={{ fontSize: 13.5 }}>
+                                <ThemedText type="smallBold" numberOfLines={1} style={{ fontSize: 13 }}>
                                   {day.maxTemp}°C
                                 </ThemedText>
-                                <ThemedText type="code" style={{ fontSize: 9.5, color: theme.textSecondary }}>
-                                  {isHindi ? `कम ${day.minTemp}°C` : `Low ${day.minTemp}°C`}
+                                <ThemedText type="code" numberOfLines={1} style={{ fontSize: 9, color: theme.textSecondary }}>
+                                  {isHindi ? `कम ${day.minTemp}°` : `Low ${day.minTemp}°`}
                                 </ThemedText>
                               </>
                             )}
@@ -210,13 +216,14 @@ export function WeatherDisasterModal({
                           >
                             <SymbolView
                               name={{ ios: 'cloud.rain.fill', android: 'grain', web: 'grain' } as any}
-                              size={12}
+                              size={11}
                               tintColor={isRain ? theme.primary : theme.textSecondary}
                             />
                             <ThemedText
                               type="code"
+                              numberOfLines={1}
                               style={{
-                                fontSize: 10,
+                                fontSize: 9.5,
                                 fontWeight: '700',
                                 color: isRain ? theme.primary : theme.textSecondary,
                               }}
@@ -234,7 +241,7 @@ export function WeatherDisasterModal({
                           size={12}
                           tintColor={theme.accent}
                         />
-                        <ThemedText type="small" style={{ fontSize: 11.5, color: theme.textSecondary, flex: 1, lineHeight: 16 }}>
+                        <ThemedText type="small" style={{ fontSize: 11.5, color: theme.textSecondary, flex: 1, minWidth: 0, lineHeight: 16 }}>
                           {generateWeatherAdvisory(day.maxTemp, day.precProb, day.weatherCode, stateName, cropName, language)}
                         </ThemedText>
                       </View>
@@ -304,12 +311,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    zIndex: 10,
+    elevation: 4,
   },
   headerTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
     flex: 1,
+    minWidth: 0,
   },
   alertIconBadge: {
     width: 30,
@@ -317,9 +327,11 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     justifyContent: 'center',
     alignItems: 'center',
+    flexShrink: 0,
   },
   closeBtn: {
     padding: 4,
+    flexShrink: 0,
   },
   scrollContent: {
     padding: Spacing.three,
@@ -340,6 +352,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 6,
+    flexShrink: 0,
   },
   actionRow: {
     flexDirection: 'row',
@@ -352,6 +365,7 @@ const styles = StyleSheet.create({
     height: 5,
     borderRadius: 2.5,
     marginTop: 6,
+    flexShrink: 0,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
@@ -371,30 +385,37 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 4,
+    width: '100%',
   },
   dateCol: {
-    width: 70,
+    width: 58,
+    flexShrink: 0,
   },
   conditionCol: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
     flex: 1,
-    paddingHorizontal: 4,
+    flexShrink: 1,
+    minWidth: 0,
+    paddingHorizontal: 2,
   },
   tempCol: {
     justifyContent: 'center',
     alignItems: 'flex-end',
-    paddingHorizontal: 4,
-    minWidth: 70,
+    flexShrink: 0,
+    minWidth: 62,
+    paddingHorizontal: 2,
   },
   rainBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    flexShrink: 0,
   },
   dayAdvisoryRow: {
     flexDirection: 'row',

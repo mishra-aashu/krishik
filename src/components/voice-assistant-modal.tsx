@@ -414,20 +414,28 @@ export function VoiceAssistantModal({
     });
   };
 
-  const SUGGESTION_CHIPS =
-    currentLang === 'hi'
-      ? [
-          '🌾 गेहूं में पीला रतुआ का इलाज क्या है?',
-          '🌦️ आज का मौसम कैसा रहेगा?',
-          '💰 मंडी में आज धान का क्या भाव है?',
-          '💧 खाद और यूरिया कब डालना चाहिए?',
-        ]
-      : [
-          '🌾 What is wheat yellow rust disease treatment?',
-          '🌦️ Today\'s weather and rain forecast?',
-          '💰 Current paddy and wheat mandi prices?',
-          '💧 When and how much urea fertilizer to use?',
-        ];
+  const SUGGESTION_ITEMS = [
+    {
+      icon: { ios: 'leaf.fill', android: 'eco', web: 'eco' },
+      hi: 'गेहूं में पीला रतुआ का इलाज क्या है?',
+      en: 'What is wheat yellow rust disease treatment?',
+    },
+    {
+      icon: { ios: 'cloud.rain.fill', android: 'grain', web: 'grain' },
+      hi: 'आज का मौसम व बारिश का अनुमान क्या है?',
+      en: "Today's weather and rain forecast?",
+    },
+    {
+      icon: { ios: 'banknote.fill', android: 'payments', web: 'payments' },
+      hi: 'मंडी में आज धान और गेहूं का क्या भाव है?',
+      en: 'Current paddy and wheat mandi prices?',
+    },
+    {
+      icon: { ios: 'drop.fill', android: 'water_drop', web: 'water_drop' },
+      hi: 'खाद और यूरिया कब और कितना डालना चाहिए?',
+      en: 'When and how much urea fertilizer to use?',
+    },
+  ];
 
   return (
     <Modal
@@ -457,11 +465,11 @@ export function VoiceAssistantModal({
                   tintColor={theme.primary}
                 />
               </View>
-              <View>
-                <ThemedText style={{ fontSize: 15, fontWeight: '800', color: theme.text }}>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <ThemedText numberOfLines={1} ellipsizeMode="tail" style={{ fontSize: 14.5, fontWeight: '800', color: theme.text }}>
                   {currentLang === 'hi' ? 'कृषिक आवाज़ साथी' : 'Krishik Voice Assistant'}
                 </ThemedText>
-                <ThemedText style={{ fontSize: 10.5, color: theme.textSecondary }}>
+                <ThemedText numberOfLines={1} ellipsizeMode="tail" style={{ fontSize: 10.5, color: theme.textSecondary }}>
                   {currentLang === 'hi' ? 'अपनी भाषा में बोलकर पूछें' : 'Speak in your local language'}
                 </ThemedText>
               </View>
@@ -473,8 +481,8 @@ export function VoiceAssistantModal({
                 style={({ pressed }) => [
                   styles.historyHeaderBtn,
                   {
-                    backgroundColor: showHistory ? theme.primary : theme.backgroundSelected,
-                    borderColor: showHistory ? theme.primary : theme.border,
+                    backgroundColor: showHistory ? theme.primary : theme.primary + '18',
+                    borderColor: showHistory ? theme.primary : theme.primary + '35',
                   },
                   pressed && { opacity: 0.8 },
                 ]}
@@ -482,13 +490,13 @@ export function VoiceAssistantModal({
                 <SymbolView
                   name={{ ios: 'clock.arrow.circlepath', android: 'history', web: 'history' } as any}
                   size={13}
-                  tintColor={showHistory ? '#FFFFFF' : theme.text}
+                  tintColor={showHistory ? theme.onPrimary : theme.primary}
                 />
                 <ThemedText
                   style={{
                     fontSize: 11,
                     fontWeight: '700',
-                    color: showHistory ? '#FFFFFF' : theme.text,
+                    color: showHistory ? theme.onPrimary : theme.primary,
                   }}
                 >
                   {currentLang === 'hi' ? 'इतिहास' : 'History'}
@@ -564,9 +572,9 @@ export function VoiceAssistantModal({
                       <SymbolView
                         name={{ ios: 'mic.fill', android: 'mic', web: 'mic' } as any}
                         size={12}
-                        tintColor="#FFFFFF"
+                        tintColor={theme.onPrimary}
                       />
-                      <ThemedText style={{ fontSize: 11.5, fontWeight: '700', color: '#FFFFFF' }}>
+                      <ThemedText style={{ fontSize: 11.5, fontWeight: '700', color: theme.onPrimary }}>
                         {currentLang === 'hi' ? 'नया सवाल' : 'New Query'}
                       </ThemedText>
                     </Pressable>
@@ -601,9 +609,9 @@ export function VoiceAssistantModal({
                       <SymbolView
                         name={{ ios: 'mic.fill', android: 'mic', web: 'mic' } as any}
                         size={15}
-                        tintColor="#FFFFFF"
+                        tintColor={theme.onPrimary}
                       />
-                      <ThemedText style={{ fontSize: 13, fontWeight: '700', color: '#FFFFFF' }}>
+                      <ThemedText style={{ fontSize: 13, fontWeight: '700', color: theme.onPrimary }}>
                         {currentLang === 'hi' ? 'बोलकर सवाल पूछें' : 'Ask Question Now'}
                       </ThemedText>
                     </Pressable>
@@ -655,13 +663,24 @@ export function VoiceAssistantModal({
 
                           {/* Meta line: Time and Source */}
                           <View style={styles.historyMetaRow}>
-                            <View style={[styles.historySourcePill, { backgroundColor: theme.primary + '12' }]}>
+                            <View style={[styles.historySourcePill, { backgroundColor: theme.primary + '14', flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
+                              <SymbolView
+                                name={
+                                  item.source === 'weather'
+                                    ? ({ ios: 'cloud.sun.fill', android: 'wb_sunny', web: 'wb_sunny' } as any)
+                                    : item.source === 'mandi'
+                                    ? ({ ios: 'banknote.fill', android: 'payments', web: 'payments' } as any)
+                                    : ({ ios: 'leaf.fill', android: 'eco', web: 'eco' } as any)
+                                }
+                                size={11}
+                                tintColor={theme.primary}
+                              />
                               <ThemedText style={{ fontSize: 10, fontWeight: '700', color: theme.primary }}>
                                 {item.source === 'weather'
-                                  ? (currentLang === 'hi' ? '🌦️ मौसम' : '🌦️ Weather')
+                                  ? (currentLang === 'hi' ? 'मौसम' : 'Weather')
                                   : item.source === 'mandi'
-                                  ? (currentLang === 'hi' ? '💰 मंडी भाव' : '💰 Mandi')
-                                  : (currentLang === 'hi' ? '🌾 कृषि सलाह' : '🌾 Agri Advice')}
+                                  ? (currentLang === 'hi' ? 'मंडी भाव' : 'Mandi')
+                                  : (currentLang === 'hi' ? 'कृषि सलाह' : 'Agri Advice')}
                               </ThemedText>
                             </View>
                             <ThemedText style={{ fontSize: 10.5, color: theme.textSecondary }}>
@@ -694,13 +713,13 @@ export function VoiceAssistantModal({
                                   web: isPlaying ? 'volume_up' : 'volume_up',
                                 } as any}
                                 size={13}
-                                tintColor={isPlaying ? '#FFFFFF' : theme.primary}
+                                tintColor={isPlaying ? theme.onPrimary : theme.primary}
                               />
                               <ThemedText
                                 style={{
                                   fontSize: 11,
                                   fontWeight: '700',
-                                  color: isPlaying ? '#FFFFFF' : theme.text,
+                                  color: isPlaying ? theme.onPrimary : theme.text,
                                 }}
                               >
                                 {isPlaying
@@ -756,7 +775,7 @@ export function VoiceAssistantModal({
                   style={[
                     styles.langSwitcherPill,
                     {
-                      backgroundColor: theme.backgroundSelected,
+                      backgroundColor: theme.backgroundElement,
                       borderColor: theme.border,
                     },
                   ]}
@@ -772,11 +791,15 @@ export function VoiceAssistantModal({
                       pressed && { opacity: 0.85 },
                     ]}
                   >
-                    <ThemedText style={{ fontSize: 13 }}>🇮🇳</ThemedText>
+                    <SymbolView
+                      name={{ ios: 'character.book.closed.fill', android: 'translate', web: 'translate' } as any}
+                      size={13}
+                      tintColor={currentLang === 'hi' ? theme.onPrimary : theme.textSecondary}
+                    />
                     <ThemedText
                       style={[
                         styles.langTabLabel,
-                        { color: currentLang === 'hi' ? '#FFFFFF' : theme.textSecondary },
+                        { color: currentLang === 'hi' ? theme.onPrimary : theme.textSecondary },
                         currentLang === 'hi' && styles.langTabLabelActive,
                       ]}
                     >
@@ -795,11 +818,15 @@ export function VoiceAssistantModal({
                       pressed && { opacity: 0.85 },
                     ]}
                   >
-                    <ThemedText style={{ fontSize: 13 }}>🌐</ThemedText>
+                    <SymbolView
+                      name={{ ios: 'globe', android: 'language', web: 'language' } as any}
+                      size={13}
+                      tintColor={currentLang === 'en' ? theme.onPrimary : theme.textSecondary}
+                    />
                     <ThemedText
                       style={[
                         styles.langTabLabel,
-                        { color: currentLang === 'en' ? '#FFFFFF' : theme.textSecondary },
+                        { color: currentLang === 'en' ? theme.onPrimary : theme.textSecondary },
                         currentLang === 'en' && styles.langTabLabelActive,
                       ]}
                     >
@@ -823,7 +850,7 @@ export function VoiceAssistantModal({
                     <SymbolView
                       name={{ ios: 'mic.fill', android: 'mic', web: 'mic' } as any}
                       size={32}
-                      tintColor="#FFFFFF"
+                      tintColor={theme.onPrimary}
                     />
                   </Pressable>
                 </View>
@@ -877,9 +904,9 @@ export function VoiceAssistantModal({
                   <SymbolView
                     name={{ ios: 'checkmark', android: 'check', web: 'check' } as any}
                     size={16}
-                    tintColor="#FFFFFF"
+                    tintColor={theme.onPrimary}
                   />
-                  <ThemedText style={styles.doneRecordingText}>
+                  <ThemedText style={[styles.doneRecordingText, { color: theme.onPrimary }]}>
                     {currentLang === 'hi' ? 'बोलना पूरा हुआ ›' : 'Done Speaking ›'}
                   </ThemedText>
                 </Pressable>
@@ -889,28 +916,38 @@ export function VoiceAssistantModal({
                   <ThemedText style={[styles.suggestionHeader, { color: theme.textSecondary }]}>
                     {currentLang === 'hi' ? 'उदाहरण के लिए ऐसे पूछें:' : 'Example questions:'}
                   </ThemedText>
-                  {SUGGESTION_CHIPS.map((chip, idx) => (
-                    <Pressable
-                      key={idx}
-                      onPress={() => {
-                        if (activeSessionRef.current) {
-                          activeSessionRef.current.abort();
-                          activeSessionRef.current = null;
-                        }
-                        setTranscribedQuery(chip);
-                        handleExecuteQuery(chip, currentLang);
-                      }}
-                      style={({ pressed }) => [
-                        styles.suggestionChip,
-                        { backgroundColor: theme.background, borderColor: theme.border },
-                        pressed && { backgroundColor: theme.backgroundSelected },
-                      ]}
-                    >
-                      <ThemedText style={{ fontSize: 12, color: theme.text }}>
-                        {chip}
-                      </ThemedText>
-                    </Pressable>
-                  ))}
+                  {SUGGESTION_ITEMS.map((item, idx) => {
+                    const qText = currentLang === 'hi' ? item.hi : item.en;
+                    return (
+                      <Pressable
+                        key={idx}
+                        onPress={() => {
+                          if (activeSessionRef.current) {
+                            activeSessionRef.current.abort();
+                            activeSessionRef.current = null;
+                          }
+                          setTranscribedQuery(qText);
+                          handleExecuteQuery(qText, currentLang);
+                        }}
+                        style={({ pressed }) => [
+                          styles.suggestionChip,
+                          { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+                          pressed && { backgroundColor: theme.backgroundSelected },
+                        ]}
+                      >
+                        <View style={[styles.suggestionIconBox, { backgroundColor: theme.primary + '18' }]}>
+                          <SymbolView
+                            name={item.icon as any}
+                            size={14}
+                            tintColor={theme.primary}
+                          />
+                        </View>
+                        <ThemedText style={{ fontSize: 13, color: theme.text, flex: 1, fontWeight: '600' }} numberOfLines={1}>
+                          {qText}
+                        </ThemedText>
+                      </Pressable>
+                    );
+                  })}
                 </View>
 
                 {/* Recent Voice Queries Quick Access */}
@@ -1174,11 +1211,16 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: Spacing.three,
     borderBottomWidth: StyleSheet.hairlineWidth,
+    gap: 8,
+    width: '100%',
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    flex: 1,
+    minWidth: 0,
+    marginRight: 4,
   },
   voiceLogoBadge: {
     width: 32,
@@ -1186,6 +1228,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
+    flexShrink: 0,
   },
   closeButton: {
     width: 30,
@@ -1351,10 +1394,21 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   suggestionChip: {
-    paddingVertical: 9,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 10,
     paddingHorizontal: 12,
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
+  },
+  suggestionIconBox: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
   },
   recognizedQueryBox: {
     width: '100%',

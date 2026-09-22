@@ -519,7 +519,7 @@ export default function HomeScreen() {
               <AppLogo size="small" showText={false} />
               <View style={{ flex: 1, flexShrink: 1 }}>
                 <ThemedText style={{ color: theme.textSecondary, fontSize: 11.5, fontWeight: '600' }}>
-                  {language === 'hi' ? 'नमस्ते 👋' : 'Welcome 👋'}
+                  {language === 'hi' ? 'नमस्ते' : 'Welcome'}
                 </ThemedText>
                 <ThemedText numberOfLines={1} type="smallBold" style={{ color: theme.primary, fontSize: 17, fontWeight: '800', marginTop: 1 }}>
                   {userName}
@@ -642,20 +642,20 @@ export default function HomeScreen() {
 
                   return (
                     <View style={styles.weatherHeroRow}>
-                      <View style={{ flex: 1 }}>
-                        <ThemedText style={{ fontSize: 44, fontWeight: '800', lineHeight: 50, color: theme.text }}>
+                      <View style={{ flex: 1, minWidth: 0, marginRight: 8 }}>
+                        <ThemedText numberOfLines={1} style={{ fontSize: 44, fontWeight: '800', lineHeight: 50, color: theme.text }}>
                           {weatherData.temp}°C
                         </ThemedText>
-                        <ThemedText style={{ fontSize: 16, fontWeight: '600', color: theme.textSecondary, marginTop: 2 }}>
+                        <ThemedText numberOfLines={1} style={{ fontSize: 16, fontWeight: '600', color: theme.textSecondary, marginTop: 2 }}>
                           {language === 'hi' ? cond.hi : cond.en}
                         </ThemedText>
                       </View>
 
-                      <View style={[styles.weatherIconCircle, { backgroundColor: isNight ? '#6366F115' : theme.accent + '18' }]}>
+                      <View style={[styles.weatherIconCircle, { backgroundColor: theme.primary + '18' }]}>
                         <SymbolView
                           name={cond.icon as any}
                           size={38}
-                          tintColor={isNight ? '#818CF8' : theme.accent}
+                          tintColor={theme.primary}
                         />
                       </View>
                     </View>
@@ -685,11 +685,11 @@ export default function HomeScreen() {
                   )}
 
                   <View style={[styles.metricChip, { backgroundColor: theme.dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.035)' }]}>
-                    <View style={[styles.metricIconBox, { backgroundColor: '#0284C718' }]}>
+                    <View style={[styles.metricIconBox, { backgroundColor: theme.primary + '15' }]}>
                       <SymbolView
                         name={{ ios: 'humidity', android: 'water_drop', web: 'water_drop' } as any}
                         size={15}
-                        tintColor="#0284C7"
+                        tintColor={theme.primary}
                       />
                     </View>
                     <View style={{ flex: 1 }}>
@@ -761,11 +761,11 @@ export default function HomeScreen() {
 
                 {/* 5. Smart Farm Advisory Callout */}
                 <View style={[styles.advisoryCallout, { backgroundColor: theme.dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.035)' }]}>
-                  <View style={[styles.advisoryIconBadge, { backgroundColor: theme.accent + '20' }]}>
+                  <View style={[styles.advisoryIconBadge, { backgroundColor: theme.primary + '18' }]}>
                     <SymbolView
                       name={{ ios: 'lightbulb.fill', android: 'lightbulb', web: 'lightbulb' } as any}
                       size={15}
-                      tintColor={theme.accent}
+                      tintColor={theme.primary}
                     />
                   </View>
                   <ThemedText style={[styles.advisoryCalloutText, { color: theme.text }]}>
@@ -944,6 +944,48 @@ export default function HomeScreen() {
             </ThemedView>
           </Animated.View>
 
+          {/* Featured Krishik Radio FM Hero Banner */}
+          <Animated.View entering={FadeInDown.duration(300).delay(220)}>
+            <PressableScale
+              onPress={() => setIsRadioModalOpen(true)}
+              style={({ pressed }) => [
+                styles.radioBannerCard,
+                { backgroundColor: theme.dark ? 'rgba(16, 185, 129, 0.12)' : '#ECFDF5', borderColor: theme.primary + '35', marginBottom: Spacing.two },
+                pressed && { opacity: 0.9 }
+              ]}
+            >
+              <View style={[styles.radioBannerIconCircle, { backgroundColor: theme.primary }]}>
+                <SymbolView
+                  name={{ ios: 'radio.fill', android: 'radio', web: 'radio' } as any}
+                  size={20}
+                  tintColor={theme.onPrimary}
+                />
+              </View>
+              
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <ThemedText numberOfLines={1} style={{ fontSize: 14.5, fontWeight: '800', color: theme.text }}>
+                    {language === 'hi' ? 'किसान रेडियो FM' : 'Krishik Radio FM'}
+                  </ThemedText>
+                  <View style={[styles.liveFmBadge, { backgroundColor: theme.primary }]}>
+                    <ThemedText style={{ fontSize: 9, fontWeight: '800', color: theme.onPrimary }}>
+                      LIVE FM
+                    </ThemedText>
+                  </View>
+                </View>
+                <ThemedText numberOfLines={1} ellipsizeMode="tail" style={{ fontSize: 11.5, color: theme.textSecondary, marginTop: 1 }}>
+                  {language === 'hi' ? 'कृषि समाचार व मौसम बुलेटिन सुनें' : 'Live farm news, weather & bulletins'}
+                </ThemedText>
+              </View>
+
+              <SymbolView
+                name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any}
+                size={16}
+                tintColor={theme.primary}
+              />
+            </PressableScale>
+          </Animated.View>
+
           {/* Quick Actions / Shortcuts */}
           <Animated.View entering={FadeInDown.duration(300).delay(250)}>
             <ThemedText type="smallBold" style={styles.sectionTitle}>
@@ -991,11 +1033,11 @@ export default function HomeScreen() {
                   pressed && styles.pressedCard
                 ]}
               >
-                <View style={[styles.advisoryIconCircle, { backgroundColor: '#0284C718' }]}>
+                <View style={[styles.advisoryIconCircle, { backgroundColor: theme.primary + '18' }]}>
                   <SymbolView
                     name={{ ios: 'drop.fill', android: 'water_drop', web: 'water_drop' } as any}
                     size={22}
-                    tintColor="#0284C7"
+                    tintColor={theme.primary}
                   />
                 </View>
                 <ThemedText style={styles.advisoryTitle}>
@@ -1017,11 +1059,11 @@ export default function HomeScreen() {
                   pressed && styles.pressedCard
                 ]}
               >
-                <View style={[styles.advisoryIconCircle, { backgroundColor: '#10B98118' }]}>
+                <View style={[styles.advisoryIconCircle, { backgroundColor: theme.primary + '18' }]}>
                   <SymbolView
                     name={{ ios: 'leaf.fill', android: 'eco', web: 'eco' } as any}
                     size={22}
-                    tintColor="#10B981"
+                    tintColor={theme.primary}
                   />
                 </View>
                 <ThemedText style={styles.advisoryTitle}>
@@ -1043,11 +1085,11 @@ export default function HomeScreen() {
                   pressed && styles.pressedCard
                 ]}
               >
-                <View style={[styles.advisoryIconCircle, { backgroundColor: '#F59E0B18' }]}>
+                <View style={[styles.advisoryIconCircle, { backgroundColor: theme.primary + '18' }]}>
                   <SymbolView
                     name={{ ios: 'scroll.fill', android: 'description', web: 'description' } as any}
                     size={22}
-                    tintColor="#F59E0B"
+                    tintColor={theme.primary}
                   />
                 </View>
                 <ThemedText style={styles.advisoryTitle}>
@@ -1055,46 +1097,6 @@ export default function HomeScreen() {
                 </ThemedText>
               </PressableScale>
             </View>
-
-            {/* Featured Krishik Radio FM Hero Banner */}
-            <PressableScale
-              onPress={() => setIsRadioModalOpen(true)}
-              style={({ pressed }) => [
-                styles.radioBannerCard,
-                { backgroundColor: theme.dark ? 'rgba(16, 185, 129, 0.12)' : '#ECFDF5', borderColor: theme.primary + '35' },
-                pressed && { opacity: 0.9 }
-              ]}
-            >
-              <View style={[styles.radioBannerIconCircle, { backgroundColor: theme.primary }]}>
-                <SymbolView
-                  name={{ ios: 'radio.fill', android: 'radio', web: 'radio' } as any}
-                  size={20}
-                  tintColor={theme.onPrimary}
-                />
-              </View>
-              
-              <View style={{ flex: 1 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <ThemedText style={{ fontSize: 14.5, fontWeight: '800', color: theme.text }}>
-                    {language === 'hi' ? 'किसान रेडियो FM 📻' : 'Krishik Radio FM 📻'}
-                  </ThemedText>
-                  <View style={[styles.liveFmBadge, { backgroundColor: theme.primary }]}>
-                    <ThemedText style={{ fontSize: 9, fontWeight: '800', color: theme.onPrimary }}>
-                      LIVE FM
-                    </ThemedText>
-                  </View>
-                </View>
-                <ThemedText style={{ fontSize: 11.5, color: theme.textSecondary, marginTop: 1 }}>
-                  {language === 'hi' ? 'कृषि समाचार, मौसम बुलेटिन व संगीत सुनें' : 'Listen to farm bulletins, weather & music'}
-                </ThemedText>
-              </View>
-
-              <SymbolView
-                name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any}
-                size={16}
-                tintColor={theme.primary}
-              />
-            </PressableScale>
           </Animated.View>
 
           {/* Mandi Prices Tracker */}
