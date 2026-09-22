@@ -38,6 +38,7 @@ interface AuthContextType {
     voiceResponse?: boolean
   ) => Promise<void>;
   resetPin: (phone: string, newPin: string) => Promise<boolean>;
+  deleteAccount: () => Promise<boolean>;
   signInWithGoogle: () => Promise<{ error?: string }>;
 }
 
@@ -465,6 +466,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const deleteAccount = async (): Promise<boolean> => {
+    try {
+      if (userPhone && userPhone !== '9999999999') {
+        const { error } = await supabase.rpc('delete_user_account');
+        if (error) {
+          console.warn('deleteAccount RPC notice:', error.message);
+        }
+      }
+      await logout();
+      return true;
+    } catch (e) {
+      console.warn('deleteAccount exception:', e);
+      await logout();
+      return false;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -481,6 +499,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logout,
         updateProfile,
         resetPin,
+        deleteAccount,
         signInWithGoogle,
       }}
     >

@@ -137,7 +137,7 @@ const TRANSLATIONS = {
 };
 
 export default function ProfileScreen() {
-  const { userName, userPhone, userEmail, farmState, farmSoil, farmCrop, updateProfile, logout } = useAuth();
+  const { userName, userPhone, userEmail, farmState, farmSoil, farmCrop, updateProfile, logout, deleteAccount } = useAuth();
   const { themeMode, setThemeMode, theme, colorScheme } = useThemeContext();
 
   const isGuest = userPhone === '9999999999' || userName === 'Kisan Guest';
@@ -166,7 +166,7 @@ export default function ProfileScreen() {
   } | null>(null);
 
   // Modal & feedback state
-  const [activeModal, setActiveModal] = useState<'state' | 'soil' | 'crop' | 'logout' | null>(null);
+  const [activeModal, setActiveModal] = useState<'state' | 'soil' | 'crop' | 'logout' | 'deleteAccount' | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   // Additional settings states
@@ -880,6 +880,24 @@ export default function ProfileScreen() {
                   {t.btnLogout}
                 </ThemedText>
               </PressableScale>
+
+              <PressableScale
+                onPress={() => setActiveModal('deleteAccount')}
+                style={({ pressed }) => [
+                  styles.logoutButton,
+                  { borderColor: 'rgba(239, 68, 68, 0.35)', marginTop: 8 },
+                  pressed && { backgroundColor: 'rgba(239, 68, 68, 0.08)' }
+                ]}
+              >
+                <SymbolView 
+                  name={{ ios: 'trash.fill', android: 'delete_forever', web: 'delete_forever' } as any} 
+                  size={16} 
+                  tintColor={theme.error} 
+                />
+                <ThemedText style={[styles.logoutButtonText, { color: theme.error, fontSize: 13 }]}>
+                  {lang === 'hi' ? 'खाता एवं डेटा मिटाएं (DPDP Act 2023)' : 'Delete Account & Data (DPDP Act 2023)'}
+                </ThemedText>
+              </PressableScale>
             </>
           )}
         </View>
@@ -1055,6 +1073,110 @@ export default function ProfileScreen() {
               >
                 <ThemedText style={{ fontSize: 15, fontWeight: '700', color: '#FFFFFF' }}>
                   {t.btnLogout}
+                </ThemedText>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Delete Account Modal (DPDP Act 2023 Right to Erasure) */}
+      <Modal
+        visible={activeModal === 'deleteAccount'}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setActiveModal(null)}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: Spacing.four,
+          }}
+          onPress={() => setActiveModal(null)}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            style={{
+              width: '100%',
+              maxWidth: 380,
+              backgroundColor: theme.card,
+              borderRadius: 24,
+              padding: 24,
+              alignItems: 'center',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: 0.35,
+              shadowRadius: 10,
+              elevation: 10,
+              borderWidth: 1,
+              borderColor: theme.border,
+            }}
+          >
+            <View
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: 28,
+                backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 16,
+              }}
+            >
+              <SymbolView
+                name={{ ios: 'trash.fill', android: 'delete_forever', web: 'delete_forever' } as any}
+                size={26}
+                tintColor={theme.error}
+              />
+            </View>
+
+            <ThemedText style={{ fontSize: 18, fontWeight: '700', marginBottom: 8, color: theme.text, textAlign: 'center' }}>
+              {lang === 'hi' ? 'खाता और डेटा स्थायी रूप से मिटाएं?' : 'Permanently Delete Account & Data?'}
+            </ThemedText>
+
+            <ThemedText style={{ fontSize: 13, textAlign: 'center', color: theme.textSecondary, marginBottom: 24, lineHeight: 18 }}>
+              {lang === 'hi'
+                ? 'DPDP अधिनियम 2023 के तहत, आपका फ़ार्म प्रोफाइल, पंजीकृत विवरण और क्लाउड डेटा डेटाबेस से स्थायी रूप से मिटा दिया जाएगा।'
+                : 'In compliance with DPDP Act 2023, deleting your account will permanently erase your farm profile, registered details, and cloud data.'}
+            </ThemedText>
+
+            <View style={{ flexDirection: 'row', gap: 12, width: '100%' }}>
+              <TouchableOpacity
+                style={{
+                  flex: 1,
+                  paddingVertical: 14,
+                  borderRadius: 14,
+                  borderWidth: 1,
+                  borderColor: theme.border,
+                  alignItems: 'center',
+                  backgroundColor: theme.background,
+                }}
+                onPress={() => setActiveModal(null)}
+              >
+                <ThemedText style={{ fontSize: 14, fontWeight: '600', color: theme.text }}>
+                  {t.cancel}
+                </ThemedText>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={{
+                  flex: 1,
+                  paddingVertical: 14,
+                  borderRadius: 14,
+                  backgroundColor: theme.error,
+                  alignItems: 'center',
+                }}
+                onPress={async () => {
+                  setActiveModal(null);
+                  await deleteAccount();
+                }}
+              >
+                <ThemedText style={{ fontSize: 14, fontWeight: '700', color: '#FFFFFF' }}>
+                  {lang === 'hi' ? 'मिटाएं (Delete)' : 'Delete Data'}
                 </ThemedText>
               </TouchableOpacity>
             </View>
@@ -1437,10 +1559,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 8,
-    ...Platform.select({
-      web: { outlineStyle: 'none' } as any,
-      default: {},
-    }),
   },
   logoutButtonText: {
     fontSize: 15,

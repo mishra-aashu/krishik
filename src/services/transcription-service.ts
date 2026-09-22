@@ -30,7 +30,22 @@ export async function startRecording(): Promise<void> {
 
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     webCurrentStream = stream;
-    const mediaRecorder = new MediaRecorder(stream);
+
+    // Detect supported MIME type for mobile browsers (iOS Safari vs Android Chrome)
+    let options: MediaRecorderOptions = {};
+    if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported) {
+      if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+        options = { mimeType: 'audio/webm;codecs=opus' };
+      } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+        options = { mimeType: 'audio/webm' };
+      } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+        options = { mimeType: 'audio/mp4' };
+      } else if (MediaRecorder.isTypeSupported('audio/aac')) {
+        options = { mimeType: 'audio/aac' };
+      }
+    }
+
+    const mediaRecorder = new MediaRecorder(stream, options);
     
     webAudioChunks = [];
     mediaRecorder.ondataavailable = (event: any) => {
@@ -39,7 +54,6 @@ export async function startRecording(): Promise<void> {
       }
     };
 
-    // Capture chunks every 250ms so ondataavailable is called continuously
     mediaRecorder.start(250);
     webMediaRecorder = mediaRecorder;
   } else {
@@ -181,5 +195,8 @@ export async function transcribeAudio(
   }
 
   const data = await response.json();
-  return data.text || '';
+  const rawText = data.text || '';
+  const { normalizePhoneticDevanagari } = require('./multilingual-voice-engine');
+  return normalizePhoneticDevanagari(rawText);
 }
+

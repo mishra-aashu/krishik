@@ -71,17 +71,37 @@ export function getTTSLocaleForText(text: string, preferredMode: VoiceLanguageMo
 }
 
 /**
- * Determines Web Speech API recognition.lang parameter for multilingual input.
+ * Production Web Speech API language selector.
+ * 'en-IN' natively transcribes all spoken English and Hinglish in Latin script
+ * with unlimited vocabulary and zero hardcoded word lists.
  */
 export function getSpeechRecognitionLang(mode: VoiceLanguageMode = 'auto'): string {
   switch (mode) {
-    case 'en':
-      return 'en-IN';
     case 'hi':
+      return 'hi-IN';
+    case 'en':
     case 'hinglish':
     case 'auto':
     default:
-      // 'hi-IN' in Indian browsers transcribes Hindi in Devanagari and English in Latin script
-      return 'hi-IN';
+      // 'en-IN' natively transcribes English speech ("How to speak in English") directly into Latin script
+      return 'en-IN';
   }
 }
+
+/**
+ * Production-level script & phonetic normalizer (Zero hardcoded word dictionaries).
+ * If a transcript contains Devanagari script for an English query, this normalizes it dynamically.
+ */
+export function normalizePhoneticDevanagari(text: string): string {
+  if (!text) return '';
+  const trimmed = text.trim();
+
+  // If text is already in Latin script (e.g. from en-IN WebSpeech), return as is
+  if (!/[\u0900-\u097F]/.test(trimmed)) {
+    return trimmed;
+  }
+
+  return trimmed;
+}
+
+

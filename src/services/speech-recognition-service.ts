@@ -1,6 +1,6 @@
 import { Platform } from 'react-native';
 import { startRecording, stopRecording, transcribeAudio } from './transcription-service';
-import { getSpeechRecognitionLang } from './multilingual-voice-engine';
+import { getSpeechRecognitionLang, normalizePhoneticDevanagari } from './multilingual-voice-engine';
 
 export interface SpeechRecognitionHandlers {
   onInterimResult?: (transcript: string) => void;
@@ -71,18 +71,22 @@ async function startWebSpeechSession(
   let isStopped = false;
   let hasReceivedSpeech = false;
 
-  // 1. Setup AudioContext volume analyser for dynamic mic orb reactivity
-  try {
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      cleanupVolume = setupWebVolumeAnalyser(stream, (vol) => {
-        if (!isStopped && handlers.onVolumeChange) {
-          handlers.onVolumeChange(vol);
-        }
-      });
+  // 1. Setup AudioContext volume analyser only if navigator.mediaDevices is available
+  // On mobile browsers, delay or wrap in try/catch to avoid locking mic hardware before WebSpeech
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+  if (!isMobile) {
+    try {
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        cleanupVolume = setupWebVolumeAnalyser(stream, (vol) => {
+          if (!isStopped && handlers.onVolumeChange) {
+            handlers.onVolumeChange(vol);
+          }
+        });
+      }
+    } catch (micErr) {
+      console.warn('[SpeechService] Mic stream for volume failed, continuing with recognition:', micErr);
     }
-  } catch (micErr) {
-    console.warn('[SpeechService] Mic stream for volume failed, continuing with recognition:', micErr);
   }
 
   const resetSilenceTimer = () => {
@@ -108,8 +112,10 @@ async function startWebSpeechSession(
 
     cleanupResources();
 
+    const normalized = normalizePhoneticDevanagari(text.trim());
+
     if (handlers.onStateChange) handlers.onStateChange('processing');
-    if (handlers.onFinalResult) handlers.onFinalResult(text.trim());
+    if (handlers.onFinalResult) handlers.onFinalResult(normalized);
   };
 
   const cleanupResources = () => {
@@ -144,8 +150,9 @@ async function startWebSpeechSession(
 
     if (combined.length > 0) {
       hasReceivedSpeech = true;
+      const normalizedCombined = normalizePhoneticDevanagari(combined);
       if (handlers.onInterimResult) {
-        handlers.onInterimResult(combined);
+        handlers.onInterimResult(normalizedCombined);
       }
       resetSilenceTimer();
     }
@@ -199,7 +206,7 @@ async function startWebSpeechSession(
       } catch {}
       cleanupResources();
       const res = (finalTranscript + ' ' + accumulatedInterim).trim();
-      return res;
+      return normalizePhoneticDevanagari(res);
     },
     abort: () => {
       isStopped = true;

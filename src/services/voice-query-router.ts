@@ -32,6 +32,10 @@ export async function processVoiceQuery(
   language: 'hi' | 'en' = 'hi'
 ): Promise<VoiceQueryResult> {
   const lower = query.toLowerCase().trim();
+  const { containsDevanagari, script } = detectScriptAndLanguage(query);
+  const isEnglishQuery =
+    (language === 'en' && !containsDevanagari) ||
+    (!containsDevanagari && script === 'latin');
 
   // 1. Weather Intent Check
   const isWeatherIntent =
@@ -59,11 +63,11 @@ export async function processVoiceQuery(
 
       const weather = await fetchWeatherData(target);
       const cond = getWeatherCondition(weather.weatherCode, weather.isDay);
-      const conditionName = language === 'hi' ? cond.hi : cond.en;
+      const conditionName = isEnglishQuery ? cond.en : cond.hi;
       const rainProb = weather.daily7d && weather.daily7d.length > 0 ? weather.daily7d[0].precProb : 10;
 
       let speechText = '';
-      if (language === 'hi') {
+      if (!isEnglishQuery) {
         speechText = `आज आपके इलाके में ${conditionName} है। तापमान ${weather.temp} डिग्री सेल्सियस है और हवा में नमी ${weather.humidity} प्रतिशत है। `;
         if (rainProb > 40) {
           speechText += `आज वर्षा की संभावना लगभग ${rainProb} प्रतिशत बनी हुई है, इसलिए सतर्क रहें।`;
@@ -77,7 +81,7 @@ export async function processVoiceQuery(
       return {
         text: speechText,
         source: 'weather',
-        title: language === 'hi' ? 'मौसम रिपोर्ट' : 'Weather Report',
+        title: isEnglishQuery ? 'Weather Report' : 'मौसम रिपोर्ट',
       };
     } catch (err) {
       console.warn('[VoiceRouter] Weather fetch failed, falling back to AI:', err);
@@ -113,15 +117,15 @@ export async function processVoiceQuery(
         let speechText = '';
         if (matchedItem) {
           const rawName = matchedItem.commodity.split('(')[0].trim();
-          const cleanName = language === 'hi' ? (matchedItem.commodity.split('(')[1]?.replace(')', '').trim() || rawName) : rawName;
-          speechText = language === 'hi'
+          const cleanName = !isEnglishQuery ? (matchedItem.commodity.split('(')[1]?.replace(')', '').trim() || rawName) : rawName;
+          speechText = !isEnglishQuery
             ? `आज ${stateName} की मंडी में ${cleanName} का भाव ${matchedItem.price} रुपये प्रति ${matchedItem.unit} चल रहा है।`
             : `Today in ${stateName} Mandi, ${rawName} is trading at ₹${matchedItem.price} per ${matchedItem.unit}.`;
         } else {
           // Top 2 commodities
           const p1 = prices[0];
           const p2 = prices[1] || prices[0];
-          speechText = language === 'hi'
+          speechText = !isEnglishQuery
             ? `आज ${stateName} की मंडी में ${p1.commodity.split('(')[0].trim()} का भाव ${p1.price} रुपये और ${p2.commodity.split('(')[0].trim()} का भाव ${p2.price} रुपये प्रति क्विंटल चल रहा है।`
             : `Today in ${stateName} Mandi, ${p1.commodity.split('(')[0].trim()} is ₹${p1.price} and ${p2.commodity.split('(')[0].trim()} is ₹${p2.price} per quintal.`;
         }
@@ -129,7 +133,7 @@ export async function processVoiceQuery(
         return {
           text: speechText,
           source: 'mandi',
-          title: language === 'hi' ? 'मंडी भाव' : 'Mandi Rates',
+          title: isEnglishQuery ? 'Mandi Rates' : 'मंडी भाव',
         };
       }
     } catch (err) {
@@ -138,11 +142,6 @@ export async function processVoiceQuery(
   }
 
   // 3. Agricultural Advisory / Crop Pest / Disease / General AI
-  const { containsDevanagari, script } = detectScriptAndLanguage(query);
-  const isEnglishQuery =
-    (language === 'en' && !containsDevanagari) ||
-    (!containsDevanagari && script === 'latin' && /^(what|how|why|when|where|which|who|can|is|are|tell|give|explain)\b/i.test(lower));
-
   const prompt = [
     {
       role: 'user' as const,
