@@ -727,7 +727,7 @@ export default function HomeScreen() {
                           />
                         </View>
                         <ThemedText style={styles.disasterTagText}>
-                          {language === 'hi' ? 'आपदा चेतावनी' : 'DISASTER ALERT'}
+                          {language === 'hi' ? 'मौसम चेतावनी' : 'SEVERE ALERT'}
                         </ThemedText>
                       </View>
 
@@ -738,15 +738,15 @@ export default function HomeScreen() {
                       </View>
                     </View>
 
-                    {/* Main Title: Full width, bold, 0 truncation */}
-                    <ThemedText style={[styles.disasterTitleText, { color: theme.dark ? '#FCA5A5' : '#991B1B' }]}>
+                    {/* Main Title: Full width, single-line strict truncation */}
+                    <ThemedText numberOfLines={1} ellipsizeMode="tail" style={[styles.disasterTitleText, { color: theme.dark ? '#FCA5A5' : '#991B1B' }]}>
                       {(language === 'hi' ? weatherData.disasterAlert.titleHi : weatherData.disasterAlert.titleEn).replace(/^(48h|48-घंटे में|48-घंटे)\s*/i, '').replace(/^[^\w\s\u0900-\u097F]+/, '').trim()}
                     </ThemedText>
 
                     {/* Footer Action Row */}
                     <View style={styles.disasterFooterRow}>
-                      <ThemedText style={[styles.disasterFooterText, { color: theme.dark ? '#F87171' : '#B91C1C' }]}>
-                        {language === 'hi' ? '48h का पूर्वानुमान व फसल सुरक्षा सलाह देखें' : '48h forecast & crop protection guide'}
+                      <ThemedText numberOfLines={1} style={[styles.disasterFooterText, { color: theme.dark ? '#F87171' : '#B91C1C' }]}>
+                        {language === 'hi' ? '48h सुरक्षा सलाह व गाइड' : '48h Advisory & Guide'}
                       </ThemedText>
                       <View style={[styles.disasterArrowBox, { backgroundColor: theme.error + '20' }]}>
                         <SymbolView

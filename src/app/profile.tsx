@@ -906,15 +906,24 @@ export default function ProfileScreen() {
       {/* Floating Bottom Unsaved Changes Sticky Bar (Slim & Sleek) */}
       {isDirty && (
         <View style={styles.unsavedStickyBarContainer}>
-          <View style={[styles.unsavedStickyBar, { backgroundColor: '#D97706' }]}>
+          <View
+            style={[
+              styles.unsavedStickyBar,
+              {
+                backgroundColor: theme.dark ? '#18181B' : '#0F172A',
+                borderColor: theme.dark ? '#27272A' : '#334155',
+                borderWidth: 1,
+              },
+            ]}
+          >
             <View style={styles.unsavedTextCol}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
                 <SymbolView
                   name={{ ios: 'exclamationmark.triangle.fill', android: 'warning', web: 'warning' } as any}
-                  size={14}
-                  tintColor={'#FFFFFF'}
+                  size={15}
+                  tintColor={'#F59E0B'}
                 />
-                <ThemedText style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700' }}>
+                <ThemedText style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '700' }}>
                   {lang === 'hi' ? 'असुरक्षित बदलाव!' : 'Unsaved Changes!'}
                 </ThemedText>
               </View>
@@ -922,15 +931,15 @@ export default function ProfileScreen() {
 
             <TouchableOpacity
               activeOpacity={0.8}
-              style={styles.unsavedActionBtn}
+              style={[styles.unsavedActionBtn, { backgroundColor: '#059669' }]}
               onPress={handleSave}
             >
               <SymbolView
                 name={{ ios: 'square.and.arrow.down.fill', android: 'save', web: 'save' } as any}
-                size={12}
-                tintColor={'#D97706'}
+                size={13}
+                tintColor={'#FFFFFF'}
               />
-              <ThemedText style={{ color: '#D97706', fontSize: 11, fontWeight: '800' }}>
+              <ThemedText style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '800' }}>
                 {lang === 'hi' ? 'सुरक्षित करें' : 'Save Now'}
               </ThemedText>
             </TouchableOpacity>
@@ -1250,20 +1259,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 14,
     width: '100%',
     ...Platform.select({
       web: {
-        boxShadow: '0px 4px 16px rgba(217, 119, 6, 0.35)',
+        boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.45)',
       } as any,
       default: {
         elevation: 10,
-        shadowColor: '#D97706',
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.35,
-        shadowRadius: 8,
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.4,
+        shadowRadius: 10,
       },
     }),
   },

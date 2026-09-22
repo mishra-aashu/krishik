@@ -199,8 +199,8 @@ export function detectDisasterAlert(
     return {
       type: 'thunderstorm',
       severity: 'critical',
-      titleHi: '48-घंटे में भारी आंधी व ओलावृष्टि चेतावनी',
-      titleEn: '48h Severe Thunderstorm & Hail Warning',
+      titleHi: 'भारी आंधी व ओलावृष्टि चेतावनी',
+      titleEn: 'Severe Thunderstorm & Hail',
       descHi: 'अगले 48 घंटों में भारी गरज, तेज हवाएं व ओले गिरने की संभावना है।',
       descEn: 'Severe thunderstorm, strong winds and hail expected within 48 hours.',
       actionItemsHi: [
@@ -223,8 +223,8 @@ export function detectDisasterAlert(
     return {
       type: 'heavy_rain',
       severity: 'warning',
-      titleHi: '48-घंटे में भारी वर्षा की चेतावनी',
-      titleEn: '48h Heavy Rain Advisory',
+      titleHi: 'भारी वर्षा की चेतावनी',
+      titleEn: 'Heavy Rain Advisory',
       descHi: `वर्षा की संभावना ${maxRainProb}% तक बनी हुई है। जलजमाव का खतरा है।`,
       descEn: `High rainfall probability of ${maxRainProb}% detected in next 48 hours.`,
       actionItemsHi: [
@@ -245,8 +245,8 @@ export function detectDisasterAlert(
     return {
       type: 'heatwave',
       severity: 'warning',
-      titleHi: '48-घंटे में तीव्र हीटवेव / लू की चेतावनी',
-      titleEn: '48h Heatwave Warning',
+      titleHi: 'तीव्र हीटवेव / लू चेतावनी',
+      titleEn: 'Severe Heatwave Advisory',
       descHi: `अधिकतम तापमान ${maxTemp}°C तक पहुँचने का अनुमान है। फसल झुलस सकती है।`,
       descEn: `Extreme heat with peak temperature reaching ${maxTemp}°C expected.`,
       actionItemsHi: [
@@ -267,8 +267,8 @@ export function detectDisasterAlert(
     return {
       type: 'frost',
       severity: 'warning',
-      titleHi: '48-घंटे में तीव्र शीतलहर व पाला (Frost) चेतावनी',
-      titleEn: '48h Coldwave & Frost Advisory',
+      titleHi: 'शीतलहर व पाला (Frost) चेतावनी',
+      titleEn: 'Coldwave & Frost Advisory',
       descHi: `न्यूनतम तापमान ${minTemp}°C तक गिरने की संभावना है। पाला पड़ने का खतरा।`,
       descEn: `Freezing temperatures around ${minTemp}°C expected. High frost risk.`,
       actionItemsHi: [
@@ -290,8 +290,8 @@ export function detectDisasterAlert(
     return {
       type: 'heavy_rain',
       severity: 'advisory',
-      titleHi: '48-घंटे में बारिश का अलर्ट',
-      titleEn: '48h Rain Forecast Alert',
+      titleHi: 'बारिश का अलर्ट',
+      titleEn: 'Rainfall Alert',
       descHi: `अगले 48 घंटों में बारिश की संभावना ${maxRainProb}% है।`,
       descEn: `Precipitation chance of ${maxRainProb}% forecasted for next 48 hours.`,
       actionItemsHi: [
