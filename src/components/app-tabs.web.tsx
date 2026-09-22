@@ -270,11 +270,6 @@ export function CustomTabList({ children, isMobile, ...props }: CustomTabListPro
             <ThemedText type="smallBold" style={styles.brandText}>
               Krishik Mitra
             </ThemedText>
-            <View style={[styles.harvestBadge, { backgroundColor: theme.accentLight }]}>
-              <ThemedText style={[styles.harvestBadgeText, { color: theme.accent }]}>
-                AI
-              </ThemedText>
-            </View>
           </View>
         )}
 
