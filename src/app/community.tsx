@@ -991,39 +991,40 @@ export default function CommunityScreen() {
 
         {/* VIEW 2: COMMUNITY BOARD DETAILS (REDDIT STYLE) */}
         {activeView === 'community-details' && selectedCommunity && (
-          <Animated.View entering={FadeInRight.duration(260)} style={{ flex: 1 }}>
+          <Animated.View entering={FadeInRight.duration(260)} style={{ flex: 1, position: 'relative' }}>
+            {/* Sticky Back Button */}
+            <Pressable
+              onPress={() => {
+                setActiveView('main');
+                setSelectedCommunity(null);
+              }}
+              style={({ pressed }) => [
+                styles.redditBackBtn,
+                pressed && { opacity: 0.8 }
+              ]}
+              hitSlop={8}
+            >
+              <SymbolView
+                name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' } as any}
+                size={18}
+                tintColor="#FFFFFF"
+              />
+            </Pressable>
+
             <ScrollView
               contentContainerStyle={[styles.scrollContent, contentPlatformStyle, { paddingHorizontal: 0, paddingTop: 0 }]}
               showsVerticalScrollIndicator={false}
             >
-            {/* 1. Reddit Cover Banner */}
-            <View style={[styles.redditCoverBanner, { backgroundColor: theme.dark ? '#0F172A' : '#1E293B' }]}>
-              {/* Back Button */}
-              <Pressable
-                onPress={() => {
-                  setActiveView('main');
-                  setSelectedCommunity(null);
-                }}
-                style={({ pressed }) => [
-                  styles.redditBackBtn,
-                  pressed && { opacity: 0.8 }
-                ]}
-              >
-                <SymbolView
-                  name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' } as any}
-                  size={18}
-                  tintColor="#FFFFFF"
-                />
-              </Pressable>
-
-              <View style={styles.redditBannerOverlay}>
-                <SymbolView
-                  name={getCategoryIcon(selectedCommunity.category) as any}
-                  size={110}
-                  tintColor="rgba(255, 255, 255, 0.08)"
-                />
+              {/* 1. Reddit Cover Banner */}
+              <View style={[styles.redditCoverBanner, { backgroundColor: theme.dark ? '#0F172A' : '#1E293B' }]}>
+                <View style={styles.redditBannerOverlay}>
+                  <SymbolView
+                    name={getCategoryIcon(selectedCommunity.category) as any}
+                    size={110}
+                    tintColor="rgba(255, 255, 255, 0.08)"
+                  />
+                </View>
               </View>
-            </View>
 
             {/* 2. Board Profile Header Container */}
             <View style={[styles.redditProfileHeader, { paddingHorizontal: isMobile ? Spacing.three : Spacing.four }]}>
@@ -2559,13 +2560,28 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 12,
     left: 16,
-    zIndex: 10,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    zIndex: 9999,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
     justifyContent: 'center',
     alignItems: 'center',
+    ...Platform.select({
+      web: {
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        boxShadow: '0 4px 14px rgba(0,0,0,0.4)',
+        cursor: 'pointer',
+      } as any,
+      default: {
+        elevation: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.4,
+        shadowRadius: 6,
+      },
+    }),
   },
   redditBannerOverlay: {
     position: 'absolute',
@@ -2578,14 +2594,14 @@ const styles = StyleSheet.create({
   redditAvatarRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    marginTop: -32,
+    alignItems: 'flex-start',
   },
   redditAvatar: {
     width: 68,
     height: 68,
     borderRadius: 34,
     borderWidth: 3.5,
+    marginTop: -34,
     justifyContent: 'center',
     alignItems: 'center',
     ...Platform.select({
@@ -2605,10 +2621,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingVertical: 7,
-    paddingHorizontal: 16,
-    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 18,
+    borderRadius: 22,
     borderWidth: 1,
+    marginTop: 10,
   },
   redditStatsBar: {
     flexDirection: 'row',
