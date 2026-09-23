@@ -24,7 +24,7 @@ export default function AppTabs() {
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
   const pathname = usePathname();
-  const isChatOrProfileScreen = pathname === '/chat' || pathname === '/profile' || pathname.startsWith('/profile');
+  const isChatScreen = pathname === '/chat';
 
   return (
     <Tabs style={[styles.tabsContainer, isMobile ? styles.mobileLayout : styles.desktopLayout]}>
@@ -117,8 +117,8 @@ export default function AppTabs() {
         </TabList>
       )}
 
-      {/* Floating Voice Assistant Action Button (Hidden inside /chat & /profile) */}
-      {!isChatOrProfileScreen && <FloatingVoiceButton />}
+      {/* Floating Voice Assistant Action Button (Hidden inside /chat) */}
+      {!isChatScreen && <FloatingVoiceButton />}
     </Tabs>
   );
 }

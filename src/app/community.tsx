@@ -13,6 +13,7 @@ import {
   useWindowDimensions,
   Image as RNImage
 } from 'react-native';
+import Animated, { FadeIn, FadeInRight, FadeInUp } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -21,7 +22,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { SymbolView } from 'expo-symbols';
-import { Colors, Spacing, BottomTabInset, MaxContentWidth } from '@/constants/theme';
+import { Colors, Fonts, Spacing, BottomTabInset, MaxContentWidth } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/context/auth-context';
 import { LocalStorage } from '@/utils/storage';
@@ -122,9 +123,10 @@ export default function CommunityScreen() {
   // 'community-details' = Subpage of a selected community
   // 'post-details' = Details of a selected post
   const [activeView, setActiveView] = useState<'main' | 'community-details' | 'post-details'>('main');
-  const [activeTab, setActiveTab] = useState<'communities' | 'my-feed' | 'trending'>('communities');
+  const [activeTab, setActiveTab] = useState<'my-feed' | 'communities'>('my-feed');
   const [selectedCommunity, setSelectedCommunity] = useState<Community | null>(null);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [boardSubTab, setBoardSubTab] = useState<'posts' | 'about'>('posts');
 
   // Filter category for community list ('all', 'crops', 'machinery', 'weather', 'general')
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -138,6 +140,7 @@ export default function CommunityScreen() {
   // Modals Visibility
   const [createCommunityVisible, setCreateCommunityVisible] = useState(false);
   const [createPostVisible, setCreatePostVisible] = useState(false);
+  const [createActionMenuVisible, setCreateActionMenuVisible] = useState(false);
 
   // Create Community Form States
   const [commName, setCommName] = useState('');
@@ -517,16 +520,12 @@ export default function CommunityScreen() {
     }
 
     if (activeTab === 'my-feed') {
-      // Show posts from communities the user joined
+      // Show posts from communities the user joined, or all posts if none joined yet
       const joinedCommIds = communities
         .filter(c => c.members.includes(userPhone || 'demo'))
         .map(c => c.id);
-      return list.filter(p => joinedCommIds.includes(p.communityId));
-    }
-
-    if (activeTab === 'trending') {
-      // Sort by upvotes count
-      return [...list].sort((a, b) => b.upvotes.length - a.upvotes.length);
+      const joinedPosts = list.filter(p => joinedCommIds.includes(p.communityId));
+      return joinedPosts.length > 0 ? joinedPosts : list;
     }
 
     return list;
@@ -546,7 +545,7 @@ export default function CommunityScreen() {
         
         {/* VIEW 1: MAIN BOARD SECTION */}
         {activeView === 'main' && (
-          <>
+          <Animated.View entering={FadeIn.duration(240)} style={{ flex: 1 }}>
             {/* Header */}
             <View style={styles.header}>
               <View style={{ flex: 1, marginRight: Spacing.two }}>
@@ -577,44 +576,35 @@ export default function CommunityScreen() {
                     {language === 'hi' ? 'Hindi' : 'English'}
                   </ThemedText>
                 </Pressable>
-
-                <Pressable
-                  onPress={() => {
-                    if (isOffline) {
-                      Alert.alert(
-                        language === 'hi' ? 'ऑफ़लाइन' : 'Offline',
-                        language === 'hi' ? 'ऑफ़लाइन होने पर आप नई चौपाल नहीं बना सकते।' : 'You cannot create a new Chowpal board while offline.'
-                      );
-                      return;
-                    }
-                    setCreateCommunityVisible(true);
-                  }}
-                  style={({ pressed }) => [
-                    styles.headerActionBtn,
-                    { 
-                      backgroundColor: isOffline ? theme.border : theme.primary, 
-                      borderColor: theme.border 
-                    },
-                    isMobile && { paddingHorizontal: 8, paddingVertical: 5 },
-                    pressed && { opacity: 0.9 }
-                  ]}
-                >
-                  <SymbolView
-                    name={{ ios: 'plus.circle.fill', android: 'add_circle', web: 'add_circle' } as any}
-                    size={14}
-                    tintColor={isOffline ? theme.textSecondary : theme.onPrimary}
-                  />
-                  <ThemedText style={{ color: isOffline ? theme.textSecondary : theme.onPrimary, fontSize: 11, fontWeight: '700' }}>
-                    {isMobile
-                      ? (language === 'hi' ? '+ चौपाल' : '+ Board')
-                      : (language === 'hi' ? 'नई चौपाल' : 'New Board')}
-                  </ThemedText>
-                </Pressable>
               </View>
             </View>
 
-            {/* Tab selection bar: Chowpal Directories vs Consolidated Feed vs Trending */}
+            {/* Tab selection bar: Posts & Feed (Left) vs Boards (Right) */}
             <View style={[styles.tabBar, { borderBottomColor: theme.border }]}>
+              <Pressable
+                onPress={() => { setActiveTab('my-feed'); setSearchQuery(''); }}
+                style={[
+                  styles.tabButton,
+                  activeTab === 'my-feed' && { borderBottomColor: theme.primary }
+                ]}
+              >
+                <SymbolView
+                  name={{ ios: 'tray.full.fill', android: 'feed', web: 'feed' } as any}
+                  size={15}
+                  tintColor={activeTab === 'my-feed' ? theme.primary : theme.textSecondary}
+                />
+                <ThemedText
+                  type="smallBold"
+                  style={{
+                    color: activeTab === 'my-feed' ? theme.primary : theme.textSecondary,
+                    fontSize: 13
+                  }}
+                  numberOfLines={1}
+                >
+                  {language === 'hi' ? 'फ़ीड व पोस्ट्स' : 'My Feed'}
+                </ThemedText>
+              </Pressable>
+
               <Pressable
                 onPress={() => { setActiveTab('communities'); setSearchQuery(''); }}
                 style={[
@@ -636,54 +626,6 @@ export default function CommunityScreen() {
                   numberOfLines={1}
                 >
                   {language === 'hi' ? 'चौपाल सूची' : 'Boards'}
-                </ThemedText>
-              </Pressable>
-
-              <Pressable
-                onPress={() => { setActiveTab('my-feed'); setSearchQuery(''); }}
-                style={[
-                  styles.tabButton,
-                  activeTab === 'my-feed' && { borderBottomColor: theme.primary }
-                ]}
-              >
-                <SymbolView
-                  name={{ ios: 'tray.full.fill', android: 'feed', web: 'feed' } as any}
-                  size={15}
-                  tintColor={activeTab === 'my-feed' ? theme.primary : theme.textSecondary}
-                />
-                <ThemedText
-                  type="smallBold"
-                  style={{
-                    color: activeTab === 'my-feed' ? theme.primary : theme.textSecondary,
-                    fontSize: 13
-                  }}
-                  numberOfLines={1}
-                >
-                  {language === 'hi' ? 'मेरी फ़ीड' : 'My Feed'}
-                </ThemedText>
-              </Pressable>
-
-              <Pressable
-                onPress={() => { setActiveTab('trending'); setSearchQuery(''); }}
-                style={[
-                  styles.tabButton,
-                  activeTab === 'trending' && { borderBottomColor: theme.primary }
-                ]}
-              >
-                <SymbolView
-                  name={{ ios: 'flame.fill', android: 'local_fire_department', web: 'local_fire_department' } as any}
-                  size={15}
-                  tintColor={activeTab === 'trending' ? theme.primary : theme.textSecondary}
-                />
-                <ThemedText
-                  type="smallBold"
-                  style={{
-                    color: activeTab === 'trending' ? theme.primary : theme.textSecondary,
-                    fontSize: 13
-                  }}
-                  numberOfLines={1}
-                >
-                  {language === 'hi' ? 'चर्चित' : 'Trending'}
                 </ThemedText>
               </Pressable>
             </View>
@@ -1026,322 +968,492 @@ export default function CommunityScreen() {
                 }
               />
             )}
-          </>
+
+            {/* FLOATING ACTION BUTTON: PLUS ICON CHOICE FAB */}
+            <Animated.View entering={FadeIn.duration(300)} style={styles.floatingFabContainer}>
+              <Pressable
+                onPress={() => setCreateActionMenuVisible(true)}
+                style={({ pressed }) => [
+                  styles.floatingPlusFab,
+                  { backgroundColor: isOffline ? theme.border : '#059669' },
+                  pressed && styles.floatingBoardFabPressed
+                ]}
+              >
+                <SymbolView
+                  name={{ ios: 'plus', android: 'add', web: 'add' } as any}
+                  size={26}
+                  tintColor={isOffline ? theme.textSecondary : '#FFFFFF'}
+                />
+              </Pressable>
+            </Animated.View>
+          </Animated.View>
         )}
 
-        {/* VIEW 2: COMMUNITY BOARD DETAILS */}
+        {/* VIEW 2: COMMUNITY BOARD DETAILS (REDDIT STYLE) */}
         {activeView === 'community-details' && selectedCommunity && (
-          <>
-            {/* Sub-Header */}
-            <View style={styles.subPageHeader}>
+          <Animated.View entering={FadeInRight.duration(260)} style={{ flex: 1 }}>
+            <ScrollView
+              contentContainerStyle={[styles.scrollContent, contentPlatformStyle, { paddingHorizontal: 0, paddingTop: 0 }]}
+              showsVerticalScrollIndicator={false}
+            >
+            {/* 1. Reddit Cover Banner */}
+            <View style={[styles.redditCoverBanner, { backgroundColor: theme.dark ? '#0F172A' : '#1E293B' }]}>
+              {/* Back Button */}
               <Pressable
                 onPress={() => {
                   setActiveView('main');
                   setSelectedCommunity(null);
                 }}
                 style={({ pressed }) => [
-                  styles.backBtn,
-                  { backgroundColor: theme.backgroundElement },
+                  styles.redditBackBtn,
                   pressed && { opacity: 0.8 }
                 ]}
               >
                 <SymbolView
                   name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' } as any}
-                  size={20}
-                  tintColor={theme.text}
+                  size={18}
+                  tintColor="#FFFFFF"
                 />
               </Pressable>
-              
-              <View style={{ flex: 1 }}>
-                <ThemedText type="smallBold" style={{ fontSize: 18 }} numberOfLines={1}>
-                  {language === 'hi' ? selectedCommunity.name.hi : selectedCommunity.name.en}
-                </ThemedText>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
-                  <SymbolView
-                    name={getCategoryIcon(selectedCommunity.category) as any}
-                    size={12}
-                    tintColor={theme.textSecondary}
-                  />
-                  <ThemedText type="code" style={{ fontSize: 11, color: theme.textSecondary }}>
-                    {selectedCommunity.members.length} {language === 'hi' ? 'सदस्य' : 'Members'}
-                  </ThemedText>
-                </View>
-              </View>
 
-              <Pressable
-                onPress={() => {
-                  if (isOffline) {
-                    Alert.alert(
-                      language === 'hi' ? 'ऑफ़लाइन' : 'Offline',
-                      language === 'hi' ? 'ऑफ़लाइन होने पर आप चौपाल में शामिल या बाहर नहीं हो सकते।' : 'You cannot join or leave communities while offline.'
-                    );
-                    return;
-                  }
-                  handleJoinLeave(selectedCommunity.id);
-                }}
-                style={({ pressed }) => [
-                  styles.joinHeaderBtn,
-                  {
-                    backgroundColor: isOffline
-                      ? theme.border
-                      : selectedCommunity.members.includes(userPhone || 'demo')
-                        ? theme.backgroundElement
-                        : theme.primary,
-                    borderColor: selectedCommunity.members.includes(userPhone || 'demo') ? theme.border : theme.primary
-                  },
-                  pressed && { opacity: 0.8 }
-                ]}
-              >
-                <ThemedText
-                  type="code"
-                  style={{
-                    color: isOffline
-                      ? theme.textSecondary
-                      : selectedCommunity.members.includes(userPhone || 'demo')
-                        ? theme.text
-                        : theme.onPrimary,
-                    fontWeight: '700',
-                    fontSize: 11
-                  }}
-                >
-                  {selectedCommunity.members.includes(userPhone || 'demo')
-                    ? (language === 'hi' ? 'शामिल' : 'Joined')
-                    : (language === 'hi' ? 'जुड़ें +' : 'Join')}
-                </ThemedText>
-              </Pressable>
+              <View style={styles.redditBannerOverlay}>
+                <SymbolView
+                  name={getCategoryIcon(selectedCommunity.category) as any}
+                  size={110}
+                  tintColor="rgba(255, 255, 255, 0.08)"
+                />
+              </View>
             </View>
 
-            {/* Board Profile / Banner Card */}
-            <ScrollView
-              contentContainerStyle={[styles.scrollContent, contentPlatformStyle]}
-              showsVerticalScrollIndicator={false}
-            >
-              <ThemedView type="card" style={[styles.descCard, { borderColor: theme.border }]}>
-                <ThemedText type="small" style={{ color: theme.text }}>
-                  {language === 'hi' ? selectedCommunity.description.hi : selectedCommunity.description.en}
-                </ThemedText>
-                <ThemedText type="code" style={{ color: theme.textSecondary, fontSize: 10, marginTop: 8 }}>
-                  {language === 'hi' ? 'निर्माता' : 'Creator'}: {selectedCommunity.creator} • {new Date(selectedCommunity.createdAt).toLocaleDateString(language === 'hi' ? 'hi-IN' : 'en-US')}
-                </ThemedText>
-              </ThemedView>
+            {/* 2. Board Profile Header Container */}
+            <View style={[styles.redditProfileHeader, { paddingHorizontal: isMobile ? Spacing.three : Spacing.four }]}>
+              <View style={styles.redditAvatarRow}>
+                {/* Overlapping Avatar */}
+                <View style={[styles.redditAvatar, { backgroundColor: theme.primary, borderColor: theme.background }]}>
+                  <SymbolView
+                    name={getCategoryIcon(selectedCommunity.category) as any}
+                    size={32}
+                    tintColor={theme.onPrimary}
+                  />
+                </View>
 
-              {/* Action Button: Create Post (only shown if joined) */}
-              {selectedCommunity.members.includes(userPhone || 'demo') ? (
+                {/* Join / Joined Pill Button */}
                 <Pressable
                   onPress={() => {
                     if (isOffline) {
                       Alert.alert(
                         language === 'hi' ? 'ऑफ़लाइन' : 'Offline',
-                        language === 'hi' ? 'ऑफ़लाइन होने पर आप नई पोस्ट नहीं बना सकते।' : 'You cannot create a new post while offline.'
+                        language === 'hi' ? 'ऑफ़लाइन होने पर आप चौपाल में शामिल या बाहर नहीं हो सकते।' : 'You cannot join or leave communities while offline.'
                       );
                       return;
                     }
-                    setPostTag(selectedCommunity.category === 'machinery' ? '#Rent' : '#Question');
-                    setCreatePostVisible(true);
+                    handleJoinLeave(selectedCommunity.id);
                   }}
                   style={({ pressed }) => [
-                    styles.createPostBar,
-                    { 
-                      backgroundColor: theme.backgroundElement, 
-                      borderColor: theme.border,
-                      opacity: isOffline ? 0.6 : 1 
+                    styles.redditJoinBtn,
+                    {
+                      backgroundColor: isOffline
+                        ? theme.border
+                        : selectedCommunity.members.includes(userPhone || 'demo')
+                          ? (theme.dark ? '#27272A' : '#E2E8F0')
+                          : '#059669',
+                      borderColor: selectedCommunity.members.includes(userPhone || 'demo')
+                        ? (theme.dark ? '#3F3F46' : '#CBD5E1')
+                        : '#047857'
                     },
-                    pressed && { opacity: 0.9 }
+                    pressed && { opacity: 0.85 }
                   ]}
                 >
-                  <View style={[styles.avatarPlaceholder, { backgroundColor: isOffline ? theme.border : theme.primary }]}>
-                    <ThemedText type="code" style={{ color: isOffline ? theme.textSecondary : theme.onPrimary, fontWeight: '700' }}>
-                      {userName ? userName.charAt(0).toUpperCase() : 'K'}
-                    </ThemedText>
-                  </View>
-                  <ThemedText type="small" style={{ color: theme.textSecondary, flex: 1 }}>
-                    {isOffline
-                      ? (language === 'hi' ? 'ऑफ़लाइन होने पर पोस्टिंग अक्षम है' : 'Posting is disabled offline')
-                      : (language === 'hi' ? 'चर्चा शुरू करें या उपकरण साझा करें...' : 'Start a discussion or share machinery...')}
-                  </ThemedText>
                   <SymbolView
-                    name={{ ios: 'camera.fill', android: 'photo_camera', web: 'photo_camera' } as any}
-                    size={18}
-                    tintColor={isOffline ? theme.textSecondary : theme.primary}
+                    name={{
+                      ios: selectedCommunity.members.includes(userPhone || 'demo') ? 'checkmark' : 'plus',
+                      android: selectedCommunity.members.includes(userPhone || 'demo') ? 'check' : 'add',
+                      web: selectedCommunity.members.includes(userPhone || 'demo') ? 'check' : 'add'
+                    } as any}
+                    size={14}
+                    tintColor={
+                      isOffline
+                        ? theme.textSecondary
+                        : selectedCommunity.members.includes(userPhone || 'demo')
+                          ? (theme.dark ? '#F4F4F5' : '#1E293B')
+                          : '#FFFFFF'
+                    }
                   />
-                </Pressable>
-              ) : (
-                <View style={[styles.joinBanner, { backgroundColor: theme.backgroundSelected, borderColor: theme.border }]}>
-                  <ThemedText type="smallBold" style={{ color: theme.primary, textAlign: 'center' }}>
-                    {language === 'hi' ? 'इस चौपाल में पोस्ट करने के लिए पहले शामिल हों!' : 'Join this board to start posting!'}
+                  <ThemedText
+                    type="smallBold"
+                    style={{
+                      color: isOffline
+                        ? theme.textSecondary
+                        : selectedCommunity.members.includes(userPhone || 'demo')
+                          ? (theme.dark ? '#F4F4F5' : '#1E293B')
+                          : '#FFFFFF',
+                      fontSize: 13,
+                      fontWeight: '700'
+                    }}
+                  >
+                    {selectedCommunity.members.includes(userPhone || 'demo')
+                      ? (language === 'hi' ? 'शामिल (Joined)' : 'Joined')
+                      : (language === 'hi' ? 'शामिल हों' : 'Join')}
                   </ThemedText>
-                </View>
-              )}
+                </Pressable>
+              </View>
 
-              {/* Posts in community */}
-              <ThemedText type="smallBold" style={{ fontSize: 15, marginVertical: Spacing.two }}>
-                {language === 'hi' ? 'चर्चाएं' : 'Discussions'}
+              {/* Title & Community Handle */}
+              <ThemedText type="title" style={{ fontSize: 22, fontWeight: '800', marginTop: 10 }}>
+                {language === 'hi' ? selectedCommunity.name.hi : selectedCommunity.name.en}
+              </ThemedText>
+              <ThemedText type="code" style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2 }}>
+                c/{selectedCommunity.id} • {language === 'hi' ? 'आधिकारिक चौपाल' : 'Official Board'}
               </ThemedText>
 
-              {isLoading ? (
-                <ActivityIndicator size="small" color={theme.primary} />
-              ) : posts.length === 0 ? (
-                <View style={{ paddingVertical: Spacing.four, alignItems: 'center' }}>
-                  <ThemedText style={{ color: theme.textSecondary }}>
-                    {language === 'hi' ? 'इस चौपाल पर कोई चर्चा नहीं है। पहली पोस्ट साझा करें!' : 'No posts yet. Be the first to share!'}
+              {/* Description */}
+              <ThemedText type="small" style={{ color: theme.text, fontSize: 13.5, lineHeight: 20, marginTop: 8 }}>
+                {language === 'hi' ? selectedCommunity.description.hi : selectedCommunity.description.en}
+              </ThemedText>
+
+              {/* Reddit Stats Row */}
+              <View style={[styles.redditStatsBar, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+                <View style={styles.redditStatItem}>
+                  <ThemedText type="smallBold" style={{ fontSize: 15, fontWeight: '800' }}>
+                    {selectedCommunity.members.length.toLocaleString()}
+                  </ThemedText>
+                  <ThemedText type="code" style={{ fontSize: 11, color: theme.textSecondary }}>
+                    {language === 'hi' ? 'सदस्य' : 'Members'}
                   </ThemedText>
                 </View>
-              ) : (
-                posts.map(item => {
-                  const isUpvoted = item.upvotes.includes(userPhone || 'demo');
-                  return (
+
+                <View style={[styles.redditStatDivider, { backgroundColor: theme.border }]} />
+
+                <View style={styles.redditStatItem}>
+                  <ThemedText type="smallBold" style={{ fontSize: 15, fontWeight: '800' }}>
+                    {posts.length}
+                  </ThemedText>
+                  <ThemedText type="code" style={{ fontSize: 11, color: theme.textSecondary }}>
+                    {language === 'hi' ? 'पोस्ट्स' : 'Posts'}
+                  </ThemedText>
+                </View>
+
+                <View style={[styles.redditStatDivider, { backgroundColor: theme.border }]} />
+
+                <View style={styles.redditStatItem}>
+                  <ThemedText type="smallBold" style={{ fontSize: 15, fontWeight: '800' }}>
+                    {new Date(selectedCommunity.createdAt).getFullYear()}
+                  </ThemedText>
+                  <ThemedText type="code" style={{ fontSize: 11, color: theme.textSecondary }}>
+                    {language === 'hi' ? 'स्थापना' : 'Created'}
+                  </ThemedText>
+                </View>
+              </View>
+
+              {/* Reddit Sub-Tabs: [ Posts ] [ About ] */}
+              <View style={[styles.redditSubTabBar, { borderBottomColor: theme.border }]}>
+                <Pressable
+                  onPress={() => setBoardSubTab('posts')}
+                  style={[
+                    styles.redditSubTabBtn,
+                    boardSubTab === 'posts' && { borderBottomColor: theme.primary }
+                  ]}
+                >
+                  <ThemedText
+                    type="smallBold"
+                    style={{
+                      color: boardSubTab === 'posts' ? theme.primary : theme.textSecondary,
+                      fontSize: 14
+                    }}
+                  >
+                    {language === 'hi' ? 'पोस्ट्स (Posts)' : 'Posts'}
+                  </ThemedText>
+                </Pressable>
+
+                <Pressable
+                  onPress={() => setBoardSubTab('about')}
+                  style={[
+                    styles.redditSubTabBtn,
+                    boardSubTab === 'about' && { borderBottomColor: theme.primary }
+                  ]}
+                >
+                  <ThemedText
+                    type="smallBold"
+                    style={{
+                      color: boardSubTab === 'about' ? theme.primary : theme.textSecondary,
+                      fontSize: 14
+                    }}
+                  >
+                    {language === 'hi' ? 'जानकारी (About)' : 'About'}
+                  </ThemedText>
+                </Pressable>
+              </View>
+            </View>
+
+            {/* Sub-Tab Content Area */}
+            <View style={{ paddingHorizontal: isMobile ? Spacing.three : Spacing.four, paddingTop: Spacing.two }}>
+              {boardSubTab === 'posts' ? (
+                <>
+                  {/* Create Post Action Input Bar (if joined) */}
+                  {selectedCommunity.members.includes(userPhone || 'demo') ? (
                     <Pressable
-                      key={item.id}
                       onPress={() => {
-                        setSelectedPost(item);
-                        setActiveView('post-details');
+                        if (isOffline) {
+                          Alert.alert(
+                            language === 'hi' ? 'ऑफ़लाइन' : 'Offline',
+                            language === 'hi' ? 'ऑफ़लाइन होने पर आप नई पोस्ट नहीं बना सकते।' : 'You cannot create a new post while offline.'
+                          );
+                          return;
+                        }
+                        setPostTag(selectedCommunity.category === 'machinery' ? '#Rent' : '#Question');
+                        setCreatePostVisible(true);
                       }}
                       style={({ pressed }) => [
-                        styles.postCard,
-                        { backgroundColor: theme.card, borderColor: theme.border },
-                        pressed && { opacity: 0.98 }
+                        styles.createPostBar,
+                        {
+                          backgroundColor: theme.backgroundElement,
+                          borderColor: theme.border,
+                          opacity: isOffline ? 0.6 : 1
+                        },
+                        pressed && { opacity: 0.9 }
                       ]}
                     >
-                      {/* Post Header */}
-                      <View style={styles.postCardHeader}>
-                        <View style={{ flex: 1 }}>
-                          <ThemedText type="smallBold" style={{ fontSize: 12 }}>
-                            {getLocalizedText(item.authorName, language)}
-                          </ThemedText>
-                          <ThemedText type="code" style={{ fontSize: 10, color: theme.textSecondary, marginTop: 1 }}>
-                            {new Date(item.createdAt).toLocaleDateString(language === 'hi' ? 'hi-IN' : 'en-US')}
-                          </ThemedText>
-                        </View>
-                        {item.tag && (
-                          <ThemedText type="code" style={{ color: theme.accent, fontWeight: '700' }}>
-                            {getLocalizedTag(item.tag, language)}
-                          </ThemedText>
-                        )}
+                      <View style={[styles.avatarPlaceholder, { backgroundColor: isOffline ? theme.border : theme.primary }]}>
+                        <ThemedText type="code" style={{ color: isOffline ? theme.textSecondary : theme.onPrimary, fontWeight: '700' }}>
+                          {userName ? userName.charAt(0).toUpperCase() : 'K'}
+                        </ThemedText>
                       </View>
-
-                      {/* Post Title & Content */}
-                      <ThemedText type="smallBold" style={styles.postTitle}>
-                        {getLocalizedText(item.title, language)}
+                      <ThemedText type="small" style={{ color: theme.textSecondary, flex: 1 }}>
+                        {isOffline
+                          ? (language === 'hi' ? 'ऑफ़लाइन होने पर पोस्टिंग अक्षम है' : 'Posting is disabled offline')
+                          : (language === 'hi' ? 'इस चौपाल में चर्चा शुरू करें...' : 'Create a post in this board...')}
                       </ThemedText>
-                      <ThemedText type="small" style={{ color: theme.text, marginTop: 4 }} numberOfLines={3}>
-                        {item.content}
+                      <SymbolView
+                        name={{ ios: 'camera.fill', android: 'photo_camera', web: 'photo_camera' } as any}
+                        size={18}
+                        tintColor={isOffline ? theme.textSecondary : theme.primary}
+                      />
+                    </Pressable>
+                  ) : (
+                    <View style={[styles.joinBanner, { backgroundColor: theme.backgroundSelected, borderColor: theme.border }]}>
+                      <ThemedText type="smallBold" style={{ color: theme.primary, textAlign: 'center' }}>
+                        {language === 'hi' ? 'इस चौपाल में पोस्ट करने के लिए पहले शामिल हों!' : 'Join this board to start posting!'}
                       </ThemedText>
+                    </View>
+                  )}
 
-                      {/* Rental Info if present */}
-                      {item.rentPrice && (
-                        <View style={[styles.rentSection, { backgroundColor: theme.backgroundElement, borderColor: theme.border, gap: 4 }]}>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                            <SymbolView
-                              name={{ ios: 'gear', android: 'agriculture', web: 'agriculture' } as any}
-                              size={14}
-                              tintColor={theme.accent}
-                            />
-                            <ThemedText type="smallBold" style={{ color: theme.accent, fontSize: 13 }}>
-                              {language === 'hi' ? 'किराया दर' : 'Rental Rate'}: ₹{item.rentPrice}/{language === 'hi' ? (item.rentUnit === 'hour' ? 'घंटा' : 'दिन') : item.rentUnit}
-                            </ThemedText>
-                          </View>
-                          {item.location && (
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                              <SymbolView
-                                name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'location_on' } as any}
-                                size={12}
-                                tintColor={theme.textSecondary}
-                              />
-                              <ThemedText type="code" style={{ color: theme.textSecondary }}>
-                                {item.location}
-                              </ThemedText>
-                            </View>
-                          )}
-                        </View>
-                      )}
-
-                      {/* Post Media Rendering */}
-                      {item.image && (
-                        <Image
-                          source={getPostImage(item.image)}
-                          style={styles.postImage}
-                          contentFit="cover"
-                        />
-                      )}
-
-                      {/* Card Footer Actions */}
-                      <View style={styles.cardFooter}>
+                  {/* Posts in community */}
+                  {isLoading ? (
+                    <ActivityIndicator size="small" color={theme.primary} style={{ marginTop: 20 }} />
+                  ) : posts.length === 0 ? (
+                    <View style={{ paddingVertical: Spacing.five, alignItems: 'center' }}>
+                      <SymbolView
+                        name={{ ios: 'doc.text.magnifyingglass', android: 'article', web: 'article' } as any}
+                        size={36}
+                        tintColor={theme.textSecondary}
+                      />
+                      <ThemedText style={{ color: theme.textSecondary, marginTop: 8 }}>
+                        {language === 'hi' ? 'इस चौपाल पर कोई चर्चा नहीं है। पहली पोस्ट साझा करें!' : 'No posts yet. Be the first to share!'}
+                      </ThemedText>
+                    </View>
+                  ) : (
+                    posts.map(item => {
+                      const isUpvoted = item.upvotes.includes(userPhone || 'demo');
+                      return (
                         <Pressable
-                          onPress={() => handleUpvote(item.id)}
+                          key={item.id}
+                          onPress={() => {
+                            setSelectedPost(item);
+                            setActiveView('post-details');
+                          }}
                           style={({ pressed }) => [
-                            styles.footerActionBtn,
-                            isUpvoted && { backgroundColor: theme.backgroundSelected },
-                            pressed && { opacity: 0.8 }
+                            styles.postCard,
+                            { backgroundColor: theme.card, borderColor: theme.border },
+                            pressed && { opacity: 0.98 }
                           ]}
                         >
-                          <SymbolView
-                            name={{ ios: 'hand.thumbsup.fill', android: 'thumb_up', web: 'thumb_up' } as any}
-                            size={14}
-                            tintColor={isUpvoted ? theme.primary : theme.textSecondary}
-                          />
-                          <ThemedText type="code" style={{ color: isUpvoted ? theme.primary : theme.textSecondary, fontWeight: '700' }}>
-                            {item.upvotes.length}
+                          {/* Post Header */}
+                          <View style={styles.postCardHeader}>
+                            <View style={{ flex: 1 }}>
+                              <ThemedText type="smallBold" style={{ fontSize: 12 }}>
+                                {getLocalizedText(item.authorName, language)}
+                              </ThemedText>
+                              <ThemedText type="code" style={{ fontSize: 10, color: theme.textSecondary, marginTop: 1 }}>
+                                {new Date(item.createdAt).toLocaleDateString(language === 'hi' ? 'hi-IN' : 'en-US')}
+                              </ThemedText>
+                            </View>
+                            {item.tag && (
+                              <ThemedText type="code" style={{ color: theme.accent, fontWeight: '700' }}>
+                                {getLocalizedTag(item.tag, language)}
+                              </ThemedText>
+                            )}
+                          </View>
+
+                          {/* Post Title & Content */}
+                          <ThemedText type="smallBold" style={styles.postTitle}>
+                            {getLocalizedText(item.title, language)}
                           </ThemedText>
+                          <ThemedText type="small" style={{ color: theme.text, marginTop: 4 }} numberOfLines={3}>
+                            {item.content}
+                          </ThemedText>
+
+                          {/* Rental Info if present */}
+                          {item.rentPrice && (
+                            <View style={[styles.rentSection, { backgroundColor: theme.backgroundElement, borderColor: theme.border, gap: 4 }]}>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                <SymbolView
+                                  name={{ ios: 'gear', android: 'agriculture', web: 'agriculture' } as any}
+                                  size={14}
+                                  tintColor={theme.accent}
+                                />
+                                <ThemedText type="smallBold" style={{ color: theme.accent, fontSize: 13 }}>
+                                  {language === 'hi' ? 'किराया दर' : 'Rental Rate'}: ₹{item.rentPrice}/{language === 'hi' ? (item.rentUnit === 'hour' ? 'घंटा' : 'दिन') : item.rentUnit}
+                                </ThemedText>
+                              </View>
+                              {item.location && (
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                  <SymbolView
+                                    name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'location_on' } as any}
+                                    size={12}
+                                    tintColor={theme.textSecondary}
+                                  />
+                                  <ThemedText type="code" style={{ color: theme.textSecondary }}>
+                                    {item.location}
+                                  </ThemedText>
+                                </View>
+                              )}
+                            </View>
+                          )}
+
+                          {/* Post Media Rendering */}
+                          {item.image && (
+                            <Image
+                              source={getPostImage(item.image)}
+                              style={styles.postImage}
+                              contentFit="cover"
+                            />
+                          )}
+
+                          {/* Card Footer Actions */}
+                          <View style={styles.cardFooter}>
+                            <Pressable
+                              onPress={() => handleUpvote(item.id)}
+                              style={({ pressed }) => [
+                                styles.footerActionBtn,
+                                isUpvoted && { backgroundColor: theme.backgroundSelected },
+                                pressed && { opacity: 0.8 }
+                              ]}
+                            >
+                              <SymbolView
+                                name={{ ios: 'hand.thumbsup.fill', android: 'thumb_up', web: 'thumb_up' } as any}
+                                size={14}
+                                tintColor={isUpvoted ? theme.primary : theme.textSecondary}
+                              />
+                              <ThemedText type="code" style={{ color: isUpvoted ? theme.primary : theme.textSecondary, fontWeight: '700' }}>
+                                {item.upvotes.length}
+                              </ThemedText>
+                            </Pressable>
+
+                            <View style={styles.footerActionBtn}>
+                              <SymbolView
+                                name={{ ios: 'bubble.left.and.bubble.right.fill', android: 'comment', web: 'comment' } as any}
+                                size={14}
+                                tintColor={theme.textSecondary}
+                              />
+                              <ThemedText type="code" style={{ color: theme.textSecondary, fontWeight: '700' }}>
+                                {item.commentsCount}
+                              </ThemedText>
+                            </View>
+
+                            {/* Delete option for own post */}
+                            {item.authorPhone === userPhone && (
+                              <Pressable
+                                onPress={() => handleDeletePost(item.id)}
+                                style={({ pressed }) => [
+                                  styles.footerActionBtn,
+                                  { marginLeft: 'auto' },
+                                  pressed && { opacity: 0.8 }
+                                ]}
+                              >
+                                <SymbolView
+                                  name={{ ios: 'trash.fill', android: 'delete', web: 'delete' } as any}
+                                  size={14}
+                                  tintColor={theme.error}
+                                />
+                              </Pressable>
+                            )}
+
+                            {/* Report option for others' posts */}
+                            {item.authorPhone !== userPhone && (
+                              <Pressable
+                                onPress={() => handleReportPost(item.id)}
+                                style={({ pressed }) => [
+                                  styles.footerActionBtn,
+                                  { marginLeft: 'auto' },
+                                  pressed && { opacity: 0.8 }
+                                ]}
+                              >
+                                <SymbolView
+                                  name={{ ios: 'flag.fill', android: 'flag', web: 'flag' } as any}
+                                  size={14}
+                                  tintColor={theme.textSecondary}
+                                />
+                              </Pressable>
+                            )}
+                          </View>
                         </Pressable>
-
-                        <View style={styles.footerActionBtn}>
-                          <SymbolView
-                            name={{ ios: 'bubble.left.and.bubble.right.fill', android: 'comment', web: 'comment' } as any}
-                            size={14}
-                            tintColor={theme.textSecondary}
-                          />
-                          <ThemedText type="code" style={{ color: theme.textSecondary, fontWeight: '700' }}>
-                            {item.commentsCount}
-                          </ThemedText>
-                        </View>
-
-                        {/* Delete option for own post */}
-                        {item.authorPhone === userPhone && (
-                          <Pressable
-                            onPress={() => handleDeletePost(item.id)}
-                            style={({ pressed }) => [
-                              styles.footerActionBtn,
-                              { marginLeft: 'auto' },
-                              pressed && { opacity: 0.8 }
-                            ]}
-                          >
-                            <SymbolView
-                              name={{ ios: 'trash.fill', android: 'delete', web: 'delete' } as any}
-                              size={14}
-                              tintColor={theme.error}
-                            />
-                          </Pressable>
-                        )}
-
-                        {/* Report option for others' posts */}
-                        {item.authorPhone !== userPhone && (
-                          <Pressable
-                            onPress={() => handleReportPost(item.id)}
-                            style={({ pressed }) => [
-                              styles.footerActionBtn,
-                              { marginLeft: 'auto' },
-                              pressed && { opacity: 0.8 }
-                            ]}
-                          >
-                            <SymbolView
-                              name={{ ios: 'flag.fill', android: 'flag', web: 'flag' } as any}
-                              size={14}
-                              tintColor={theme.textSecondary}
-                            />
-                          </Pressable>
-                        )}
+                      );
+                    })
+                  )}
+                </>
+              ) : (
+                /* About Tab Content */
+                <View style={{ gap: Spacing.three, paddingBottom: Spacing.four }}>
+                  <ThemedView type="card" style={[styles.descCard, { borderColor: theme.border }]}>
+                    <ThemedText type="smallBold" style={{ fontSize: 16, marginBottom: 8, color: theme.primary }}>
+                      {language === 'hi' ? 'चौपाल के नियम व निर्देश' : 'Board Rules & Guidelines'}
+                    </ThemedText>
+                    <View style={{ gap: 10 }}>
+                      <View style={{ flexDirection: 'row', gap: 8 }}>
+                        <ThemedText type="smallBold" style={{ color: theme.primary }}>1.</ThemedText>
+                        <ThemedText type="small" style={{ color: theme.text, flex: 1 }}>
+                          {language === 'hi' ? 'सभी किसान भाइयों व बहनों के साथ सम्मानजनक व्यवहार करें।' : 'Be respectful to all fellow farmers and community members.'}
+                        </ThemedText>
                       </View>
-                    </Pressable>
-                  );
-                })
+                      <View style={{ flexDirection: 'row', gap: 8 }}>
+                        <ThemedText type="smallBold" style={{ color: theme.primary }}>2.</ThemedText>
+                        <ThemedText type="small" style={{ color: theme.text, flex: 1 }}>
+                          {language === 'hi' ? 'केवल सटीक कृषि, फ़सल, मंडी व उपकरण संबंधी विषय साझा करें।' : 'Share verified agricultural, crop, mandi rates, and equipment info.'}
+                        </ThemedText>
+                      </View>
+                      <View style={{ flexDirection: 'row', gap: 8 }}>
+                        <ThemedText type="smallBold" style={{ color: theme.primary }}>3.</ThemedText>
+                        <ThemedText type="small" style={{ color: theme.text, flex: 1 }}>
+                          {language === 'hi' ? 'किसी भी प्रकार का स्पैम, विज्ञापन या अफ़वाह सख्त मना है।' : 'Strictly no spam, fake rumors, or unverified commercial ads.'}
+                        </ThemedText>
+                      </View>
+                    </View>
+                  </ThemedView>
+
+                  <ThemedView type="card" style={[styles.descCard, { borderColor: theme.border }]}>
+                    <ThemedText type="smallBold" style={{ fontSize: 15, marginBottom: 8 }}>
+                      {language === 'hi' ? 'चौपाल विवरण व प्रबंधन' : 'Board Details & Admin'}
+                    </ThemedText>
+                    <ThemedText type="code" style={{ color: theme.textSecondary, fontSize: 12 }}>
+                      {language === 'hi' ? 'निर्माता' : 'Creator'}: {selectedCommunity.creator}
+                    </ThemedText>
+                    <ThemedText type="code" style={{ color: theme.textSecondary, fontSize: 12, marginTop: 4 }}>
+                      {language === 'hi' ? 'स्थापना तिथि' : 'Created Date'}: {new Date(selectedCommunity.createdAt).toLocaleDateString(language === 'hi' ? 'hi-IN' : 'en-US')}
+                    </ThemedText>
+                    <ThemedText type="code" style={{ color: theme.textSecondary, fontSize: 12, marginTop: 4 }}>
+                      {language === 'hi' ? 'कुल सदस्य संख्या' : 'Total Members'}: {selectedCommunity.members.length}
+                    </ThemedText>
+                  </ThemedView>
+                </View>
               )}
-            </ScrollView>
-          </>
-        )}
+            </View>
+          </ScrollView>
+        </Animated.View>
+      )}
 
         {/* VIEW 3: POST DETAILS & COMMENTS */}
         {activeView === 'post-details' && selectedPost && (
-          <>
+          <Animated.View entering={FadeInRight.duration(260)} style={{ flex: 1 }}>
             {/* Sub-Header */}
             <View style={styles.subPageHeader}>
               <Pressable
@@ -1572,13 +1684,128 @@ export default function CommunityScreen() {
                 />
               </Pressable>
             </View>
-          </>
+          </Animated.View>
         )}
 
+        {/* MODAL 0: CREATE ACTION CHOICE MENU */}
+        <Modal visible={createActionMenuVisible} animationType="fade" transparent onRequestClose={() => setCreateActionMenuVisible(false)}>
+          <Pressable style={styles.modalOverlay} onPress={() => setCreateActionMenuVisible(false)}>
+            <Animated.View entering={FadeInUp.duration(260)} style={[styles.actionChoiceCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+              <View style={styles.modalHeader}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, marginRight: 8 }}>
+                  <SymbolView
+                    name={{ ios: 'plus.circle.fill', android: 'add_circle', web: 'add_circle' } as any}
+                    size={20}
+                    tintColor={theme.primary}
+                  />
+                  <ThemedText type="smallBold" style={{ fontSize: 16, flex: 1 }} numberOfLines={1}>
+                    {language === 'hi' ? 'क्या जोड़ना चाहते हैं?' : 'What would you like to create?'}
+                  </ThemedText>
+                </View>
+                <Pressable onPress={() => setCreateActionMenuVisible(false)} hitSlop={8}>
+                  <SymbolView
+                    name={{ ios: 'xmark.circle.fill', android: 'close', web: 'close' } as any}
+                    size={22}
+                    tintColor={theme.textSecondary}
+                  />
+                </Pressable>
+              </View>
+
+              <View style={{ gap: Spacing.three, marginTop: Spacing.two }}>
+                {/* Option 1: Create Post */}
+                <Pressable
+                  onPress={() => {
+                    setCreateActionMenuVisible(false);
+                    if (isOffline) {
+                      Alert.alert(
+                        language === 'hi' ? 'ऑफ़लाइन' : 'Offline',
+                        language === 'hi' ? 'ऑफ़लाइन होने पर आप नई पोस्ट नहीं बना सकते।' : 'You cannot create a post while offline.'
+                      );
+                      return;
+                    }
+                    if (!selectedCommunity && communities.length > 0) {
+                      setSelectedCommunity(communities[0]);
+                    }
+                    setPostTag(selectedCommunity?.category === 'machinery' ? '#Rent' : '#Question');
+                    setCreatePostVisible(true);
+                  }}
+                  style={({ pressed }) => [
+                    styles.actionChoiceBtn,
+                    { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+                    pressed && { opacity: 0.9, backgroundColor: theme.backgroundSelected }
+                  ]}
+                >
+                  <View style={[styles.actionChoiceIconBg, { backgroundColor: theme.primary + '25' }]}>
+                    <SymbolView
+                      name={{ ios: 'square.and.pencil', android: 'edit', web: 'edit' } as any}
+                      size={22}
+                      tintColor={theme.primary}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <ThemedText type="smallBold" style={{ fontSize: 15, color: theme.text }}>
+                      {language === 'hi' ? 'नई पोस्ट साझा करें' : 'Create New Post'}
+                    </ThemedText>
+                    <ThemedText type="small" style={{ fontSize: 12, color: theme.textSecondary, marginTop: 2 }}>
+                      {language === 'hi' ? 'अपने प्रश्न, फोटो या उपकरण किराए के लिए पोस्ट करें' : 'Share questions, photos, or machinery for rent'}
+                    </ThemedText>
+                  </View>
+                  <SymbolView
+                    name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any}
+                    size={18}
+                    tintColor={theme.textSecondary}
+                  />
+                </Pressable>
+
+                {/* Option 2: Create Board */}
+                <Pressable
+                  onPress={() => {
+                    setCreateActionMenuVisible(false);
+                    if (isOffline) {
+                      Alert.alert(
+                        language === 'hi' ? 'ऑफ़लाइन' : 'Offline',
+                        language === 'hi' ? 'ऑफ़लाइन होने पर आप नई चौपाल नहीं बना सकते।' : 'You cannot create a new Chowpal board while offline.'
+                      );
+                      return;
+                    }
+                    setCreateCommunityVisible(true);
+                  }}
+                  style={({ pressed }) => [
+                    styles.actionChoiceBtn,
+                    { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+                    pressed && { opacity: 0.9, backgroundColor: theme.backgroundSelected }
+                  ]}
+                >
+                  <View style={[styles.actionChoiceIconBg, { backgroundColor: '#3B82F625' }]}>
+                    <SymbolView
+                      name={{ ios: 'rectangle.stack.badge.plus', android: 'groups', web: 'groups' } as any}
+                      size={22}
+                      tintColor="#3B82F6"
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <ThemedText type="smallBold" style={{ fontSize: 15, color: theme.text }}>
+                      {language === 'hi' ? 'नई चौपाल (Board) बनाएं' : 'Create New Chowpal Board'}
+                    </ThemedText>
+                    <ThemedText type="small" style={{ fontSize: 12, color: theme.textSecondary, marginTop: 2 }}>
+                      {language === 'hi' ? 'किसानों के लिए नया विषय चर्चा मंच शुरू करें' : 'Start a new topic forum community for farmers'}
+                    </ThemedText>
+                  </View>
+                  <SymbolView
+                    name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any}
+                    size={18}
+                    tintColor={theme.textSecondary}
+                  />
+                </Pressable>
+              </View>
+            </Animated.View>
+          </Pressable>
+        </Modal>
+
         {/* MODAL 1: CREATE COMMUNITY BOARD */}
-        <Modal visible={createCommunityVisible} animationType="slide" transparent>
+        <Modal visible={createCommunityVisible} animationType="fade" transparent>
           <View style={styles.modalOverlay}>
-            <ThemedView type="card" style={[styles.modalCard, { borderColor: theme.border }]}>
+            <Animated.View entering={FadeInUp.duration(260)} style={[styles.modalCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
               <View style={styles.modalHeader}>
                 <ThemedText type="smallBold" style={{ fontSize: 18 }}>
                   {language === 'hi' ? 'नई चौपाल बनाएं' : 'Create New Chowpal'}
@@ -1594,7 +1821,7 @@ export default function CommunityScreen() {
 
               <ScrollView contentContainerStyle={styles.modalForm} showsVerticalScrollIndicator={false}>
                 {/* Board Category */}
-                <ThemedText type="code" style={styles.formLabel}>
+                <ThemedText type="smallBold" style={styles.formLabel}>
                   {language === 'hi' ? 'श्रेणी (Category)' : 'CATEGORY'}
                 </ThemedText>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, marginBottom: Spacing.three }}>
@@ -1628,7 +1855,7 @@ export default function CommunityScreen() {
                           size={12}
                           tintColor={isSelected ? theme.primary : theme.textSecondary}
                         />
-                        <ThemedText type="code" style={{ color: isSelected ? theme.primary : theme.text }}>
+                        <ThemedText type="smallBold" style={{ color: isSelected ? theme.primary : theme.text, fontSize: 13 }}>
                           {cat.label}
                         </ThemedText>
                       </Pressable>
@@ -1637,7 +1864,7 @@ export default function CommunityScreen() {
                 </View>
 
                 {/* Name */}
-                <ThemedText type="code" style={styles.formLabel}>
+                <ThemedText type="smallBold" style={styles.formLabel}>
                   {language === 'hi' ? 'चौपाल नाम (Name)' : 'BOARD NAME'}
                 </ThemedText>
                 <TextInput
@@ -1648,7 +1875,7 @@ export default function CommunityScreen() {
                 />
 
                 {/* Description */}
-                <ThemedText type="code" style={styles.formLabel}>
+                <ThemedText type="smallBold" style={styles.formLabel}>
                   {language === 'hi' ? 'विवरण (Description)' : 'BOARD DESCRIPTION'}
                 </ThemedText>
                 <TextInput
@@ -1678,14 +1905,14 @@ export default function CommunityScreen() {
                   )}
                 </Pressable>
               </ScrollView>
-            </ThemedView>
+            </Animated.View>
           </View>
         </Modal>
 
         {/* MODAL 2: CREATE POST */}
-        <Modal visible={createPostVisible} animationType="slide" transparent>
+        <Modal visible={createPostVisible} animationType="fade" transparent>
           <View style={styles.modalOverlay}>
-            <ThemedView type="card" style={[styles.modalCard, { borderColor: theme.border }]}>
+            <Animated.View entering={FadeInUp.duration(260)} style={[styles.modalCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
               <View style={styles.modalHeader}>
                 <ThemedText type="smallBold" style={{ fontSize: 18 }}>
                   {language === 'hi' ? 'नई पोस्ट साझा करें' : 'Create New Post'}
@@ -1708,14 +1935,14 @@ export default function CommunityScreen() {
                       size={12}
                       tintColor={theme.primary}
                     />
-                    <ThemedText type="code" style={{ color: theme.primary, fontWeight: '700' }}>
+                    <ThemedText type="smallBold" style={{ color: theme.primary, fontWeight: '700', fontSize: 13 }}>
                       {language === 'hi' ? 'पोस्टिंग स्थान' : 'Posting in'}: {language === 'hi' ? selectedCommunity.name.hi : selectedCommunity.name.en}
                     </ThemedText>
                   </View>
                 )}
 
                 {/* Tag Selection */}
-                <ThemedText type="code" style={styles.formLabel}>
+                <ThemedText type="smallBold" style={styles.formLabel}>
                   {language === 'hi' ? 'विषय टैग (Tag)' : 'TOPIC TAG'}
                 </ThemedText>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, marginBottom: Spacing.three }}>
@@ -1740,7 +1967,7 @@ export default function CommunityScreen() {
                           }
                         ]}
                       >
-                        <ThemedText type="code" style={{ color: isSelected ? theme.primary : theme.text }}>
+                        <ThemedText type="smallBold" style={{ color: isSelected ? theme.primary : theme.text, fontSize: 13 }}>
                           {getLocalizedTag(t, language)}
                         </ThemedText>
                       </Pressable>
@@ -1749,7 +1976,7 @@ export default function CommunityScreen() {
                 </View>
 
                 {/* Title */}
-                <ThemedText type="code" style={styles.formLabel}>
+                <ThemedText type="smallBold" style={styles.formLabel}>
                   {language === 'hi' ? 'शीर्षक' : 'POST TITLE'}
                 </ThemedText>
                 <TextInput
@@ -1760,7 +1987,7 @@ export default function CommunityScreen() {
                 />
 
                 {/* Content */}
-                <ThemedText type="code" style={styles.formLabel}>
+                <ThemedText type="smallBold" style={styles.formLabel}>
                   {language === 'hi' ? 'विवरण' : 'DETAILS / DESCRIPTION'}
                 </ThemedText>
                 <TextInput
@@ -1787,7 +2014,7 @@ export default function CommunityScreen() {
 
                     <View style={{ flexDirection: 'row', gap: Spacing.two, marginBottom: Spacing.two }}>
                       <View style={{ flex: 1 }}>
-                        <ThemedText type="code" style={{ fontSize: 10, color: theme.textSecondary }}>
+                        <ThemedText type="smallBold" style={{ fontSize: 11, color: theme.textSecondary }}>
                           {language === 'hi' ? 'दर (₹)' : 'RATE (₹)'}
                         </ThemedText>
                         <TextInput
@@ -1800,7 +2027,7 @@ export default function CommunityScreen() {
                       </View>
 
                       <View style={{ flex: 1 }}>
-                        <ThemedText type="code" style={{ fontSize: 10, color: theme.textSecondary }}>
+                        <ThemedText type="smallBold" style={{ fontSize: 11, color: theme.textSecondary }}>
                           {language === 'hi' ? 'इकाई (Unit)' : 'UNIT'}
                         </ThemedText>
                         <View style={{ flexDirection: 'row', gap: Spacing.one, marginTop: 4, height: 40 }}>
@@ -1818,7 +2045,7 @@ export default function CommunityScreen() {
                                 justifyContent: 'center'
                               }}
                             >
-                              <ThemedText type="code" style={{ fontSize: 11 }}>
+                              <ThemedText type="smallBold" style={{ fontSize: 12 }}>
                                 {language === 'hi' ? (u === 'hour' ? 'घंटा' : 'दिन') : u}
                               </ThemedText>
                             </Pressable>
@@ -1827,7 +2054,7 @@ export default function CommunityScreen() {
                       </View>
                     </View>
 
-                    <ThemedText type="code" style={{ fontSize: 10, color: theme.textSecondary }}>
+                    <ThemedText type="smallBold" style={{ fontSize: 11, color: theme.textSecondary }}>
                       {language === 'hi' ? 'स्थान (क्षेत्र/गाँव)' : 'LOCATION / DISTRICT'}
                     </ThemedText>
                     <TextInput
@@ -1840,7 +2067,7 @@ export default function CommunityScreen() {
                 )}
 
                 {/* Upload Image Selector */}
-                <ThemedText type="code" style={styles.formLabel}>
+                <ThemedText type="smallBold" style={styles.formLabel}>
                   {language === 'hi' ? 'फोटो अपलोड करें (वैकल्पिक)' : 'UPLOAD PHOTO (OPTIONAL)'}
                 </ThemedText>
                 <View style={{ flexDirection: 'row', gap: Spacing.two, marginBottom: Spacing.three }}>
@@ -1857,7 +2084,7 @@ export default function CommunityScreen() {
                       size={18}
                       tintColor={theme.primary}
                     />
-                    <ThemedText type="code" style={{ color: theme.primary, fontWeight: '700', fontSize: 12 }}>
+                    <ThemedText type="smallBold" style={{ color: theme.primary, fontSize: 13 }}>
                       {language === 'hi' ? 'कैमरा' : 'Camera'}
                     </ThemedText>
                   </Pressable>
@@ -1875,7 +2102,7 @@ export default function CommunityScreen() {
                       size={18}
                       tintColor={theme.primary}
                     />
-                    <ThemedText type="code" style={{ color: theme.primary, fontWeight: '700', fontSize: 12 }}>
+                    <ThemedText type="smallBold" style={{ color: theme.primary, fontSize: 13 }}>
                       {language === 'hi' ? 'गैलरी' : 'Gallery'}
                     </ThemedText>
                   </Pressable>
@@ -1917,7 +2144,7 @@ export default function CommunityScreen() {
                   )}
                 </Pressable>
               </ScrollView>
-            </ThemedView>
+            </Animated.View>
           </View>
         </Modal>
 
@@ -2222,9 +2449,15 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
     justifyContent: 'flex-end',
-    alignItems: 'center'
+    alignItems: 'center',
+    ...Platform.select({
+      web: {
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+      } as any,
+    }),
   },
   modalCard: {
     width: '100%',
@@ -2246,9 +2479,12 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.six
   },
   formLabel: {
-    fontSize: 10,
-    color: '#7A9E83',
+    fontFamily: Fonts.sans,
+    fontSize: 11,
+    color: '#059669',
     fontWeight: '700',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
     marginTop: Spacing.three,
     marginBottom: 6
   },
@@ -2310,5 +2546,193 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: Spacing.four,
+  },
+  redditCoverBanner: {
+    height: 125,
+    width: '100%',
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  redditBackBtn: {
+    position: 'absolute',
+    top: 12,
+    left: 16,
+    zIndex: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  redditBannerOverlay: {
+    position: 'absolute',
+    right: -10,
+    bottom: -15,
+  },
+  redditProfileHeader: {
+    paddingBottom: 4,
+  },
+  redditAvatarRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    marginTop: -32,
+  },
+  redditAvatar: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    borderWidth: 3.5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Platform.select({
+      web: {
+        boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+      } as any,
+      default: {
+        elevation: 6,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+      },
+    }),
+  },
+  redditJoinBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 7,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  redditStatsBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 14,
+  },
+  redditStatItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  redditStatDivider: {
+    width: 1,
+    height: 24,
+  },
+  redditSubTabBar: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    marginTop: 14,
+    gap: 24,
+  },
+  redditSubTabBtn: {
+    paddingVertical: 10,
+    borderBottomWidth: 2.5,
+    borderBottomColor: 'transparent',
+  },
+  floatingFabContainer: {
+    position: 'absolute',
+    right: 18,
+    bottom: 18,
+    zIndex: 9999,
+  },
+  floatingBoardFab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    paddingVertical: 11,
+    paddingHorizontal: 16,
+    borderRadius: 28,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 6px 20px rgba(5, 150, 105, 0.45)',
+        cursor: 'pointer',
+        outlineStyle: 'none',
+      } as any,
+      default: {
+        shadowColor: '#059669',
+        shadowOffset: { width: 0, height: 5 },
+        shadowOpacity: 0.4,
+        shadowRadius: 10,
+        elevation: 8,
+      },
+    }),
+  },
+  floatingBoardFabPressed: {
+    opacity: 0.88,
+    transform: [{ scale: 0.94 }],
+  },
+  floatingBoardFabText: {
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 0.2,
+  },
+  floatingPlusFab: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Platform.select({
+      web: {
+        boxShadow: '0 6px 20px rgba(5, 150, 105, 0.45)',
+        cursor: 'pointer',
+        outlineStyle: 'none',
+      } as any,
+      default: {
+        shadowColor: '#059669',
+        shadowOffset: { width: 0, height: 5 },
+        shadowOpacity: 0.4,
+        shadowRadius: 10,
+        elevation: 8,
+      },
+    }),
+  },
+  actionChoiceCard: {
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.four,
+    paddingBottom: Platform.OS === 'web' ? Spacing.five : Spacing.six,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 -10px 30px rgba(0,0,0,0.3)',
+      } as any,
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -6 },
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
+        elevation: 12,
+      },
+    }),
+  },
+  actionChoiceBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+    padding: Spacing.three,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  actionChoiceIconBg: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    justifyContent: 'center',
+    alignItems: 'center',
   }
 });

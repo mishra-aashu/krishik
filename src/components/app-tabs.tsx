@@ -10,7 +10,7 @@ export default function AppTabs() {
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
   const pathname = usePathname();
-  const isChatOrProfileScreen = pathname === '/chat' || pathname === '/profile' || pathname.startsWith('/profile');
+  const isChatScreen = pathname === '/chat';
 
   return (
     <View style={{ flex: 1 }}>
@@ -58,7 +58,7 @@ export default function AppTabs() {
         />
       </NativeTabs.Trigger>
     </NativeTabs>
-    {!isChatOrProfileScreen && <FloatingVoiceButton />}
+    {!isChatScreen && <FloatingVoiceButton />}
   </View>
   );
 }

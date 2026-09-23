@@ -1,6 +1,6 @@
 import { Platform } from 'react-native';
 import { startRecording, stopRecording, transcribeAudio } from './transcription-service';
-import { getSpeechRecognitionLang, normalizePhoneticDevanagari } from './multilingual-voice-engine';
+import { getSpeechRecognitionLang, normalizePhoneticDevanagari, deduplicateSpeechTranscript } from './multilingual-voice-engine';
 
 export interface SpeechRecognitionHandlers {
   onInterimResult?: (transcript: string) => void;
@@ -93,7 +93,7 @@ async function startWebSpeechSession(
     if (silenceTimer) clearTimeout(silenceTimer);
     // When user stops speaking for 1.7 seconds, auto-submit
     silenceTimer = setTimeout(() => {
-      const bestText = (finalTranscript + ' ' + accumulatedInterim).trim();
+      const bestText = deduplicateSpeechTranscript((finalTranscript + ' ' + accumulatedInterim).trim());
       if (bestText.length > 0 && !isStopped) {
         console.log('[SpeechService] Auto-silence detected after speech, finalizing:', bestText);
         finalizeSpeech(bestText);
@@ -112,7 +112,7 @@ async function startWebSpeechSession(
 
     cleanupResources();
 
-    const normalized = normalizePhoneticDevanagari(text.trim());
+    const normalized = deduplicateSpeechTranscript(normalizePhoneticDevanagari(text.trim()));
 
     if (handlers.onStateChange) handlers.onStateChange('processing');
     if (handlers.onFinalResult) handlers.onFinalResult(normalized);
@@ -131,22 +131,39 @@ async function startWebSpeechSession(
   };
 
   recognition.onresult = (event: any) => {
-    let currentInterim = '';
-    let currentFinal = '';
+    const finalParts: string[] = [];
+    const interimParts: string[] = [];
 
     for (let i = 0; i < event.results.length; i++) {
       const item = event.results[i];
-      const text = item[0]?.transcript || '';
+      const text = (item[0]?.transcript || '').trim();
+      if (!text) continue;
+
       if (item.isFinal) {
-        currentFinal += text + ' ';
+        if (finalParts.length > 0) {
+          const lastPart = finalParts[finalParts.length - 1];
+          // If the new segment extends or duplicates the previous, replace it
+          if (text.toLowerCase().startsWith(lastPart.toLowerCase())) {
+            finalParts[finalParts.length - 1] = text;
+          } else if (!lastPart.toLowerCase().includes(text.toLowerCase())) {
+            finalParts.push(text);
+          }
+        } else {
+          finalParts.push(text);
+        }
       } else {
-        currentInterim += text;
+        interimParts.push(text);
       }
     }
 
+    const currentFinal = deduplicateSpeechTranscript(finalParts.join(' '));
+    const currentInterim = deduplicateSpeechTranscript(interimParts.join(' '));
+
     finalTranscript = currentFinal;
     accumulatedInterim = currentInterim;
-    const combined = (finalTranscript + (currentInterim ? ' ' + currentInterim : '')).trim();
+
+    const rawCombined = (currentFinal + ' ' + currentInterim).trim();
+    const combined = deduplicateSpeechTranscript(rawCombined);
 
     if (combined.length > 0) {
       hasReceivedSpeech = true;
@@ -180,7 +197,7 @@ async function startWebSpeechSession(
   recognition.onend = () => {
     console.log('[SpeechService] WebSpeech ended');
     if (!isStopped) {
-      const candidate = (finalTranscript + ' ' + accumulatedInterim).trim();
+      const candidate = deduplicateSpeechTranscript((finalTranscript + ' ' + accumulatedInterim).trim());
       if (candidate.length > 0) {
         finalizeSpeech(candidate);
       } else {
