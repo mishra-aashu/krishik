@@ -28,6 +28,7 @@ import { useAuth } from '@/context/auth-context';
 import { LocalStorage } from '@/utils/storage';
 import { CommunityService, type Community, type Post, type Comment } from '@/services/community-service';
 import { compressAndResizeImage, saveImageToLocalFileSystem, resolveLocalImageUri } from '@/utils/image-compress';
+import { uploadImageToImgBB } from '@/services/imgbb-service';
 import { useNetInfo } from '@react-native-community/netinfo';
 import OfflineNotice from '@/components/offline-notice';
 
@@ -122,7 +123,9 @@ export default function CommunityScreen() {
   // 'main' = Community lists & generic feed tabs
   // 'community-details' = Subpage of a selected community
   // 'post-details' = Details of a selected post
-  const [activeView, setActiveView] = useState<'main' | 'community-details' | 'post-details'>('main');
+  // 'create-community' = Subpage to create a new community board
+  // 'create-post' = Subpage to create a new post
+  const [activeView, setActiveView] = useState<'main' | 'community-details' | 'post-details' | 'create-community' | 'create-post'>('main');
   const [activeTab, setActiveTab] = useState<'my-feed' | 'communities'>('my-feed');
   const [selectedCommunity, setSelectedCommunity] = useState<Community | null>(null);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
@@ -137,9 +140,7 @@ export default function CommunityScreen() {
   const [comments, setComments] = useState<Comment[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Modals Visibility
-  const [createCommunityVisible, setCreateCommunityVisible] = useState(false);
-  const [createPostVisible, setCreatePostVisible] = useState(false);
+  // Action Menu Visibility
   const [createActionMenuVisible, setCreateActionMenuVisible] = useState(false);
 
   // Create Community Form States
@@ -292,7 +293,7 @@ export default function CommunityScreen() {
         userPhone || 'demo'
       );
       setCommunities(prev => [newComm, ...prev]);
-      setCreateCommunityVisible(false);
+      setActiveView('main');
       // Reset form
       setCommName('');
       setCommDesc('');
@@ -365,6 +366,11 @@ export default function CommunityScreen() {
     }
     setIsSubmitting(true);
     try {
+      let hostedImageUrl: string | null = null;
+      if (postImage) {
+        hostedImageUrl = await uploadImageToImgBB(postImage);
+      }
+
       const price = postRentPrice ? parseFloat(postRentPrice) : null;
       const freshPost = await CommunityService.createPost(
         selectedCommunity.id,
@@ -373,14 +379,18 @@ export default function CommunityScreen() {
         postTitle,
         postContent,
         postTag,
-        postImage,
+        hostedImageUrl,
         price,
         price ? postRentUnit : null,
         postLocation || null
       );
       
       setPosts(prev => [freshPost, ...prev]);
-      setCreatePostVisible(false);
+      if (selectedCommunity) {
+        setActiveView('community-details');
+      } else {
+        setActiveView('main');
+      }
       // Reset form
       setPostTitle('');
       setPostContent('');
@@ -1202,7 +1212,7 @@ export default function CommunityScreen() {
                           return;
                         }
                         setPostTag(selectedCommunity.category === 'machinery' ? '#Rent' : '#Question');
-                        setCreatePostVisible(true);
+                        setActiveView('create-post');
                       }}
                       style={({ pressed }) => [
                         styles.createPostBar,
@@ -1728,7 +1738,7 @@ export default function CommunityScreen() {
                       setSelectedCommunity(communities[0]);
                     }
                     setPostTag(selectedCommunity?.category === 'machinery' ? '#Rent' : '#Question');
-                    setCreatePostVisible(true);
+                    setActiveView('create-post');
                   }}
                   style={({ pressed }) => [
                     styles.actionChoiceBtn,
@@ -1769,7 +1779,7 @@ export default function CommunityScreen() {
                       );
                       return;
                     }
-                    setCreateCommunityVisible(true);
+                    setActiveView('create-community');
                   }}
                   style={({ pressed }) => [
                     styles.actionChoiceBtn,
@@ -1803,24 +1813,38 @@ export default function CommunityScreen() {
           </Pressable>
         </Modal>
 
-        {/* MODAL 1: CREATE COMMUNITY BOARD */}
-        <Modal visible={createCommunityVisible} animationType="fade" transparent>
-          <View style={styles.modalOverlay}>
-            <Animated.View entering={FadeInUp.duration(260)} style={[styles.modalCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
-              <View style={styles.modalHeader}>
+        {/* VIEW 4: CREATE COMMUNITY BOARD PAGE */}
+        {activeView === 'create-community' && (
+          <Animated.View entering={FadeInRight.duration(260)} style={{ flex: 1 }}>
+            {/* Sub-Header */}
+            <View style={styles.subPageHeader}>
+              <Pressable
+                onPress={() => setActiveView('main')}
+                style={({ pressed }) => [
+                  styles.backBtn,
+                  { backgroundColor: theme.backgroundElement },
+                  pressed && { opacity: 0.8 }
+                ]}
+              >
+                <SymbolView
+                  name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' } as any}
+                  size={20}
+                  tintColor={theme.text}
+                />
+              </Pressable>
+              
+              <View style={{ flex: 1 }}>
                 <ThemedText type="smallBold" style={{ fontSize: 18 }}>
                   {language === 'hi' ? 'नई चौपाल बनाएं' : 'Create New Chowpal'}
                 </ThemedText>
-                <Pressable onPress={() => setCreateCommunityVisible(false)}>
-                  <SymbolView
-                    name={{ ios: 'xmark.circle.fill', android: 'close', web: 'close' } as any}
-                    size={24}
-                    tintColor={theme.textSecondary}
-                  />
-                </Pressable>
+                <ThemedText type="small" style={{ fontSize: 12, color: theme.textSecondary }}>
+                  {language === 'hi' ? 'किसानों के लिए चर्चा मंच शुरू करें' : 'Start a community discussion forum for farmers'}
+                </ThemedText>
               </View>
+            </View>
 
-              <ScrollView contentContainerStyle={styles.modalForm} showsVerticalScrollIndicator={false}>
+            <ScrollView contentContainerStyle={styles.createPageFormContent} showsVerticalScrollIndicator={false}>
+              <View style={[styles.createPageFormCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
                 {/* Board Category */}
                 <ThemedText type="smallBold" style={styles.formLabel}>
                   {language === 'hi' ? 'श्रेणी (Category)' : 'CATEGORY'}
@@ -1844,7 +1868,7 @@ export default function CommunityScreen() {
                           styles.formCategoryPill,
                           {
                             borderColor: isSelected ? theme.primary : theme.border,
-                            backgroundColor: isSelected ? theme.backgroundSelected : theme.backgroundElement,
+                            backgroundColor: isSelected ? (theme.dark ? '#064E3B' : '#ECFDF5') : (theme.dark ? '#18181B' : '#F8FAF8'),
                             flexDirection: 'row',
                             alignItems: 'center',
                             gap: 6
@@ -1853,10 +1877,10 @@ export default function CommunityScreen() {
                       >
                         <SymbolView
                           name={getCategoryIcon(cat.key) as any}
-                          size={12}
-                          tintColor={isSelected ? theme.primary : theme.textSecondary}
+                          size={13}
+                          tintColor={isSelected ? (theme.dark ? '#34D399' : '#059669') : theme.textSecondary}
                         />
-                        <ThemedText type="smallBold" style={{ color: isSelected ? theme.primary : theme.text, fontSize: 13 }}>
+                        <ThemedText type="smallBold" style={{ color: isSelected ? (theme.dark ? '#34D399' : '#059669') : theme.text, fontSize: 13 }}>
                           {cat.label}
                         </ThemedText>
                       </Pressable>
@@ -1880,7 +1904,7 @@ export default function CommunityScreen() {
                   {language === 'hi' ? 'विवरण (Description)' : 'BOARD DESCRIPTION'}
                 </ThemedText>
                 <TextInput
-                  style={[styles.formInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.backgroundElement, height: 70 }]}
+                  style={[styles.formInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.backgroundElement, height: 90 }]}
                   placeholder={language === 'hi' ? 'संक्षिप्त विवरण लिखें...' : 'Enter brief description...'}
                   value={commDesc}
                   onChangeText={setCommDesc}
@@ -1900,40 +1924,62 @@ export default function CommunityScreen() {
                   {isSubmitting ? (
                     <ActivityIndicator size="small" color={theme.onPrimary} />
                   ) : (
-                    <ThemedText type="smallBold" style={{ color: theme.onPrimary }}>
+                    <ThemedText type="smallBold" style={{ color: theme.onPrimary, fontSize: 16 }}>
                       {language === 'hi' ? 'चौपाल बनाएं' : 'Create Chowpal'}
                     </ThemedText>
                   )}
                 </Pressable>
-              </ScrollView>
-            </Animated.View>
-          </View>
-        </Modal>
+              </View>
+            </ScrollView>
+          </Animated.View>
+        )}
 
-        {/* MODAL 2: CREATE POST */}
-        <Modal visible={createPostVisible} animationType="fade" transparent>
-          <View style={styles.modalOverlay}>
-            <Animated.View entering={FadeInUp.duration(260)} style={[styles.modalCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
-              <View style={styles.modalHeader}>
+        {/* VIEW 5: CREATE POST PAGE */}
+        {activeView === 'create-post' && (
+          <Animated.View entering={FadeInRight.duration(260)} style={{ flex: 1 }}>
+            {/* Sub-Header */}
+            <View style={styles.subPageHeader}>
+              <Pressable
+                onPress={() => {
+                  if (selectedCommunity) {
+                    setActiveView('community-details');
+                  } else {
+                    setActiveView('main');
+                  }
+                }}
+                style={({ pressed }) => [
+                  styles.backBtn,
+                  { backgroundColor: theme.backgroundElement },
+                  pressed && { opacity: 0.8 }
+                ]}
+              >
+                <SymbolView
+                  name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' } as any}
+                  size={20}
+                  tintColor={theme.text}
+                />
+              </Pressable>
+              
+              <View style={{ flex: 1 }}>
                 <ThemedText type="smallBold" style={{ fontSize: 18 }}>
                   {language === 'hi' ? 'नई पोस्ट साझा करें' : 'Create New Post'}
                 </ThemedText>
-                <Pressable onPress={() => setCreatePostVisible(false)}>
-                  <SymbolView
-                    name={{ ios: 'xmark.circle.fill', android: 'close', web: 'close' } as any}
-                    size={24}
-                    tintColor={theme.textSecondary}
-                  />
-                </Pressable>
-              </View>
-
-              <ScrollView contentContainerStyle={styles.modalForm} showsVerticalScrollIndicator={false}>
-                {/* Selected Board Header */}
                 {selectedCommunity && (
-                  <View style={[styles.commBannerPill, { backgroundColor: theme.backgroundSelected, flexDirection: 'row', alignItems: 'center', gap: 6 }]}>
+                  <ThemedText type="small" style={{ fontSize: 12, color: theme.primary, fontWeight: '600' }} numberOfLines={1}>
+                    {language === 'hi' ? 'चौपाल: ' : 'Board: '}{language === 'hi' ? selectedCommunity.name.hi : selectedCommunity.name.en}
+                  </ThemedText>
+                )}
+              </View>
+            </View>
+
+            <ScrollView contentContainerStyle={styles.createPageFormContent} showsVerticalScrollIndicator={false}>
+              <View style={[styles.createPageFormCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+                {/* Selected Board Header Banner if available */}
+                {selectedCommunity && (
+                  <View style={[styles.commBannerPill, { backgroundColor: theme.backgroundSelected, flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: Spacing.three }]}>
                     <SymbolView
                       name={{ ios: 'megaphone.fill', android: 'campaign', web: 'campaign' } as any}
-                      size={12}
+                      size={14}
                       tintColor={theme.primary}
                     />
                     <ThemedText type="smallBold" style={{ color: theme.primary, fontWeight: '700', fontSize: 13 }}>
@@ -1964,11 +2010,11 @@ export default function CommunityScreen() {
                           styles.formCategoryPill,
                           {
                             borderColor: isSelected ? theme.primary : theme.border,
-                            backgroundColor: isSelected ? theme.backgroundSelected : theme.backgroundElement
+                            backgroundColor: isSelected ? (theme.dark ? '#064E3B' : '#ECFDF5') : (theme.dark ? '#18181B' : '#F8FAF8')
                           }
                         ]}
                       >
-                        <ThemedText type="smallBold" style={{ color: isSelected ? theme.primary : theme.text, fontSize: 13 }}>
+                        <ThemedText type="smallBold" style={{ color: isSelected ? (theme.dark ? '#34D399' : '#059669') : theme.text, fontSize: 13 }}>
                           {getLocalizedTag(t, language)}
                         </ThemedText>
                       </Pressable>
@@ -1992,7 +2038,7 @@ export default function CommunityScreen() {
                   {language === 'hi' ? 'विवरण' : 'DETAILS / DESCRIPTION'}
                 </ThemedText>
                 <TextInput
-                  style={[styles.formInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.backgroundElement, height: 100 }]}
+                  style={[styles.formInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.backgroundElement, height: 120 }]}
                   placeholder={language === 'hi' ? 'अपनी बात विस्तार से साझा करें...' : 'Describe your post details...'}
                   value={postContent}
                   onChangeText={setPostContent}
@@ -2031,7 +2077,7 @@ export default function CommunityScreen() {
                         <ThemedText type="smallBold" style={{ fontSize: 11, color: theme.textSecondary }}>
                           {language === 'hi' ? 'इकाई (Unit)' : 'UNIT'}
                         </ThemedText>
-                        <View style={{ flexDirection: 'row', gap: Spacing.one, marginTop: 4, height: 40 }}>
+                        <View style={{ flexDirection: 'row', gap: Spacing.one, marginTop: 4, height: 44 }}>
                           {['hour', 'day'].map(u => (
                             <Pressable
                               key={u}
@@ -2041,7 +2087,7 @@ export default function CommunityScreen() {
                                 borderWidth: 1,
                                 borderColor: postRentUnit === u ? theme.primary : theme.border,
                                 backgroundColor: postRentUnit === u ? theme.backgroundSelected : theme.card,
-                                borderRadius: 8,
+                                borderRadius: 12,
                                 alignItems: 'center',
                                 justifyContent: 'center'
                               }}
@@ -2139,15 +2185,15 @@ export default function CommunityScreen() {
                   {isSubmitting ? (
                     <ActivityIndicator size="small" color={theme.onPrimary} />
                   ) : (
-                    <ThemedText type="smallBold" style={{ color: theme.onPrimary }}>
+                    <ThemedText type="smallBold" style={{ color: theme.onPrimary, fontSize: 16 }}>
                       {language === 'hi' ? 'पोस्ट साझा करें' : 'Publish Post'}
                     </ThemedText>
                   )}
                 </Pressable>
-              </ScrollView>
-            </Animated.View>
-          </View>
-        </Modal>
+              </View>
+            </ScrollView>
+          </Animated.View>
+        )}
 
       </SafeAreaView>
     </ThemedView>
@@ -2165,6 +2211,17 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
+  },
+  createPageFormContent: {
+    paddingHorizontal: Spacing.three,
+    paddingTop: Spacing.two,
+    paddingBottom: Spacing.six,
+  },
+  createPageFormCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: Spacing.four,
+    gap: Spacing.two,
   },
   centerContainer: {
     flex: 1,
@@ -2463,55 +2520,74 @@ const styles = StyleSheet.create({
   modalCard: {
     width: '100%',
     maxWidth: MaxContentWidth,
-    height: '80%',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    maxHeight: '88%',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     borderWidth: 1,
     borderBottomWidth: 0,
-    padding: Spacing.three,
+    padding: Spacing.four,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 -10px 30px rgba(0,0,0,0.25)',
+      } as any,
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -6 },
+        shadowOpacity: 0.25,
+        shadowRadius: 10,
+        elevation: 12,
+      },
+    }),
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingBottom: Spacing.three
+    paddingBottom: Spacing.three,
   },
   modalForm: {
-    paddingBottom: Spacing.six
+    paddingBottom: Spacing.six,
   },
   formLabel: {
     fontFamily: Fonts.sans,
     fontSize: 11,
-    color: '#059669',
+    color: '#64748B',
     fontWeight: '700',
-    letterSpacing: 0.6,
+    letterSpacing: 0.8,
     textTransform: 'uppercase',
-    marginTop: Spacing.three,
-    marginBottom: 6
+    marginTop: Spacing.four,
+    marginBottom: 8,
   },
   commBannerPill: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 10,
     marginBottom: Spacing.two,
   },
   formInput: {
-    height: 40,
+    minHeight: 44,
     borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: Spacing.two,
-    fontSize: 13,
+    borderRadius: 12,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: 10,
+    fontSize: 14,
+    fontFamily: Fonts.sans,
+    ...Platform.select({
+      web: {
+        outlineStyle: 'none',
+      } as any,
+    }),
   },
   formCategoryPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1.5,
   },
   formRentGroup: {
     padding: Spacing.three,
     borderWidth: 1,
-    borderRadius: 10,
+    borderRadius: 12,
     marginTop: Spacing.three,
   },
   modalPhotoBtn: {
@@ -2519,15 +2595,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     borderWidth: 1,
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
   },
   imagePreviewContainer: {
     position: 'relative',
     width: 120,
     height: 90,
-    borderRadius: 8,
+    borderRadius: 12,
     overflow: 'hidden',
     marginBottom: Spacing.three,
   },
@@ -2542,11 +2618,24 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   formSubmitBtn: {
-    height: 44,
-    borderRadius: 8,
+    height: 48,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: Spacing.four,
+    marginTop: Spacing.five,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 4px 14px rgba(5, 150, 105, 0.35)',
+        cursor: 'pointer',
+      } as any,
+      default: {
+        elevation: 4,
+        shadowColor: '#059669',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+      },
+    }),
   },
   redditCoverBanner: {
     height: 125,

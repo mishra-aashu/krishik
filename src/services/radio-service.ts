@@ -16,6 +16,8 @@ export interface RadioStation {
   iconName: string;
   isAiStation?: boolean;
   isFarmingStation?: boolean;
+  isYouTube?: boolean;
+  youtubeId?: string;
   bitrate?: number;
   tags?: string;
 }
@@ -39,6 +41,22 @@ export const DEFAULT_AI_STATION: RadioStation = {
 // Dedicated Farming & Agriculture Radio Stations (100% LIVE VERIFIED STREAM MP3s)
 export const AGRICULTURE_STATIONS: RadioStation[] = [
   DEFAULT_AI_STATION,
+  {
+    id: 'dd-kisan-live-stream',
+    nameEn: 'DD Kisan & AIR Live Audio',
+    nameHi: 'डीडी किसान व आकाशवाणी 24x7 रेडियो',
+    frequency: '105.4 FM',
+    freqMHz: 105.4,
+    regionEn: 'National Live Farm Stream',
+    regionHi: 'राष्ट्रीय लाइव किसान रेडियो',
+    streamUrl: 'https://www.youtube.com/embed/izXvukZFBtg?autoplay=1&enablejsapi=1&playsinline=1',
+    youtubeId: 'izXvukZFBtg',
+    isYouTube: true,
+    descriptionEn: 'Official 24/7 AIR & DD Kisan Live audio broadcast.',
+    descriptionHi: 'आधिकारिक 24/7 डीडी किसान व आकाशवाणी लाइव सीधा ऑडियो प्रसारण।',
+    iconName: 'broadcast',
+    isFarmingStation: true,
+  },
   {
     id: 'air-kisan-vani',
     nameEn: 'AIR Kisan Vani',
@@ -216,6 +234,7 @@ export async function searchRadioBrowserStations(query: string): Promise<RadioSt
 class RadioServiceManager {
   private currentSound: Audio.Sound | null = null;
   private htmlAudio: HTMLAudioElement | null = null;
+  private ytIframe: any = null;
   private activeStationId: string | null = null;
   private isPlayingState: boolean = false;
 
@@ -234,6 +253,30 @@ class RadioServiceManager {
     }
 
     try {
+      if (station.isYouTube && station.youtubeId) {
+        if (Platform.OS === 'web' && typeof document !== 'undefined') {
+          const old = document.getElementById('krishik-yt-radio-iframe');
+          if (old && old.parentNode) old.parentNode.removeChild(old);
+
+          const iframe = document.createElement('iframe');
+          iframe.id = 'krishik-yt-radio-iframe';
+          iframe.style.position = 'fixed';
+          iframe.style.width = '1px';
+          iframe.style.height = '1px';
+          iframe.style.top = '-9999px';
+          iframe.style.left = '-9999px';
+          iframe.style.opacity = '0';
+          iframe.style.pointerEvents = 'none';
+          iframe.src = `https://www.youtube.com/embed/${station.youtubeId}?autoplay=1&enablejsapi=1&playsinline=1&controls=0&mute=0`;
+          iframe.allow = 'autoplay; encrypted-media';
+          document.body.appendChild(iframe);
+          this.ytIframe = iframe;
+          this.isPlayingState = true;
+          onStateChange?.(true, station.id);
+          return true;
+        }
+      }
+
       if (Platform.OS === 'web') {
         this.htmlAudio = new window.Audio(station.streamUrl);
 
@@ -336,6 +379,14 @@ class RadioServiceManager {
   public async stopCurrent(): Promise<void> {
     try {
       Speech.stop();
+
+      if (this.ytIframe || (typeof document !== 'undefined' && document.getElementById('krishik-yt-radio-iframe'))) {
+        const elem = this.ytIframe || document.getElementById('krishik-yt-radio-iframe');
+        this.ytIframe = null;
+        if (elem && elem.parentNode) {
+          elem.parentNode.removeChild(elem);
+        }
+      }
 
       if (this.htmlAudio) {
         const audio = this.htmlAudio;

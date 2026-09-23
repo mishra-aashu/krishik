@@ -28,6 +28,7 @@ import { useLanguage } from '@/context/language-context';
 import { LocalStorage } from '@/utils/storage';
 import { sendMessageToGroq, type ModelMode } from '@/services/chat-service';
 import { compressAndResizeImage, saveImageToLocalFileSystem, resolveLocalImageUri } from '@/utils/image-compress';
+import { uploadImageToImgBB } from '@/services/imgbb-service';
 import { CustomMarkdown } from '@/components/custom-markdown';
 import { useNetInfo } from '@react-native-community/netinfo';
 import OfflineNotice from '@/components/offline-notice';
@@ -1138,8 +1139,13 @@ export default function ChatScreen() {
     setErrorMsg(null);
     setInputValue('');
 
-    const imageToSend = selectedImage;
+    let imageToSend = selectedImage;
     setSelectedImage(null);
+
+    if (imageToSend) {
+      const hostedUrl = await uploadImageToImgBB(imageToSend);
+      if (hostedUrl) imageToSend = hostedUrl;
+    }
 
     const userMsg: ChatMessage = {
       id: Date.now().toString(),

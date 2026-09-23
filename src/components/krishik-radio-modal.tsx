@@ -20,15 +20,13 @@ import Animated, {
 } from 'react-native-reanimated';
 import { ThemedText } from './themed-text';
 import { useTheme } from '../hooks/use-theme';
-import { Colors } from '../constants/theme';
+import { Colors, MaxContentWidth } from '../constants/theme';
 import { useLanguage } from '../context/language-context';
 import {
   INITIAL_RADIO_STATIONS,
   DEFAULT_AI_STATION,
   RadioStation,
   radioService,
-  fetchLiveIndianRadioStations,
-  searchRadioBrowserStations,
 } from '../services/radio-service';
 
 interface KrishikRadioModalProps {
@@ -52,33 +50,21 @@ export const KrishikRadioModal: React.FC<KrishikRadioModalProps> = ({
   const [isFetchingStations, setIsFetchingStations] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  useEffect(() => {
-    if (visible) {
-      setIsFetchingStations(true);
-      fetchLiveIndianRadioStations()
-        .then((fetched) => {
-          if (fetched && fetched.length > 0) {
-            setStations(fetched);
-          }
-        })
-        .finally(() => {
-          setIsFetchingStations(false);
-        });
-    }
-  }, [visible]);
-
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    setIsFetchingStations(true);
-    searchRadioBrowserStations(query)
-      .then((results) => {
-        if (results && results.length > 0) {
-          setStations(results);
-        }
-      })
-      .finally(() => {
-        setIsFetchingStations(false);
-      });
+    if (!query.trim()) {
+      setStations(INITIAL_RADIO_STATIONS);
+      return;
+    }
+    const q = query.toLowerCase();
+    const filtered = INITIAL_RADIO_STATIONS.filter(s =>
+      s.nameEn.toLowerCase().includes(q) ||
+      s.nameHi.toLowerCase().includes(q) ||
+      s.frequency.toLowerCase().includes(q) ||
+      s.regionEn.toLowerCase().includes(q) ||
+      s.regionHi.toLowerCase().includes(q)
+    );
+    setStations(filtered);
   };
 
   // Dynamic 5-bar VU Equalizer Animation
@@ -160,36 +146,41 @@ export const KrishikRadioModal: React.FC<KrishikRadioModalProps> = ({
       onRequestClose={handleClose}
     >
       <View style={[styles.fullScreenContainer, { backgroundColor: pageBg }]}>
-        <SafeAreaView style={{ flex: 1 }}>
+        <SafeAreaView style={styles.safeArea}>
           <View style={styles.mainContentPadding}>
             {/* Top Compact Header Bar */}
             <View style={[styles.headerRow, { borderBottomColor: isDarkMode ? 'rgba(255,255,255,0.08)' : theme.border }]}>
-              <TouchableOpacity
-                onPress={handleClose}
-                activeOpacity={0.7}
-                style={[styles.backBtn, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : theme.backgroundElement }]}
-              >
-                <SymbolView
-                  name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' } as any}
-                  size={16}
-                  tintColor={theme.text}
-                />
-              </TouchableOpacity>
+              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <TouchableOpacity
+                  onPress={handleClose}
+                  activeOpacity={0.7}
+                  style={[styles.backBtn, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : theme.backgroundElement }]}
+                >
+                  <SymbolView
+                    name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' } as any}
+                    size={16}
+                    tintColor={theme.text}
+                  />
+                </TouchableOpacity>
 
-              <View style={{ flex: 1, marginLeft: 8 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <ThemedText style={{ fontSize: 16, fontWeight: '800', color: theme.text }}>
-                    {language === 'hi' ? 'किसान रेडियो ट्रांसिस्टर' : 'Krishik FM Transistor'}
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <ThemedText style={{ fontSize: 16, fontWeight: '800', color: theme.text }}>
+                      {language === 'hi' ? 'किसान रेडियो ट्रांसिस्टर' : 'Krishik FM Transistor'}
+                    </ThemedText>
+                    {isPlaying && (
+                      <View style={styles.headerLivePulse}>
+                        <View style={styles.headerLiveDot} />
+                        <ThemedText style={{ color: '#EF4444', fontSize: 8.5, fontWeight: '800' }}>
+                          LIVE
+                        </ThemedText>
+                      </View>
+                    )}
+                  </View>
+                  <ThemedText style={{ fontSize: 10, color: theme.textSecondary, fontWeight: '500' }}>
+                    {language === 'hi' ? 'कृषि सलाह, मौसम व समाचार बुलेटिन' : 'Live Agricultural Audio Bulletins'}
                   </ThemedText>
-                  {isPlaying && (
-                    <View style={styles.headerLivePulse}>
-                      <View style={styles.headerLiveDot} />
-                    </View>
-                  )}
                 </View>
-                <ThemedText style={{ fontSize: 10, color: theme.textSecondary, fontWeight: '600' }}>
-                  {language === 'hi' ? 'कृषि सलाह, मौसम व समाचार बुलेटिन' : 'Live Agricultural Audio Bulletins'}
-                </ThemedText>
               </View>
 
               <TouchableOpacity
@@ -211,7 +202,7 @@ export const KrishikRadioModal: React.FC<KrishikRadioModalProps> = ({
               <View style={styles.transistorLedScreen}>
                 {/* Top Row: Frequency Digital Pill + Station Title + VU Equalizer */}
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, marginRight: 8 }}>
                     {/* Glowing Digital Frequency Cyan Pill */}
                     <View style={styles.digitalFreqBadge}>
                       <ThemedText style={styles.digitalFreqText}>
@@ -245,17 +236,18 @@ export const KrishikRadioModal: React.FC<KrishikRadioModalProps> = ({
                             style={[
                               styles.rulerTickLine,
                               {
-                                backgroundColor: isActive ? '#38BDF8' : 'rgba(56, 189, 248, 0.3)',
-                                height: isActive ? 8 : 4,
+                                backgroundColor: isActive ? '#38BDF8' : 'rgba(56, 189, 248, 0.35)',
+                                height: isActive ? 10 : 5,
                                 width: isActive ? 2 : 1,
                               },
                             ]}
                           />
                           <ThemedText
                             style={{
-                              fontSize: 8,
+                              fontSize: 8.5,
                               fontWeight: isActive ? '800' : '600',
                               color: isActive ? '#38BDF8' : 'rgba(125, 211, 252, 0.5)',
+                              marginTop: 2,
                             }}
                           >
                             {freq}
@@ -269,8 +261,8 @@ export const KrishikRadioModal: React.FC<KrishikRadioModalProps> = ({
                 </View>
 
                 {/* Region / Status Sub-line */}
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 }}>
-                  <ThemedText numberOfLines={1} style={{ fontSize: 9.5, color: '#7DD3FC', fontWeight: '500', flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
+                  <ThemedText numberOfLines={1} style={{ fontSize: 10, color: '#7DD3FC', fontWeight: '500', flex: 1 }}>
                     {language === 'hi' ? activeStation.regionHi : activeStation.regionEn}
                   </ThemedText>
 
@@ -307,30 +299,22 @@ export const KrishikRadioModal: React.FC<KrishikRadioModalProps> = ({
                       android: isPlaying ? 'pause' : 'play_arrow',
                       web: isPlaying ? 'pause' : 'play_arrow',
                     } as any}
-                    size={18}
+                    size={20}
                     tintColor="#FFFFFF"
                   />
                 )}
               </TouchableOpacity>
             </View>
 
-            {/* Station Channel Selector Header */}
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, marginBottom: 6 }}>
-              <ThemedText style={{ fontSize: 13, fontWeight: '800', color: theme.text }}>
-                {language === 'hi' ? 'रेडियो चैनल सूची' : 'FM Radio Channels'}
-              </ThemedText>
-              {isFetchingStations && (
-                <ActivityIndicator size="small" color={cyanAccent} />
-              )}
-            </View>
-
-            {/* Seamless Search Bar (No Native Web Outline Box) */}
+            {/* Seamless Search Bar */}
             <View
               style={[
                 styles.searchBoxRow,
                 {
                   backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : '#FFFFFF',
                   borderColor: isDarkMode ? 'rgba(255,255,255,0.12)' : theme.border,
+                  marginTop: 12,
+                  marginBottom: 10,
                 },
               ]}
             >
@@ -341,7 +325,7 @@ export const KrishikRadioModal: React.FC<KrishikRadioModalProps> = ({
               />
               <TextInput
                 style={[styles.radioSearchInput, { color: theme.text }]}
-                placeholder={language === 'hi' ? 'चैनल, राज्य या AIR स्ट्रीम खोजें...' : 'Search station, state or AIR stream...'}
+                placeholder={language === 'hi' ? 'कृषि रेडियो चैनल खोजें...' : 'Search agriculture radio stations...'}
                 placeholderTextColor={theme.textSecondary}
                 value={searchQuery}
                 onChangeText={handleSearch}
@@ -357,37 +341,28 @@ export const KrishikRadioModal: React.FC<KrishikRadioModalProps> = ({
               )}
             </View>
 
+            {/* Single Clean Section Title */}
+            <View style={styles.sectionHeaderRow}>
+              <ThemedText style={{ fontSize: 12.5, fontWeight: '800', color: cyanAccent, letterSpacing: 0.2 }}>
+                {language === 'hi' ? 'कृषि व किसान विशेष चैनल' : 'Agriculture & Farming Stations'}
+              </ThemedText>
+            </View>
+
             {/* Full Height Station List */}
             <ScrollView style={styles.stationListScroll} showsVerticalScrollIndicator={false}>
-              {/* Farming Section Header */}
-              <View style={styles.sectionHeaderRow}>
-                <ThemedText style={{ fontSize: 11.5, fontWeight: '800', color: cyanAccent, letterSpacing: 0.2 }}>
-                  {language === 'hi' ? 'कृषि व किसान विशेष चैनल (Top Picks)' : 'Agriculture & Farming Stations (Top Picks)'}
-                </ThemedText>
-              </View>
 
-              {stations.map((station, index) => {
+              {stations.map((station) => {
                 const isCurrent = activeStation.id === station.id;
                 const isThisPlaying = isCurrent && isPlaying;
-                const showGeneralHeader = index > 0 && !station.isFarmingStation && stations[index - 1]?.isFarmingStation;
 
                 const iconSymbol = station.isAiStation
                   ? { ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }
-                  : station.isFarmingStation
-                  ? { ios: 'leaf.fill', android: 'eco', web: 'eco' }
-                  : { ios: 'radio.fill', android: 'radio', web: 'radio' };
+                  : { ios: 'leaf.fill', android: 'eco', web: 'eco' };
 
                 return (
-                  <React.Fragment key={station.id}>
-                    {showGeneralHeader && (
-                      <View style={[styles.sectionHeaderRow, { marginTop: 10 }]}>
-                        <ThemedText style={{ fontSize: 11.5, fontWeight: '800', color: theme.textSecondary, letterSpacing: 0.2 }}>
-                          {language === 'hi' ? 'आकाशवाणी व अन्य एफएम चैनल (AIR Live)' : 'All India Radio & Regional FM Streams'}
-                        </ThemedText>
-                      </View>
-                    )}
-                    <TouchableOpacity
-                      onPress={() => handleTogglePlay(station)}
+                  <TouchableOpacity
+                    key={station.id}
+                    onPress={() => handleTogglePlay(station)}
                       activeOpacity={0.75}
                       style={[
                         styles.stationRow,
@@ -468,7 +443,6 @@ export const KrishikRadioModal: React.FC<KrishikRadioModalProps> = ({
                         />
                       </View>
                     </TouchableOpacity>
-                  </React.Fragment>
                 );
               })}
             </ScrollView>
@@ -484,10 +458,18 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     height: '100%',
+    alignItems: 'center',
+  },
+  safeArea: {
+    flex: 1,
+    width: '100%',
+    maxWidth: 720,
+    alignSelf: 'center',
   },
   mainContentPadding: {
     flex: 1,
-    paddingHorizontal: 12,
+    width: '100%',
+    paddingHorizontal: 16,
     paddingTop: Platform.OS === 'android' ? 8 : 4,
     paddingBottom: 10,
   },
@@ -628,16 +610,15 @@ const styles = StyleSheet.create({
   searchBoxRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: Platform.OS === 'ios' ? 8 : 6,
+    borderRadius: 14,
     borderWidth: 1,
-    marginBottom: 6,
   },
   radioSearchInput: {
     flex: 1,
-    fontSize: 12.5,
+    fontSize: 13,
     paddingVertical: Platform.OS === 'ios' ? 3 : 1,
     ...Platform.select({
       web: { outlineStyle: 'none', borderStyle: 'none' } as any,
@@ -647,41 +628,41 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sectionHeaderRow: {
-    marginBottom: 5,
+    marginBottom: 8,
   },
   stationRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    height: 54,
-    paddingHorizontal: 10,
-    borderRadius: 12,
+    gap: 12,
+    height: 58,
+    paddingHorizontal: 12,
+    borderRadius: 14,
     borderWidth: 1,
-    marginBottom: 6,
+    marginBottom: 8,
   },
   stationIconCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   freqTagPill: {
-    paddingHorizontal: 6,
-    paddingVertical: 1,
+    paddingHorizontal: 7,
+    paddingVertical: 1.5,
     borderRadius: 10,
   },
   farmingPillMini: {
     backgroundColor: 'rgba(14, 165, 233, 0.15)',
-    paddingHorizontal: 6,
-    paddingVertical: 1,
+    paddingHorizontal: 7,
+    paddingVertical: 1.5,
     borderRadius: 10,
   },
   playMiniBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },

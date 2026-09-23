@@ -77,6 +77,7 @@ export default function HomeScreen() {
   const [isRadioModalOpen, setIsRadioModalOpen] = useState(false);
   const [liveLocation, setLiveLocation] = useState<LiveLocationData | null>(null);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
+  const [showAllMandi, setShowAllMandi] = useState(false);
 
   // Fetch weather when farmState changes or on init
   useEffect(() => {
@@ -460,17 +461,18 @@ export default function HomeScreen() {
   };
 
   // Filter, deduplicate and sort prices
-  const filteredMandiPrices = React.useMemo(() => {
+  const { allMandiCount, filteredMandiPrices } = React.useMemo(() => {
     // 1. Filter by search query
     let list = mandiPrices.filter(item =>
       item.commodity.toLowerCase().includes(mandiSearch.toLowerCase()) ||
-      item.state.toLowerCase().includes(mandiSearch.toLowerCase())
+      item.state.toLowerCase().includes(mandiSearch.toLowerCase()) ||
+      (item.variety && item.variety.toLowerCase().includes(mandiSearch.toLowerCase()))
     );
 
-    // 2. Deduplicate items so same commodity in same market isn't repeated 10 times
+    // 2. Deduplicate items by commodity + state + variety
     const seen = new Set<string>();
     list = list.filter(item => {
-      const key = `${item.commodity.trim().toLowerCase()}___${item.state.trim().toLowerCase()}`;
+      const key = `${item.commodity.trim().toLowerCase()}___${item.state.trim().toLowerCase()}___${(item.variety || '').trim().toLowerCase()}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
@@ -488,12 +490,10 @@ export default function HomeScreen() {
       });
     }
 
-    // 4. Limit default view to 25 items so page isn't too long, but show all if searching
-    if (!mandiSearch) {
-      return list.slice(0, 25);
-    }
-    return list;
-  }, [mandiPrices, mandiSearch, farmCrop]);
+    const totalCount = list.length;
+    const sliced = (!mandiSearch && !showAllMandi) ? list.slice(0, 12) : list;
+    return { allMandiCount: totalCount, filteredMandiPrices: sliced };
+  }, [mandiPrices, mandiSearch, farmCrop, showAllMandi]);
 
   // Quick advice trigger
   const handleQuickAdvice = (topic: string, question: string) => {
@@ -705,58 +705,58 @@ export default function HomeScreen() {
 
                 {/* 4. Disaster Alert Card (If Active) */}
                 {weatherData.disasterAlert && (
-                  <Pressable
+                  <PressableScale
                     onPress={() => setIsDisasterModalOpen(true)}
                     style={({ pressed }) => [
                       styles.disasterAlertCard,
                       {
-                        backgroundColor: theme.dark ? 'rgba(239, 68, 68, 0.12)' : '#FEF2F2',
-                        borderColor: theme.dark ? 'rgba(239, 68, 68, 0.35)' : '#FCA5A5',
+                        backgroundColor: theme.dark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+                        borderColor: theme.border,
                       },
-                      pressed && { opacity: 0.9 }
+                      pressed && { opacity: 0.8 }
                     ]}
                   >
                     {/* Top Row: Category Tag on Left, Risk Pill on Right */}
                     <View style={styles.disasterHeaderRow}>
                       <View style={styles.disasterTagLeft}>
-                        <View style={[styles.disasterIconCircle, { backgroundColor: theme.error }]}>
+                        <View style={[styles.disasterIconCircle, { backgroundColor: 'rgba(245, 158, 11, 0.15)' }]}>
                           <SymbolView
                             name={{ ios: 'exclamationmark.triangle.fill', android: 'warning', web: 'warning' } as any}
                             size={11}
-                            tintColor="#FFFFFF"
+                            tintColor="#F59E0B"
                           />
                         </View>
-                        <ThemedText style={styles.disasterTagText}>
-                          {language === 'hi' ? 'मौसम चेतावनी' : 'SEVERE ALERT'}
+                        <ThemedText style={[styles.disasterTagText, { color: '#F59E0B' }]}>
+                          {language === 'hi' ? 'मौसम चेतावनी' : 'WEATHER ADVISORY'}
                         </ThemedText>
                       </View>
 
-                      <View style={[styles.disasterRiskBadge, { backgroundColor: theme.error }]}>
-                        <ThemedText style={styles.disasterRiskText}>
+                      <View style={[styles.disasterRiskBadge, { backgroundColor: 'rgba(245, 158, 11, 0.15)', borderWidth: 1, borderColor: 'rgba(245, 158, 11, 0.3)' }]}>
+                        <ThemedText style={[styles.disasterRiskText, { color: '#F59E0B' }]}>
                           {weatherData.disasterAlert.probability}% {language === 'hi' ? 'खतरा' : 'RISK'}
                         </ThemedText>
                       </View>
                     </View>
 
-                    {/* Main Title: Full width, single-line strict truncation */}
-                    <ThemedText numberOfLines={1} ellipsizeMode="tail" style={[styles.disasterTitleText, { color: theme.dark ? '#FCA5A5' : '#991B1B' }]}>
+                    {/* Main Title: Full width, clean theme text */}
+                    <ThemedText numberOfLines={1} ellipsizeMode="tail" style={[styles.disasterTitleText, { color: theme.text }]}>
                       {(language === 'hi' ? weatherData.disasterAlert.titleHi : weatherData.disasterAlert.titleEn).replace(/^(48h|48-घंटे में|48-घंटे)\s*/i, '').replace(/^[^\w\s\u0900-\u097F]+/, '').trim()}
                     </ThemedText>
 
                     {/* Footer Action Row */}
                     <View style={styles.disasterFooterRow}>
-                      <ThemedText numberOfLines={1} style={[styles.disasterFooterText, { color: theme.dark ? '#F87171' : '#B91C1C' }]}>
+                      <ThemedText numberOfLines={1} style={[styles.disasterFooterText, { color: theme.primary }]}>
                         {language === 'hi' ? '48h सुरक्षा सलाह व गाइड' : '48h Advisory & Guide'}
                       </ThemedText>
-                      <View style={[styles.disasterArrowBox, { backgroundColor: theme.error + '20' }]}>
+                      <View style={[styles.disasterArrowBox, { backgroundColor: theme.primary + '18' }]}>
                         <SymbolView
                           name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any}
                           size={12}
-                          tintColor={theme.error}
+                          tintColor={theme.primary}
                         />
                       </View>
                     </View>
-                  </Pressable>
+                  </PressableScale>
                 )}
 
                 {/* 5. Smart Farm Advisory Callout */}
@@ -1116,20 +1116,23 @@ export default function HomeScreen() {
               disabled={isRefreshingPrices}
               style={({ pressed }) => [
                 styles.refreshButton,
-                { backgroundColor: theme.primary },
-                pressed && { opacity: 0.8 }
+                {
+                  backgroundColor: theme.dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
+                  borderColor: theme.border,
+                },
+                pressed && { opacity: 0.7 }
               ]}
             >
               {isRefreshingPrices ? (
-                <ActivityIndicator size="small" color={theme.onPrimary} />
+                <ActivityIndicator size="small" color={theme.primary} />
               ) : (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.one }}>
                   <SymbolView
                     name={{ ios: 'arrow.clockwise', android: 'refresh', web: 'refresh' } as any}
                     size={12}
-                    tintColor={theme.onPrimary}
+                    tintColor={theme.primary}
                   />
-                  <ThemedText type="code" style={[styles.refreshBtnText, { color: theme.onPrimary }]}>
+                  <ThemedText type="code" style={[styles.refreshBtnText, { color: theme.text }]}>
                     {language === 'hi' ? 'ताज़ा करें' : 'Refresh'}
                   </ThemedText>
                 </View>
@@ -1199,6 +1202,26 @@ export default function HomeScreen() {
                   </Animated.View>
                 );
               })
+            )}
+
+            {allMandiCount > 12 && !mandiSearch && (
+              <PressableScale
+                onPress={() => setShowAllMandi(prev => !prev)}
+                style={({ pressed }) => [
+                  styles.showMoreMandiBtn,
+                  {
+                    backgroundColor: theme.dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.025)',
+                    borderColor: theme.border
+                  },
+                  pressed && { opacity: 0.7 }
+                ]}
+              >
+                <ThemedText type="smallBold" style={{ color: theme.primary, fontSize: 13, textAlign: 'center' }}>
+                  {showAllMandi
+                    ? (language === 'hi' ? 'कम दिखाएं ▲' : 'Show Less ▲')
+                    : (language === 'hi' ? `देखें सभी मंडी भाव (${allMandiCount}) ▼` : `View All Mandi Rates (${allMandiCount}) ▼`)}
+                </ThemedText>
+              </PressableScale>
             )}
           </ThemedView>
 
@@ -1635,16 +1658,16 @@ const styles = StyleSheet.create({
     marginTop: Spacing.two,
   },
   refreshButton: {
-    paddingVertical: Spacing.half,
-    paddingHorizontal: Spacing.two,
-    borderRadius: Spacing.two,
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   refreshBtnText: {
-    color: '#ffffff',
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   mandiCard: {
     borderRadius: Spacing.three,
@@ -1669,6 +1692,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: Spacing.two,
     borderBottomWidth: 1,
+  },
+  showMoreMandiBtn: {
+    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: Spacing.two,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   footerBranding: {
     alignItems: 'center',

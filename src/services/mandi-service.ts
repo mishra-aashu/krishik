@@ -171,7 +171,7 @@ function mapCommodityName(rawName: string): string {
 export function deduplicateMandiItems(items: MandiItem[]): MandiItem[] {
   const seen = new Set<string>();
   return items.filter(item => {
-    const key = `${item.commodity.trim().toLowerCase()}___${item.state.trim().toLowerCase()}`;
+    const key = `${item.commodity.trim().toLowerCase()}___${item.state.trim().toLowerCase()}___${(item.variety || '').trim().toLowerCase()}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -192,13 +192,25 @@ export async function fetchLiveMandiPrices(stateName: string): Promise<MandiItem
       .order('fetched_at', { ascending: false })
       .limit(200);
 
-    // If state filter yielded 0 results, fall back to general latest Supabase records
-    if (!error && (!data || data.length === 0)) {
+    // If state filter yielded fewer than 25 items, supplement with all top mandi records
+    if (!error && data) {
+      if (data.length < 25) {
+        const { data: fallbackData } = await supabase
+          .from('mandi_prices')
+          .select('*')
+          .order('fetched_at', { ascending: false })
+          .limit(200);
+
+        if (fallbackData && fallbackData.length > 0) {
+          data = [...data, ...fallbackData];
+        }
+      }
+    } else if (!error && (!data || data.length === 0)) {
       const fallbackQuery = await supabase
         .from('mandi_prices')
         .select('*')
         .order('fetched_at', { ascending: false })
-        .limit(150);
+        .limit(200);
       if (!fallbackQuery.error && fallbackQuery.data) {
         data = fallbackQuery.data;
       }
