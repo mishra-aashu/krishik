@@ -2,6 +2,7 @@ import React from 'react';
 import { View, StyleSheet, Image, Platform, StyleProp, ViewStyle } from 'react-native';
 import { ThemedText } from './themed-text';
 import { Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
 export interface AppLogoProps {
   size?: 'small' | 'medium' | 'large' | 'hero';
@@ -20,10 +21,13 @@ export function AppLogo({
   showTagline = true,
   showSubtitle = false,
   welcomeText,
-  textColor = '#ffffff',
+  textColor,
   language = 'hi',
   style
 }: AppLogoProps) {
+  const theme = useTheme();
+  const isDark = theme.dark !== false;
+  const effectiveTextColor = textColor || (isDark ? '#ffffff' : '#051C0C');
   // Dimensions based on size preset
   const iconSizes = {
     small: 36,
@@ -60,7 +64,7 @@ export function AppLogo({
             type="title"
             style={[
               styles.appName,
-              { color: textColor },
+              { color: effectiveTextColor },
               size === 'hero' && styles.appNameHero,
               size === 'small' && styles.appNameSmall,
             ]}
@@ -72,7 +76,7 @@ export function AppLogo({
           {showTagline && (
             <View style={[
               styles.taglineBadge,
-              textColor !== '#ffffff' && {
+              effectiveTextColor !== '#ffffff' && {
                 backgroundColor: 'rgba(46, 125, 50, 0.12)',
                 borderColor: 'rgba(46, 125, 50, 0.35)',
               }
@@ -81,7 +85,7 @@ export function AppLogo({
                 type="smallBold"
                 style={[
                   styles.taglineText,
-                  { color: textColor === '#ffffff' ? '#ffffff' : '#1B5E20' }
+                  { color: effectiveTextColor === '#ffffff' ? '#ffffff' : '#1B5E20' }
                 ]}
               >
                 AI FOR AGRICULTURE
@@ -91,7 +95,7 @@ export function AppLogo({
 
           {/* Optional Welcome Message */}
           {welcomeText && (
-            <ThemedText type="subtitle" style={[styles.welcomeMsg, { color: textColor }]}>
+            <ThemedText type="subtitle" style={[styles.welcomeMsg, { color: effectiveTextColor }]}>
               {welcomeText}
             </ThemedText>
           )}

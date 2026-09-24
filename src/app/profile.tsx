@@ -261,7 +261,6 @@ export default function ProfileScreen() {
   // Unsaved changes dirty detection
   const isDirty = !isGuest && savedValues !== null && (
     editableName.trim() !== savedValues.name ||
-    editableEmail.trim() !== savedValues.email ||
     selectedState !== savedValues.state ||
     selectedSoil !== savedValues.soil ||
     selectedCrop !== savedValues.crop ||
@@ -469,19 +468,30 @@ export default function ProfileScreen() {
                   <SymbolView name={{ ios: 'envelope.fill', android: 'email', web: 'email' } as any} size={14} tintColor={theme.primary} />
                 </View>
                 <ThemedText type="smallBold" style={styles.cardSectionTitle}>{t.emailLabel}</ThemedText>
+                <View style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <SymbolView name={{ ios: 'lock.fill', android: 'lock', web: 'lock' } as any} size={11} tintColor={theme.textSecondary} />
+                  <ThemedText type="small" style={{ fontSize: 11, color: theme.textSecondary, fontWeight: '600' }}>
+                    {lang === 'hi' ? 'सुरक्षित (Read-only)' : 'Read-only'}
+                  </ThemedText>
+                </View>
               </View>
               <View style={styles.inputGroup}>
                 <TextInput
-                  style={[styles.textInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.background }]}
-                  value={editableEmail}
-                  onChangeText={setEditableEmail}
+                  style={[
+                    styles.textInput,
+                    {
+                      color: theme.textSecondary,
+                      borderColor: theme.border,
+                      backgroundColor: theme.dark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.04)',
+                      opacity: 0.85,
+                    }
+                  ]}
+                  value={userEmail || editableEmail || (userPhone ? `${userPhone}@gmail.com` : '')}
+                  editable={false}
+                  selectTextOnFocus={false}
                   placeholder={t.emailPlaceholder}
                   placeholderTextColor={theme.textSecondary}
                   keyboardType="email-address"
-                  inputMode="email"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  autoComplete="email"
                 />
               </View>
             </ThemedView>

@@ -146,8 +146,8 @@ export async function processVoiceQuery(
     {
       role: 'user' as const,
       content: isEnglishQuery
-        ? `${query}\n\n[Please provide a direct, simple, conversational response in English. First give a direct 2-3 sentence answer, then highlight key practical steps so a farmer listening to audio can easily understand.]`
-        : `${query}\n\n[कृपया सरल, स्पष्ट और बातचीत की हिंदी भाषा में 2 से 3 वाक्यों में पहले सीधा उत्तर दें, फिर मुख्य उपाय बताएं ताकि किसान सुनकर आसानी से समझ सके।]`,
+        ? `${query}\n\n[CRITICAL FOR VOICE AUDIO: Give an ULTRA-SHORT, direct response in maximum 2-3 short sentences (under 30 words total). Do NOT include long intros, bullet lists, or extra fluff. Give only the exact practical answer so the farmer gets the solution instantly without getting bored.]`
+        : `${query}\n\n[वॉइस ऑडियो के लिए अति आवश्यक: उत्तर केवल 2 से 3 बहुत छोटे और सटीक वाक्यों में दें (अधिकतम 25-30 शब्द)। कोई लंबी भूमिका, नंबर वाली लिस्ट या फालतू बात न लिखें। केवल मुख्य और सीधा उपाय बताएं ताकि किसान ऑडियो सुनकर तुरंत समझ जाए और बोर न हो।]`,
     },
   ];
 

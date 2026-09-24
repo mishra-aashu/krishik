@@ -51,24 +51,24 @@ export function LanguageSelectionModal({
         >
           {/* App Header Logo */}
           <View style={styles.headerContainer}>
-            <AppLogo size="medium" showSubtitle={false} />
+            <AppLogo size="medium" showSubtitle={false} textColor={isDark ? '#FFFFFF' : '#051C0C'} />
             <ThemedText
               type="title"
               style={[
                 styles.title,
-                { color: isDark ? '#FFFFFF' : '#041509' },
+                { color: isDark ? '#FFFFFF' : '#051C0C' },
               ]}
             >
-              अपनी भाषा चुनें / Choose Language
+              भाषा चुनें • Select Language
             </ThemedText>
             <ThemedText
               type="small"
               style={[
                 styles.subtitle,
-                { color: isDark ? '#A3D9AC' : '#2E7D32' },
+                { color: isDark ? '#A3D9AC' : '#166534' },
               ]}
             >
-              कृषि सहायता के लिए अपनी पसंदीदा भाषा का चयन करें
+              पसंदीदा भाषा चुनें • Choose your preferred language
             </ThemedText>
           </View>
 
@@ -90,10 +90,10 @@ export function LanguageSelectionModal({
                       : '#F4FBF5',
                   borderColor:
                     currentLanguage === 'hi'
-                      ? '#4CAF50'
+                      ? '#166534'
                       : isDark
                       ? 'rgba(255, 255, 255, 0.15)'
-                      : 'rgba(46, 125, 50, 0.20)',
+                      : 'rgba(46, 125, 50, 0.25)',
                 },
                 pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] },
               ]}
@@ -105,17 +105,17 @@ export function LanguageSelectionModal({
                     {
                       backgroundColor:
                         currentLanguage === 'hi'
-                          ? '#4CAF50'
+                          ? '#166534'
                           : isDark
                           ? 'rgba(255,255,255,0.12)'
-                          : 'rgba(46,125,50,0.12)',
+                          : 'rgba(22,101,52,0.12)',
                     },
                   ]}
                 >
                   <SymbolView
                     name={{ ios: 'character.book.closed.fill', android: 'translate', web: 'translate' } as any}
                     size={20}
-                    tintColor={currentLanguage === 'hi' ? '#FFFFFF' : (isDark ? '#81C784' : '#2E7D32')}
+                    tintColor={currentLanguage === 'hi' ? '#FFFFFF' : (isDark ? '#81C784' : '#166534')}
                   />
                 </View>
 
@@ -125,7 +125,7 @@ export function LanguageSelectionModal({
                       type="smallBold"
                       style={[
                         styles.optionTitle,
-                        { color: isDark ? '#FFFFFF' : '#041509' },
+                        { color: isDark ? '#FFFFFF' : '#051C0C' },
                       ]}
                     >
                       हिंदी (Hindi)
@@ -136,22 +136,13 @@ export function LanguageSelectionModal({
                       </View>
                     )}
                   </View>
-                  <ThemedText
-                    type="small"
-                    style={[
-                      styles.optionDesc,
-                      { color: isDark ? '#C8E6C9' : '#33691E' },
-                    ]}
-                  >
-                    मंडी भाव, मौसम अलर्ट व फसल रोग परामर्श हिंदी भाषा में।
-                  </ThemedText>
                 </View>
               </View>
 
               <SymbolView
-                name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any}
-                size={18}
-                tintColor={isDark ? '#81C784' : '#2E7D32'}
+                name={{ ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' } as any}
+                size={20}
+                tintColor={currentLanguage === 'hi' ? '#166534' : (isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.20)')}
               />
             </Pressable>
 
@@ -171,10 +162,10 @@ export function LanguageSelectionModal({
                       : '#F4FBF5',
                   borderColor:
                     currentLanguage === 'en'
-                      ? '#4CAF50'
+                      ? '#166534'
                       : isDark
                       ? 'rgba(255, 255, 255, 0.15)'
-                      : 'rgba(46, 125, 50, 0.20)',
+                      : 'rgba(46, 125, 50, 0.25)',
                 },
                 pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] },
               ]}
@@ -186,17 +177,17 @@ export function LanguageSelectionModal({
                     {
                       backgroundColor:
                         currentLanguage === 'en'
-                          ? '#4CAF50'
+                          ? '#166534'
                           : isDark
                           ? 'rgba(255,255,255,0.12)'
-                          : 'rgba(46,125,50,0.12)',
+                          : 'rgba(22,101,52,0.12)',
                     },
                   ]}
                 >
                   <SymbolView
                     name={{ ios: 'globe', android: 'language', web: 'language' } as any}
                     size={20}
-                    tintColor={currentLanguage === 'en' ? '#FFFFFF' : (isDark ? '#81C784' : '#2E7D32')}
+                    tintColor={currentLanguage === 'en' ? '#FFFFFF' : (isDark ? '#81C784' : '#166534')}
                   />
                 </View>
 
@@ -206,7 +197,7 @@ export function LanguageSelectionModal({
                       type="smallBold"
                       style={[
                         styles.optionTitle,
-                        { color: isDark ? '#FFFFFF' : '#041509' },
+                        { color: isDark ? '#FFFFFF' : '#051C0C' },
                       ]}
                     >
                       English
@@ -217,22 +208,13 @@ export function LanguageSelectionModal({
                       </View>
                     )}
                   </View>
-                  <ThemedText
-                    type="small"
-                    style={[
-                      styles.optionDesc,
-                      { color: isDark ? '#C8E6C9' : '#33691E' },
-                    ]}
-                  >
-                    Mandi rates, weather forecasts & crop protection in English.
-                  </ThemedText>
                 </View>
               </View>
 
               <SymbolView
-                name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any}
-                size={18}
-                tintColor={isDark ? '#81C784' : '#2E7D32'}
+                name={{ ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' } as any}
+                size={20}
+                tintColor={currentLanguage === 'en' ? '#166534' : (isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.20)')}
               />
             </Pressable>
           </View>
@@ -242,10 +224,10 @@ export function LanguageSelectionModal({
             type="small"
             style={[
               styles.footerNote,
-              { color: isDark ? 'rgba(255, 255, 255, 0.50)' : 'rgba(0, 0, 0, 0.50)' },
+              { color: isDark ? 'rgba(255, 255, 255, 0.55)' : 'rgba(5, 28, 12, 0.60)' },
             ]}
           >
-            * आप ऐप में कभी भी ऊपर दिए गए बटन से भाषा बदल सकते हैं।
+            आप बाद में भी भाषा बदल सकते हैं • You can change anytime
           </ThemedText>
         </View>
       </View>

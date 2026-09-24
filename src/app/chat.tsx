@@ -32,6 +32,7 @@ import { uploadImageToImgBB } from '@/services/imgbb-service';
 import { CustomMarkdown } from '@/components/custom-markdown';
 import { useNetInfo } from '@react-native-community/netinfo';
 import OfflineNotice from '@/components/offline-notice';
+import { speakVernacular, stopSpeaking } from '@/services/voice-service';
 import Animated, {
   FadeInRight,
   FadeInLeft,
@@ -475,7 +476,7 @@ export default function ChatScreen() {
   useEffect(() => {
     return () => {
       try {
-        Speech.stop();
+        stopSpeaking();
       } catch (e) {
         // ignore speech stop errors
       }
@@ -682,7 +683,7 @@ export default function ChatScreen() {
   useEffect(() => {
     const handleAppStateChange = (nextAppState: string) => {
       if (nextAppState === 'inactive' || nextAppState === 'background') {
-        Speech.stop();
+        stopSpeaking();
         if (isRecordingRef.current) {
           if (chatListeningSessionRef.current) {
             chatListeningSessionRef.current.abort();
@@ -697,7 +698,7 @@ export default function ChatScreen() {
 
     return () => {
       subscription.remove();
-      Speech.stop();
+      stopSpeaking();
       if (chatListeningSessionRef.current) {
         chatListeningSessionRef.current.abort();
         chatListeningSessionRef.current = null;
@@ -788,20 +789,14 @@ export default function ChatScreen() {
 
   const toggleSpeech = React.useCallback(async (msg: ChatMessage) => {
     if (speakingMessageId === msg.id) {
-      Speech.stop();
+      await stopSpeaking();
       setSpeakingMessageId(null);
     } else {
-      Speech.stop();
+      await stopSpeaking();
       setSpeakingMessageId(msg.id);
       
-      const cleanText = msg.content
-        .replace(/[#*`_-]/g, '') // remove markdown symbols
-        .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1') // replace links with plain text
-        .trim();
-        
-      Speech.speak(cleanText, {
-        language: language === 'hi' ? 'hi-IN' : 'en-US',
-        rate: 0.85,
+      await speakVernacular(msg.content, {
+        language: language as any,
         onDone: () => setSpeakingMessageId(null),
         onError: () => setSpeakingMessageId(null),
       });
@@ -1951,21 +1946,21 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 7,
+    gap: 12,
     minWidth: 0,
   },
   backButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarMini: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1974,48 +1969,48 @@ const styles = StyleSheet.create({
   headerTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 6,
   },
   headerTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '800',
     letterSpacing: -0.2,
   },
   headerSubtitle: {
-    fontSize: 10.5,
+    fontSize: 11,
     fontWeight: '600',
-    marginTop: 1,
+    marginTop: 1.5,
   },
   headerControls: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 10,
   },
   controlIconBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   onlineDot: {
     position: 'absolute',
-    bottom: -1,
-    right: -1,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    bottom: 0,
+    right: 0,
+    width: 9,
+    height: 9,
+    borderRadius: 4.5,
     borderWidth: 1.5,
     borderColor: '#FFFFFF',
   },
   miniBadge: {
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderRadius: 5,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
   },
   miniBadgeText: {
-    fontSize: 8.5,
+    fontSize: 9.5,
     fontWeight: '800',
     letterSpacing: 0.3,
   },

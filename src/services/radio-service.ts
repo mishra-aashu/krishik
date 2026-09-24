@@ -1,6 +1,7 @@
 import { Audio } from 'expo-av';
 import * as Speech from 'expo-speech';
 import { Platform } from 'react-native';
+import { speakVernacular, stopSpeaking } from './voice-service';
 
 export interface RadioStation {
   id: string;
@@ -355,8 +356,8 @@ class RadioServiceManager {
     const speechText = language === 'hi' ? textHi : textEn;
 
     try {
-      Speech.speak(speechText, {
-        language: language === 'hi' ? 'hi-IN' : 'en-IN',
+      speakVernacular(speechText, {
+        language: language as any,
         pitch: 1.0,
         rate: 0.92,
         onDone: () => {
@@ -378,7 +379,7 @@ class RadioServiceManager {
 
   public async stopCurrent(): Promise<void> {
     try {
-      Speech.stop();
+      await stopSpeaking();
 
       if (this.ytIframe || (typeof document !== 'undefined' && document.getElementById('krishik-yt-radio-iframe'))) {
         const elem = this.ytIframe || document.getElementById('krishik-yt-radio-iframe');
