@@ -17,6 +17,7 @@ import { useLanguage } from '@/context/language-context';
 import { AppLogo } from '@/components/app-logo';
 import { SymbolView } from 'expo-symbols';
 import { AuthScreen } from '@/components/auth-screen';
+import { BackgroundSlideshow } from '@/components/background-slideshow';
 
 export interface HomeScreenProps {
   onExploreDemo: () => void;
@@ -52,20 +53,8 @@ export function HomeScreen({ onExploreDemo, onLoginSuccess }: HomeScreenProps) {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#05140A' : '#EBF7EE' }]}>
-      {/* Background Image Layer */}
-      <View style={StyleSheet.absoluteFill}>
-        <Image
-          source={require('@/assets/images/farm_bg.png')}
-          style={styles.bgImage}
-          resizeMode="cover"
-        />
-        <View
-          style={[
-            styles.bgOverlay,
-            { backgroundColor: isDark ? 'rgba(5, 20, 10, 0.85)' : 'rgba(235, 247, 237, 0.94)' }
-          ]}
-        />
-      </View>
+      {/* Background Image Layer with Crossfade Slideshow */}
+      <BackgroundSlideshow isDark={isDark} />
 
       {/* Top Header Navigation Bar */}
       <View

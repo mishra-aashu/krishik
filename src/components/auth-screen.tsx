@@ -38,10 +38,21 @@ const SOILS = [
 ];
 const CROPS = cropsData.map(c => c.name);
 
-const BG_IMAGES = [
+const DESKTOP_BG_IMAGES = [
   require('@/assets/images/farm_bg.png'),
+  require('@/assets/images/farm_bg_4.png'),
   require('@/assets/images/farm_bg_2.png'),
   require('@/assets/images/farm_bg_3.png'),
+  { uri: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=1920&auto=format&fit=crop' },
+  { uri: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?q=80&w=1920&auto=format&fit=crop' },
+  { uri: 'https://images.unsplash.com/photo-1586771107445-d3ca888129ff?q=80&w=1920&auto=format&fit=crop' },
+];
+
+const MOBILE_BG_IMAGES = [
+  require('@/assets/images/farmer_paddy_mobile.jpg'),
+  require('@/assets/images/farm_bg_2.png'),
+  require('@/assets/images/farm_bg_3.png'),
+  { uri: 'https://images.unsplash.com/photo-1530507629858-e4977d30e9e0?q=80&w=1200&auto=format&fit=crop' },
 ];
 
 interface AuthScreenProps {
@@ -85,6 +96,7 @@ export function AuthScreen({ onLoginSuccess, onBack }: AuthScreenProps) {
   const SHOW_PHONE_AUTH = false;
 
   // Background slideshow crossfade animation
+  const bgImages = isDesktop ? DESKTOP_BG_IMAGES : MOBILE_BG_IMAGES;
   const [bgIndex, setBgIndex] = useState(0);
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
@@ -95,13 +107,13 @@ export function AuthScreen({ onLoginSuccess, onBack }: AuthScreenProps) {
         duration: 1500,
         useNativeDriver: false,
       }).start(() => {
-        setBgIndex((prev) => (prev + 1) % BG_IMAGES.length);
+        setBgIndex((prev) => (prev + 1) % bgImages.length);
         fadeAnim.setValue(1);
       });
     }, 6000);
 
     return () => clearInterval(timer);
-  }, [fadeAnim]);
+  }, [fadeAnim, bgImages.length]);
 
   // Mode state
   const [isLoginMode, setIsLoginMode] = useState(true);
@@ -336,7 +348,7 @@ export function AuthScreen({ onLoginSuccess, onBack }: AuthScreenProps) {
     }
   };
 
-  const nextBgIndex = (bgIndex + 1) % BG_IMAGES.length;
+  const nextBgIndex = (bgIndex + 1) % bgImages.length;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -344,13 +356,13 @@ export function AuthScreen({ onLoginSuccess, onBack }: AuthScreenProps) {
       <View style={StyleSheet.absoluteFill}>
         {/* Next Image (Static beneath) */}
         <Image
-          source={BG_IMAGES[nextBgIndex]}
+          source={bgImages[nextBgIndex % bgImages.length]}
           style={styles.bgImage}
           resizeMode="cover"
         />
         {/* Current Image (Fading out smoothly) */}
         <Animated.Image
-          source={BG_IMAGES[bgIndex]}
+          source={bgImages[bgIndex % bgImages.length]}
           style={[styles.bgImage, { opacity: fadeAnim, position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }]}
           resizeMode="cover"
         />
@@ -358,19 +370,58 @@ export function AuthScreen({ onLoginSuccess, onBack }: AuthScreenProps) {
         <View style={styles.bgOverlay} />
       </View>
 
-        {/* Top Header Row for Navigation & Language Switcher */}
-        <View style={styles.topHeaderBar}>
-          {onBack ? (
+        {/* Top Header Navigation Bar Container */}
+        <View
+          style={[
+            styles.topNavHeaderContainer,
+            {
+              backgroundColor: theme.dark ? 'rgba(5, 20, 10, 0.88)' : 'rgba(255, 255, 255, 0.94)',
+              borderBottomColor: theme.dark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(46, 125, 50, 0.22)',
+            }
+          ]}
+        >
+          <View style={styles.topHeaderBar}>
+            {onBack ? (
+              <Pressable
+                onPress={onBack}
+                style={({ pressed }) => [
+                  styles.topHeaderBtn,
+                  {
+                    backgroundColor: theme.dark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(46, 125, 50, 0.08)',
+                    borderColor: theme.dark ? 'rgba(255, 255, 255, 0.25)' : 'rgba(46, 125, 50, 0.30)',
+                  },
+                  pressed && { opacity: 0.8, transform: [{ scale: 0.97 }] }
+                ]}
+              >
+                <SymbolView
+                  name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' } as any}
+                  size={14}
+                  tintColor={theme.dark ? '#ffffff' : '#166534'}
+                />
+                <ThemedText
+                  type="smallBold"
+                  style={{ color: theme.dark ? '#ffffff' : '#166534' }}
+                >
+                  {lang === 'hi' ? 'वापस' : 'Back'}
+                </ThemedText>
+              </Pressable>
+            ) : (
+              <View />
+            )}
+
             <Pressable
-              onPress={onBack}
+              onPress={() => setLang(lang === 'hi' ? 'en' : 'hi')}
               style={({ pressed }) => [
                 styles.topHeaderBtn,
-                { backgroundColor: theme.dark ? 'rgba(20,40,25,0.85)' : 'rgba(255,255,255,0.92)', borderColor: theme.dark ? 'rgba(255,255,255,0.35)' : '#166534' },
-                pressed && { opacity: 0.8 }
+                {
+                  backgroundColor: theme.dark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(46, 125, 50, 0.08)',
+                  borderColor: theme.dark ? 'rgba(255, 255, 255, 0.25)' : 'rgba(46, 125, 50, 0.30)',
+                },
+                pressed && { opacity: 0.8, transform: [{ scale: 0.97 }] }
               ]}
             >
               <SymbolView
-                name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' } as any}
+                name={{ ios: 'globe', android: 'language', web: 'language' } as any}
                 size={14}
                 tintColor={theme.dark ? '#ffffff' : '#166534'}
               />
@@ -378,33 +429,10 @@ export function AuthScreen({ onLoginSuccess, onBack }: AuthScreenProps) {
                 type="smallBold"
                 style={{ color: theme.dark ? '#ffffff' : '#166534' }}
               >
-                {lang === 'hi' ? 'वापस' : 'Back'}
+                {lang === 'hi' ? 'Switch to English' : 'हिंदी में बदलें'}
               </ThemedText>
             </Pressable>
-          ) : (
-            <View />
-          )}
-
-          <Pressable
-            onPress={() => setLang(lang === 'hi' ? 'en' : 'hi')}
-            style={({ pressed }) => [
-              styles.topHeaderBtn,
-              { backgroundColor: theme.dark ? 'rgba(20,40,25,0.85)' : 'rgba(255,255,255,0.92)', borderColor: theme.dark ? 'rgba(255,255,255,0.35)' : '#166534' },
-              pressed && { opacity: 0.8 }
-            ]}
-          >
-            <SymbolView
-              name={{ ios: 'globe', android: 'language', web: 'language' } as any}
-              size={14}
-              tintColor={theme.dark ? '#ffffff' : '#166534'}
-            />
-            <ThemedText
-              type="smallBold"
-              style={{ color: theme.dark ? '#ffffff' : '#166534' }}
-            >
-              {lang === 'hi' ? 'Switch to English' : 'हिंदी में बदलें'}
-            </ThemedText>
-          </Pressable>
+          </View>
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
@@ -553,8 +581,8 @@ export function AuthScreen({ onLoginSuccess, onBack }: AuthScreenProps) {
                     style={({ pressed }) => [
                       styles.googleBtn,
                       {
-                        backgroundColor: theme.dark ? '#1F2937' : '#FFFFFF',
-                        borderColor: theme.dark ? 'rgba(255,255,255,0.22)' : '#D1D5DB',
+                        backgroundColor: theme.dark ? 'rgba(255, 255, 255, 0.09)' : '#FFFFFF',
+                        borderColor: theme.dark ? 'rgba(255, 255, 255, 0.28)' : 'rgba(46, 125, 50, 0.30)',
                       },
                       pressed && { opacity: 0.88, transform: [{ scale: 0.985 }] },
                       (isGoogleLoading || isLoading) && { opacity: 0.7 }
@@ -573,7 +601,7 @@ export function AuthScreen({ onLoginSuccess, onBack }: AuthScreenProps) {
                           type="smallBold"
                           style={[
                             styles.googleBtnText,
-                            { color: theme.dark ? '#FFFFFF' : '#1F2937' }
+                            { color: theme.dark ? '#FFFFFF' : '#041509' }
                           ]}
                         >
                           {lang === 'hi' ? 'Google से आगे बढ़ें' : 'Continue with Google'}
@@ -1156,21 +1184,25 @@ const styles = StyleSheet.create({
   },
   desktop3ColWrap: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'stretch',
     justifyContent: 'center',
-    gap: 20,
+    gap: 28,
     width: '100%',
+    maxWidth: 1280,
+    alignSelf: 'center',
     marginTop: Spacing.two,
   },
   sideFeaturesCol: {
     flex: 1,
-    maxWidth: 340,
-    gap: 16,
+    maxWidth: 330,
+    justifyContent: 'space-between',
+    paddingVertical: 2,
   },
   centerAuthCol: {
     width: '100%',
     maxWidth: 440,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   leftAuthCol: {
     width: '100%',
@@ -1181,15 +1213,30 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 580,
   },
+  topNavHeaderContainer: {
+    width: '100%',
+    borderBottomWidth: 1,
+    zIndex: 30,
+    ...Platform.select({
+      web: {
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+      } as any,
+      default: {
+        elevation: 4,
+      }
+    }),
+  },
   topHeaderBar: {
     width: '100%',
+    maxWidth: 1200,
+    alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.three,
-    paddingTop: Platform.OS === 'web' ? Spacing.two : Spacing.one,
-    paddingBottom: 4,
-    zIndex: 20,
+    paddingVertical: Spacing.two,
   },
   topHeaderBtn: {
     flexDirection: 'row',
@@ -1572,45 +1619,42 @@ const styles = StyleSheet.create({
     })
   },
   featureIconBadge: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0, 0, 0, 0.40)',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.35)',
   },
   featureTitle: {
-    fontSize: 14,
+    fontSize: 14.5,
     fontWeight: '800',
     color: '#ffffff',
+    textShadowColor: 'rgba(0, 0, 0, 0.90)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
   featureDesc: {
-    fontSize: 11.5,
-    color: '#E8F5E9',
-    lineHeight: 16,
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.90)',
+    lineHeight: 17,
+    textShadowColor: 'rgba(0, 0, 0, 0.90)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
   featureCardStacked: {
     width: '100%',
-    borderRadius: 20,
-    padding: Spacing.two,
-    backgroundColor: 'rgba(10, 32, 18, 0.88)',
-    borderWidth: 1.2,
-    borderColor: 'rgba(255, 255, 255, 0.28)',
+    minHeight: 72,
+    paddingHorizontal: 6,
+    paddingVertical: 6,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    borderColor: 'transparent',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    ...Platform.select({
-      web: {
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
-        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)',
-      } as any,
-      default: {
-        elevation: 6,
-      }
-    })
   },
 
   // ── Google Sign In Section ──
