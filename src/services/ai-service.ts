@@ -1,7 +1,12 @@
 const GROQ_API_KEY = process.env.EXPO_PUBLIC_GROQ_API_KEY || '';
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
-const CHOSEN_MODEL = 'groq/compound-mini'; // Using fast compound model
+const GROQ_MODEL_CHAIN = [
+  'llama-3.3-70b-versatile',
+  'llama-3.1-8b-instant',
+  'mixtral-8x7b-32768',
+  'gemma2-9b-it',
+];
 
 export interface Scheme {
   title: string;
@@ -42,36 +47,46 @@ Each object in the array must have EXACTLY the following structure:
 
 ${langPrompt}`;
 
-    const response = await fetch(GROQ_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${GROQ_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: CHOSEN_MODEL,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Give me schemes for a farmer in state: ${stateName}, crop: ${cropName}` }
-        ],
-        temperature: 0.3,
-        max_tokens: 1500,
-      }),
-    });
+    let lastError: any = null;
+    for (const modelName of GROQ_MODEL_CHAIN) {
+      try {
+        console.log(`[AI Schemes Service] Fetching dynamic schemes using model: ${modelName}`);
+        const response = await fetch(GROQ_API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${GROQ_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model: modelName,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: `Give me schemes for a farmer in state: ${stateName}, crop: ${cropName}` }
+            ],
+            temperature: 0.3,
+            max_tokens: 1500,
+          }),
+        });
 
-    if (!response.ok) {
-      throw new Error(`Groq API returned status ${response.status}`);
-    }
+        if (!response.ok) {
+          console.warn(`[AI Schemes Service] Groq model ${modelName} returned HTTP ${response.status}`);
+          continue;
+        }
 
-    const data = await response.json();
-    let content = data.choices?.[0]?.message?.content || '';
+        const data = await response.json();
+        let content = data.choices?.[0]?.message?.content || '';
 
-    // Clean markdown wraps if present
-    content = content.replace(/```json/g, '').replace(/```/g, '').trim();
+        // Clean markdown wraps if present
+        content = content.replace(/```json/g, '').replace(/```/g, '').trim();
 
-    const parsed = JSON.parse(content);
-    if (Array.isArray(parsed)) {
-      return parsed;
+        const parsed = JSON.parse(content);
+        if (Array.isArray(parsed)) {
+          return parsed;
+        }
+      } catch (err) {
+        lastError = err;
+        console.warn(`[AI Schemes Service] Model ${modelName} failed:`, err);
+      }
     }
     return [];
   } catch (error) {
@@ -208,8 +223,8 @@ ${langPrompt}`;
     }
 
     const modelsToTry = imageBase64
-      ? ['qwen/qwen3.8-27b', 'groq/compound']
-      : [CHOSEN_MODEL];
+      ? ['llama-3.2-11b-vision-preview', 'llama-3.3-70b-versatile']
+      : GROQ_MODEL_CHAIN;
 
     let lastError: any = null;
     for (const modelName of modelsToTry) {

@@ -37,6 +37,7 @@ import CropCalculator from '@/components/crop-calculator';
 import SoilCalculator from '@/components/soil-calculator';
 import OfflineNotice from '@/components/offline-notice';
 import { useNetInfo } from '@react-native-community/netinfo';
+import { GovSchemesView } from '@/components/gov-schemes-view';
 
 // Pests and diseases database
 const PEST_DIRECTORY = [
@@ -722,31 +723,31 @@ export default function ExploreScreen() {
                 onPress={() => setActiveView('scheme')}
                 style={({ pressed }) => [
                   styles.optionCard,
-                  { borderColor: theme.border, backgroundColor: theme.card },
+                  { borderColor: theme.primary, backgroundColor: theme.card, borderWidth: 1.5 },
                   pressed && { opacity: 0.9 }
                 ]}
               >
-                <View style={[styles.optionIconContainer, { backgroundColor: 'rgba(33, 150, 243, 0.12)' }]}>
+                <View style={[styles.optionIconContainer, { backgroundColor: 'rgba(5, 150, 105, 0.15)' }]}>
                   <SymbolView
-                    name={{ ios: 'scroll.fill', android: 'description', web: 'description' } as any}
-                    size={24}
-                    tintColor="#2196F3"
+                    name={{ ios: 'building.columns.fill', android: 'account_balance', web: 'account_balance' } as any}
+                    size={22}
+                    tintColor={theme.primary}
                   />
                 </View>
                 <View style={styles.optionContent}>
-                  <ThemedText type="smallBold" style={[styles.optionTitle, { color: theme.text }]}>
-                    {language === 'hi' ? 'सरकारी योजनाएं' : 'Government Schemes'}
+                  <ThemedText type="smallBold" style={[styles.optionTitle, { color: theme.text, fontSize: 15 }]}>
+                    {language === 'hi' ? 'PM-किसान एवं सब्सिडी फाइंडर (सरकारी योजनाएं)' : 'PM-Kisan & Subsidy Finder (Government Schemes)'}
                   </ThemedText>
                   <ThemedText type="small" style={[styles.optionDescription, { color: theme.textSecondary }]}>
                     {language === 'hi'
-                      ? 'कृषि लोन, पीएम किसान सम्मान निधि और राज्य कृषि सब्सिडी व योजनाओं का विवरण देखें।'
-                      : 'View government agricultural loans, PM Kisan Nidhi, state subsidies and schemes details.'}
+                      ? 'पीएम किसान, कुसुम सोलर पंप, ड्रिप सिंचाई, ट्रैक्टर व कृषि लोन पर ₹45,000+ सब्सिडी खोजें व आवेदन करें।'
+                      : 'Calculate & apply for PM-Kisan, KUSUM solar pump, drip irrigation & KCC loans subsidies up to ₹45,000+.'}
                   </ThemedText>
                 </View>
                 <SymbolView
                   name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any}
                   size={18}
-                  tintColor={theme.textSecondary}
+                  tintColor={theme.primary}
                 />
               </PressableScale>
             </ScrollView>
@@ -1350,124 +1351,7 @@ export default function ExploreScreen() {
 
           {activeView === 'scheme' && (
             <AnimatedReanimated.View style={{ flex: 1 }} entering={FadeInRight.duration(300)}>
-              <View style={styles.sectionContainer}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <ThemedText type="smallBold" style={styles.sectionHeading}>
-                  {language === 'hi' ? 'कृषि कल्याणकारी योजनाएं' : 'Agricultural Welfare Schemes'}
-                </ThemedText>
-                {farmState && (
-                  <ThemedText type="code" style={{ fontSize: 10, color: theme.primary, fontWeight: '700', marginTop: Spacing.one }}>
-                    {formatLabel(farmState)} • {formatLabel(farmCrop || 'Wheat (गेहूं)')}
-                  </ThemedText>
-                )}
-              </View>
-
-              {isLoadingSchemes ? (
-                <View style={{ paddingVertical: Spacing.four, alignItems: 'center' }}>
-                  <ActivityIndicator size="small" color={theme.primary} />
-                  <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: Spacing.two }}>
-                    {language === 'hi' ? 'आपके राज्य के लिए योजनाएं लोड हो रही हैं...' : 'Loading schemes for your state...'}
-                  </ThemedText>
-                </View>
-              ) : (
-                schemesList.map((scheme, index) => {
-                  const queryText = language === 'hi'
-                    ? `मुझे "${scheme.title}" के बारे में और जानकारी चाहिए। इसके लाभ, पात्रता और आवेदन करने की प्रक्रिया विस्तार से बताएं।`
-                    : `I want to know more about "${scheme.title}". Please explain the benefits, eligibility criteria, and step-by-step application process.`;
-                  return (
-                    <ThemedView key={index} type="card" style={[styles.schemeCard, { borderColor: theme.border, backgroundColor: theme.card }]}>
-                      <View style={styles.schemeHeader}>
-                        <View style={{ flex: 1, marginRight: Spacing.two }}>
-                          <ThemedText type="smallBold" style={{ fontSize: 18, color: theme.primary, fontWeight: '700' }}>
-                            {scheme.title}
-                          </ThemedText>
-                        </View>
-                        <View style={[styles.schemeIconBadge, { backgroundColor: 'rgba(76, 175, 80, 0.12)' }]}>
-                          <SymbolView
-                            name={{ ios: 'scroll.fill', android: 'description', web: 'description' } as any}
-                            size={20}
-                            tintColor={theme.primary}
-                          />
-                        </View>
-                      </View>
-
-                      <View style={[styles.schemeDetailSection, { backgroundColor: 'rgba(76, 175, 80, 0.05)', borderColor: 'rgba(76, 175, 80, 0.15)', marginTop: Spacing.one }]}>
-                        <View style={styles.detailLabelRow}>
-                          <SymbolView
-                            name={{ ios: 'gift.fill', android: 'redeem', web: 'redeem' } as any}
-                            size={15}
-                            tintColor={theme.primary}
-                          />
-                          <ThemedText type="code" style={[styles.pestLabel, { color: theme.primary, fontWeight: '700', fontSize: 11, marginBottom: 0 }]}>
-                            {language === 'hi' ? 'योजना लाभ (Benefits)' : 'BENEFITS'}
-                          </ThemedText>
-                        </View>
-                        <ThemedText type="small" style={[styles.pestValue, { color: theme.text, fontSize: 13, lineHeight: 18, marginTop: 4 }]}>
-                          {scheme.benefit}
-                        </ThemedText>
-                      </View>
-
-                      <View style={[styles.schemeDetailSection, { backgroundColor: 'rgba(33, 150, 243, 0.05)', borderColor: 'rgba(33, 150, 243, 0.15)' }]}>
-                        <View style={styles.detailLabelRow}>
-                          <SymbolView
-                            name={{ ios: 'checkmark.seal.fill', android: 'verified', web: 'verified' } as any}
-                            size={15}
-                            tintColor="#2196F3"
-                          />
-                          <ThemedText type="code" style={[styles.pestLabel, { color: '#2196F3', fontWeight: '700', fontSize: 11, marginBottom: 0 }]}>
-                            {language === 'hi' ? 'पात्रता (Eligibility)' : 'ELIGIBILITY'}
-                          </ThemedText>
-                        </View>
-                        <ThemedText type="small" style={[styles.pestValue, { color: theme.text, fontSize: 13, lineHeight: 18, marginTop: 4 }]}>
-                          {scheme.eligibility}
-                        </ThemedText>
-                      </View>
-
-                      <View style={[styles.schemeDetailSection, { backgroundColor: 'rgba(255, 152, 0, 0.05)', borderColor: 'rgba(255, 152, 0, 0.15)' }]}>
-                        <View style={styles.detailLabelRow}>
-                          <SymbolView
-                            name={{ ios: 'doc.on.doc.fill', android: 'file_copy', web: 'file_copy' } as any}
-                            size={15}
-                            tintColor="#FF9800"
-                          />
-                          <ThemedText type="code" style={[styles.pestLabel, { color: '#FF9800', fontWeight: '700', fontSize: 11, marginBottom: 0 }]}>
-                            {language === 'hi' ? 'आवश्यक दस्तावेज (Required Documents)' : 'REQUIRED DOCUMENTS'}
-                          </ThemedText>
-                        </View>
-                        <ThemedText type="small" style={[styles.pestValue, { color: theme.text, fontSize: 13, lineHeight: 18, marginTop: 4 }]}>
-                          {scheme.documents}
-                        </ThemedText>
-                      </View>
-
-                      <Pressable
-                        onPress={() => {
-                          router.push({
-                            pathname: '/chat',
-                            params: { prefill: queryText }
-                          });
-                        }}
-                        style={({ pressed }) => [
-                          styles.askAiBtn,
-                          { backgroundColor: theme.primary, borderRadius: 12, marginTop: Spacing.one },
-                          pressed && { opacity: 0.85 }
-                        ]}
-                      >
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
-                          <SymbolView
-                            name={{ ios: 'cpu', android: 'smart_toy', web: 'smart_toy' } as any}
-                            size={16}
-                            tintColor={theme.onPrimary}
-                          />
-                          <ThemedText type="code" style={{ color: theme.onPrimary, fontWeight: '700', fontSize: 12 }}>
-                            {language === 'hi' ? 'एआई मित्रा से जानकारी और आवेदन प्रक्रिया पूछें' : 'Ask AI Mitra for details & process'}
-                          </ThemedText>
-                        </View>
-                      </Pressable>
-                    </ThemedView>
-                  );
-                })
-              )}
-              </View>
+              <GovSchemesView embeddedInTab={true} />
             </AnimatedReanimated.View>
           )}
           </ScrollView>

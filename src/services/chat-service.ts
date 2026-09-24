@@ -17,13 +17,15 @@ const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 // Model fallback chains — verified against account's available models
 const MODEL_CHAINS = {
   smart: [
-    'groq/compound',           // Groq's agentic compound system (full)
-    'openai/gpt-oss-120b',     // OpenAI open-weight flagship
-    'qwen/qwen3.8-27b',        // Qwen 27B fallback
+    'llama-3.3-70b-versatile',
+    'llama-3.1-8b-instant',
+    'mixtral-8x7b-32768',
+    'gemma2-9b-it',
   ],
   fast: [
-    'groq/compound-mini',      // Groq's fast compound system
-    'qwen/qwen3.8-27b',        // Qwen 27B fallback
+    'llama-3.1-8b-instant',
+    'llama-3.3-70b-versatile',
+    'mixtral-8x7b-32768',
   ],
 } as const;
 
