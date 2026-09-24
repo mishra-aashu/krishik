@@ -8,7 +8,6 @@ import {
   Linking,
   Alert,
   Platform,
-  useWindowDimensions,
   ActivityIndicator,
   Modal,
 } from 'react-native';
@@ -50,13 +49,14 @@ const ALL_INDIAN_STATES = [
   'Assam',
 ];
 
-const QUICK_STATES = [
-  'All',
-  'Bihar',
-  'Uttar Pradesh',
-  'Madhya Pradesh',
-  'Maharashtra',
-  'Rajasthan',
+const SCHEME_CATEGORIES: { id: string; labelEn: string; labelHi: string }[] = [
+  { id: 'all', labelEn: 'All Schemes', labelHi: 'सभी योजनाएं' },
+  { id: 'dbt', labelEn: 'DBT Cash Support', labelHi: 'डीबीटी नकद अनुदान' },
+  { id: 'solar', labelEn: 'Solar Pump (PM-KUSUM)', labelHi: 'पीएम-कुसुम सोलर पंप' },
+  { id: 'machinery', labelEn: 'Agricultural Machinery', labelHi: 'कृषि यंत्र व ट्रैक्टर' },
+  { id: 'irrigation', labelEn: 'Micro Irrigation & Drip', labelHi: 'ड्रिप व स्प्रिंकलर सिंचाई' },
+  { id: 'loan', labelEn: 'KCC Loan (Low Interest)', labelHi: 'केसीसी 4% ब्याज ऋण' },
+  { id: 'insurance', labelEn: 'Crop Insurance (PMFBY)', labelHi: 'पीएम फसल बीमा' },
 ];
 
 interface GovSchemesViewProps {
@@ -68,11 +68,14 @@ export function GovSchemesView({ onBack, embeddedInTab = false }: GovSchemesView
   const theme = useTheme();
   const { isHi } = useLanguage();
 
-  // State & Filter states
+  // Filter states
   const [selectedState, setSelectedState] = useState<string>('All');
   const [isStateModalOpen, setIsStateModalOpen] = useState<boolean>(false);
-  const [landAcresInput, setLandAcresInput] = useState<string>('2.5');
+
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState<boolean>(false);
+
+  const [landAcresInput, setLandAcresInput] = useState<string>('2.5');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Scheme detail modal state
@@ -123,51 +126,6 @@ export function GovSchemesView({ onBack, embeddedInTab = false }: GovSchemesView
     };
   }, []);
 
-  const categories: Array<{ id: string; nameHi: string; nameEn: string; iconSymbol: any }> = [
-    {
-      id: 'all',
-      nameHi: 'सभी योजनाएं',
-      nameEn: 'All Schemes',
-      iconSymbol: { ios: 'globe', android: 'language', web: 'language' },
-    },
-    {
-      id: 'dbt',
-      nameHi: 'डीबीटी नकद',
-      nameEn: 'DBT Cash',
-      iconSymbol: { ios: 'banknote.fill', android: 'payments', web: 'payments' },
-    },
-    {
-      id: 'solar',
-      nameHi: 'सोलर पंप',
-      nameEn: 'Solar Pump',
-      iconSymbol: { ios: 'sun.max.fill', android: 'wb_sunny', web: 'wb_sunny' },
-    },
-    {
-      id: 'machinery',
-      nameHi: 'कृषि यंत्र',
-      nameEn: 'Machinery',
-      iconSymbol: { ios: 'gearshape.2.fill', android: 'precision_manufacturing', web: 'precision_manufacturing' },
-    },
-    {
-      id: 'irrigation',
-      nameHi: 'सिंचाई',
-      nameEn: 'Irrigation',
-      iconSymbol: { ios: 'drop.fill', android: 'water_drop', web: 'water_drop' },
-    },
-    {
-      id: 'loan',
-      nameHi: 'कम ब्याज ऋण',
-      nameEn: 'Low Loan',
-      iconSymbol: { ios: 'creditcard.fill', android: 'credit_card', web: 'credit_card' },
-    },
-    {
-      id: 'insurance',
-      nameHi: 'फसल बीमा',
-      nameEn: 'Crop Insurance',
-      iconSymbol: { ios: 'shield.fill', android: 'verified_user', web: 'verified_user' },
-    },
-  ];
-
   const handleOpenLink = async (url: string) => {
     try {
       const supported = await Linking.canOpenURL(url);
@@ -196,7 +154,7 @@ export function GovSchemesView({ onBack, embeddedInTab = false }: GovSchemesView
     }
   };
 
-  // Brand emerald green for active buttons/chips
+  // Brand emerald green accent color
   const activeGreen = '#059669';
 
   return (
@@ -347,7 +305,7 @@ export function GovSchemesView({ onBack, embeddedInTab = false }: GovSchemesView
             )}
           </Animated.View>
 
-          {/* Land Acreage & State Controls Box */}
+          {/* Profile-Style Controls Box */}
           <View
             style={[
               styles.controlsCard,
@@ -365,106 +323,83 @@ export function GovSchemesView({ onBack, embeddedInTab = false }: GovSchemesView
               </ThemedText>
             </View>
 
-            {/* State Selection Dropdown Button Trigger */}
+            {/* Profile Dropdown Style 1: STATE Selector */}
             <Pressable
               onPress={() => setIsStateModalOpen(true)}
               style={({ pressed }) => [
-                styles.stateDropdownBtn,
+                styles.profileDropdownCard,
                 {
-                  backgroundColor: theme.dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
-                  borderColor: activeGreen,
+                  backgroundColor: theme.dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                  borderColor: theme.border,
                 },
                 pressed && { opacity: 0.8 },
               ]}
             >
-              <View style={styles.stateDropdownLeft}>
+              <View style={[styles.profileIconBadge, { backgroundColor: activeGreen + '18' }]}>
                 <SymbolView
-                  name={{ ios: 'map.fill', android: 'location_on', web: 'location_on' } as any}
-                  size={20}
+                  name={{ ios: 'mappin.and.ellipse', android: 'place', web: 'place' } as any}
+                  size={16}
                   tintColor={activeGreen}
                 />
-                <View>
-                  <ThemedText style={[styles.stateDropdownLabel, { color: theme.textSecondary }]}>
-                    {isHi ? 'चुना गया राज्य (State Filter):' : 'Selected State:'}
-                  </ThemedText>
-                  <ThemedText style={[styles.stateDropdownValue, { color: theme.text }]}>
-                    {selectedState === 'All'
-                      ? isHi ? '🌐 सभी राज्य (All India Schemes)' : '🌐 All States (Central Schemes)'
-                      : selectedState}
-                  </ThemedText>
-                </View>
               </View>
 
-              <View style={[styles.stateDropdownRightBadge, { backgroundColor: activeGreen }]}>
-                <ThemedText style={styles.stateDropdownRightBadgeText}>
-                  {isHi ? 'राज्य बदलें ▾' : 'Select State ▾'}
+              <View style={styles.profileDropdownContent}>
+                <ThemedText type="code" style={[styles.profileDropdownHeaderLabel, { color: theme.textSecondary }]}>
+                  {isHi ? 'राज्य (STATE)' : 'STATE'}
+                </ThemedText>
+                <ThemedText type="smallBold" style={[styles.profileDropdownValueText, { color: theme.text }]} numberOfLines={1}>
+                  {selectedState === 'All'
+                    ? isHi ? 'सभी राज्य' : 'All States'
+                    : selectedState}
                 </ThemedText>
               </View>
+
+              <SymbolView
+                name={{ ios: 'chevron.down', android: 'arrow_drop_down', web: 'arrow_drop_down' } as any}
+                size={16}
+                tintColor={theme.textSecondary}
+              />
             </Pressable>
 
-            {/* Quick State Pills Row */}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.stateScrollView}
-              contentContainerStyle={styles.stateScrollContent}
+            {/* Profile Dropdown Style 2: CATEGORY Selector */}
+            <Pressable
+              onPress={() => setIsCategoryModalOpen(true)}
+              style={({ pressed }) => [
+                styles.profileDropdownCard,
+                {
+                  backgroundColor: theme.dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                  borderColor: theme.border,
+                  marginTop: 10,
+                },
+                pressed && { opacity: 0.8 },
+              ]}
             >
-              {QUICK_STATES.map((st) => {
-                const active = selectedState === st;
-                return (
-                  <Pressable
-                    key={st}
-                    onPress={() => setSelectedState(st)}
-                    style={[
-                      styles.stateChip,
-                      {
-                        backgroundColor: active
-                          ? activeGreen
-                          : theme.dark
-                          ? 'rgba(255,255,255,0.06)'
-                          : 'rgba(0,0,0,0.05)',
-                        borderColor: active ? activeGreen : theme.border,
-                      },
-                    ]}
-                  >
-                    <SymbolView
-                      name={{ ios: 'globe', android: 'language', web: 'language' } as any}
-                      size={13}
-                      tintColor={active ? '#FFFFFF' : theme.textSecondary}
-                    />
-                    <ThemedText
-                      style={[
-                        styles.stateChipText,
-                        { color: active ? '#FFFFFF' : theme.text },
-                      ]}
-                    >
-                      {st === 'All' ? (isHi ? 'सभी राज्य' : 'All States') : st}
-                    </ThemedText>
-                  </Pressable>
-                );
-              })}
-
-              {/* More States Button */}
-              <Pressable
-                onPress={() => setIsStateModalOpen(true)}
-                style={[
-                  styles.stateChip,
-                  {
-                    backgroundColor: theme.dark ? 'rgba(5, 150, 105, 0.15)' : '#ECFDF5',
-                    borderColor: activeGreen,
-                  },
-                ]}
-              >
+              <View style={[styles.profileIconBadge, { backgroundColor: activeGreen + '18' }]}>
                 <SymbolView
-                  name={{ ios: 'plus.circle.fill', android: 'add_circle', web: 'add_circle' } as any}
-                  size={13}
+                  name={{ ios: 'tag.fill', android: 'category', web: 'category' } as any}
+                  size={16}
                   tintColor={activeGreen}
                 />
-                <ThemedText style={[styles.stateChipText, { color: activeGreen, fontWeight: '700' }]}>
-                  {isHi ? '+ अन्य राज्य...' : '+ More States...'}
+              </View>
+
+              <View style={styles.profileDropdownContent}>
+                <ThemedText type="code" style={[styles.profileDropdownHeaderLabel, { color: theme.textSecondary }]}>
+                  {isHi ? 'योजना श्रेणी (SCHEME CATEGORY)' : 'SCHEME CATEGORY'}
                 </ThemedText>
-              </Pressable>
-            </ScrollView>
+                <ThemedText type="smallBold" style={[styles.profileDropdownValueText, { color: theme.text }]} numberOfLines={1}>
+                  {(() => {
+                    const catObj = SCHEME_CATEGORIES.find((c) => c.id === selectedCategory);
+                    return catObj ? (isHi ? catObj.labelHi : catObj.labelEn) : (isHi ? 'सभी योजनाएं' : 'All Schemes');
+                  })()}
+                </ThemedText>
+              </View>
+
+              <SymbolView
+                name={{ ios: 'chevron.down', android: 'arrow_drop_down', web: 'arrow_drop_down' } as any}
+                size={16}
+                tintColor={theme.textSecondary}
+              />
+            </Pressable>
 
             {/* Land Acreage Input & Preset Buttons */}
             <View style={styles.acreageRow}>
@@ -564,45 +499,6 @@ export function GovSchemesView({ onBack, embeddedInTab = false }: GovSchemesView
             )}
           </View>
 
-          {/* Category Filter Pills */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.categoryScrollView}
-            contentContainerStyle={styles.categoryScrollContent}
-          >
-            {categories.map((cat) => {
-              const active = selectedCategory === cat.id;
-              return (
-                <Pressable
-                  key={cat.id}
-                  onPress={() => setSelectedCategory(cat.id)}
-                  style={[
-                    styles.categoryChip,
-                    {
-                      backgroundColor: active ? activeGreen : theme.card,
-                      borderColor: active ? activeGreen : theme.border,
-                    },
-                  ]}
-                >
-                  <SymbolView
-                    name={cat.iconSymbol}
-                    size={14}
-                    tintColor={active ? '#FFFFFF' : theme.dark ? '#A1A1AA' : activeGreen}
-                  />
-                  <ThemedText
-                    style={[
-                      styles.categoryChipText,
-                      { color: active ? '#FFFFFF' : theme.text },
-                    ]}
-                  >
-                    {isHi ? cat.nameHi : cat.nameEn}
-                  </ThemedText>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-
           {/* Schemes Count & Section Header */}
           <View style={styles.sectionHeaderRow}>
             <View style={styles.iconHeadingRow}>
@@ -640,8 +536,8 @@ export function GovSchemesView({ onBack, embeddedInTab = false }: GovSchemesView
               </ThemedText>
               <ThemedText style={[styles.emptyStateSub, { color: theme.textSecondary }]}>
                 {isHi
-                  ? 'कृपया अपने खोज शब्द या राज्य फ़िल्टर को बदल कर देखें।'
-                  : 'Try changing your search term or state filter.'}
+                  ? 'कृपया अपने खोज शब्द, राज्य या श्रेणी फ़िल्टर को बदल कर देखें।'
+                  : 'Try changing your search term, state, or category filter.'}
               </ThemedText>
               <Pressable
                 onPress={() => {
@@ -881,15 +777,40 @@ export function GovSchemesView({ onBack, embeddedInTab = false }: GovSchemesView
       {/* State Selection Modal Popup */}
       <SelectionModal
         visible={isStateModalOpen}
-        title={isHi ? 'राज्य का चयन करें (Select State)' : 'Select State'}
+        title={isHi ? 'राज्य का चयन करें' : 'Select State'}
         placeholder={isHi ? 'राज्य का नाम खोजें...' : 'Search state name...'}
-        list={ALL_INDIAN_STATES}
-        selectedValue={selectedState}
+        list={ALL_INDIAN_STATES.map((s) => (s === 'All' ? (isHi ? 'सभी राज्य' : 'All States') : s))}
+        selectedValue={selectedState === 'All' ? (isHi ? 'सभी राज्य' : 'All States') : selectedState}
         onSelect={(st) => {
-          setSelectedState(st);
+          if (st === 'सभी राज्य' || st === 'All States' || st === 'All') {
+            setSelectedState('All');
+          } else {
+            setSelectedState(st);
+          }
           setIsStateModalOpen(false);
         }}
         onClose={() => setIsStateModalOpen(false)}
+      />
+
+      {/* Category Selection Modal Popup */}
+      <SelectionModal
+        visible={isCategoryModalOpen}
+        title={isHi ? 'योजना श्रेणी का चयन करें' : 'Select Category'}
+        placeholder={isHi ? 'श्रेणी खोजें...' : 'Search category...'}
+        list={SCHEME_CATEGORIES.map((c) => (isHi ? c.labelHi : c.labelEn))}
+        selectedValue={
+          isHi
+            ? SCHEME_CATEGORIES.find((c) => c.id === selectedCategory)?.labelHi
+            : SCHEME_CATEGORIES.find((c) => c.id === selectedCategory)?.labelEn
+        }
+        onSelect={(selectedDisplayStr) => {
+          const found = SCHEME_CATEGORIES.find(
+            (c) => c.labelEn === selectedDisplayStr || c.labelHi === selectedDisplayStr
+          );
+          setSelectedCategory(found ? found.id : 'all');
+          setIsCategoryModalOpen(false);
+        }}
+        onClose={() => setIsCategoryModalOpen(false)}
       />
 
       {/* Scheme Detail Bottom Sheet Modal */}
@@ -1188,71 +1109,46 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 6,
+    marginBottom: 8,
   },
   controlSectionLabel: {
     fontSize: 13,
     fontWeight: '700',
   },
-  stateDropdownBtn: {
+  profileDropdownCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    marginVertical: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    gap: 12,
   },
-  stateDropdownLeft: {
-    flexDirection: 'row',
+  profileIconBadge: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 10,
+  },
+  profileDropdownContent: {
     flex: 1,
   },
-  stateDropdownLabel: {
-    fontSize: 11,
-    fontWeight: '600',
+  profileDropdownHeaderLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    marginBottom: 2,
   },
-  stateDropdownValue: {
+  profileDropdownValueText: {
     fontSize: 14,
-    fontWeight: '700',
-    marginTop: 1,
-  },
-  stateDropdownRightBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 14,
-  },
-  stateDropdownRightBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  stateScrollView: {
-    marginBottom: 10,
-    marginTop: 4,
-  },
-  stateScrollContent: {
-    gap: 8,
-  },
-  stateChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-  },
-  stateChipText: {
-    fontSize: 13,
     fontWeight: '700',
   },
   acreageRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
-    marginTop: 4,
+    marginTop: 12,
   },
   acreageInputWrapper: {
     flex: 1,
@@ -1312,25 +1208,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginLeft: 8,
     padding: 0,
-  },
-  categoryScrollView: {
-    marginBottom: 14,
-  },
-  categoryScrollContent: {
-    gap: 8,
-  },
-  categoryChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-  },
-  categoryChipText: {
-    fontSize: 13,
-    fontWeight: '700',
   },
   sectionHeaderRow: {
     flexDirection: 'row',
@@ -1539,15 +1416,19 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    justifyContent: Platform.OS === 'web' ? 'center' : 'flex-end',
+    alignItems: 'center',
+    padding: Platform.OS === 'web' ? 16 : 0,
   },
   modalContent: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    borderTopWidth: 1,
+    width: '100%',
+    maxWidth: 680,
+    borderRadius: 20,
+    borderWidth: 1,
     maxHeight: '88%',
     minHeight: '60%',
+    overflow: 'hidden',
     paddingBottom: Platform.OS === 'ios' ? 24 : 12,
   },
   modalHeader: {

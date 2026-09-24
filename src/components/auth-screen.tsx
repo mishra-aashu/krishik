@@ -1632,17 +1632,27 @@ const styles = StyleSheet.create({
     fontSize: 14.5,
     fontWeight: '800',
     color: '#ffffff',
-    textShadowColor: 'rgba(0, 0, 0, 0.90)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
+    ...Platform.select({
+      web: { textShadow: '0px 1px 4px rgba(0, 0, 0, 0.90)' } as any,
+      default: {
+        textShadowColor: 'rgba(0, 0, 0, 0.90)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 4,
+      },
+    }),
   },
   featureDesc: {
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.90)',
     lineHeight: 17,
-    textShadowColor: 'rgba(0, 0, 0, 0.90)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
+    ...Platform.select({
+      web: { textShadow: '0px 1px 4px rgba(0, 0, 0, 0.90)' } as any,
+      default: {
+        textShadowColor: 'rgba(0, 0, 0, 0.90)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 4,
+      },
+    }),
   },
   featureCardStacked: {
     width: '100%',

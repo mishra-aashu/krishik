@@ -825,18 +825,6 @@ Format output strictly as a JSON array of objects with keys: id, nameHi, nameEn,
       }
     }
     clearTimeout(timeoutId);
-
-    if (response.ok) {
-      const data = await response.json();
-      let content = data.choices?.[0]?.message?.content || '';
-      content = content.replace(/```json/g, '').replace(/```/g, '').trim();
-
-      const liveItems = JSON.parse(content);
-      if (Array.isArray(liveItems) && liveItems.length > 0) {
-        // Merge AI dynamic items with base list safely
-        return [...liveItems, ...baseList];
-      }
-    }
   } catch (err) {
     // Graceful fallback to dynamic database on network/timeout
   }

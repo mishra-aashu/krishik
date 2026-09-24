@@ -644,8 +644,8 @@ export default function ExploreScreen() {
                   </ThemedText>
                   <ThemedText type="small" style={[styles.optionDescription, { color: theme.textSecondary }]}>
                     {language === 'hi'
-                      ? 'अपनी भूमि के क्षेत्रफल के अनुसार बीज दर, सिंचाई चक्र और उर्वरक आवश्यकताओं की गणना करें।'
-                      : 'Calculate seed rates, irrigation counts, and fertilizer requirements (NPK) according to your acreage.'}
+                      ? 'बीज मात्रा, सिंचाई व एनपीके उर्वरक गणना'
+                      : 'Seed rates, NPK dose & irrigation calculator'}
                   </ThemedText>
                 </View>
                 <SymbolView
@@ -672,12 +672,12 @@ export default function ExploreScreen() {
                 </View>
                 <View style={styles.optionContent}>
                   <ThemedText type="smallBold" style={[styles.optionTitle, { color: theme.text }]}>
-                    {language === 'hi' ? 'मृदा स्वास्थ्य कैलकुलेटर' : 'Soil Health Calculator'}
+                    {language === 'hi' ? 'मृदा स्वास्थ्य कार्ड' : 'Soil Health Calculator'}
                   </ThemedText>
                   <ThemedText type="small" style={[styles.optionDescription, { color: theme.textSecondary }]}>
                     {language === 'hi'
-                      ? 'मिट्टी रिपोर्ट/कार्ड अपलोड करें या मान दर्ज करें और वैज्ञानिक उर्वरक सिफारिशें पाएं।'
-                      : 'Upload your soil test report/card or enter parameters to get tailored fertilizer prescriptions.'}
+                      ? 'मिट्टी जांच रिपोर्ट व खाद खुराक सिफारिश'
+                      : 'Soil test analysis & NPK recommendations'}
                   </ThemedText>
                 </View>
                 <SymbolView
@@ -704,12 +704,12 @@ export default function ExploreScreen() {
                 </View>
                 <View style={styles.optionContent}>
                   <ThemedText type="smallBold" style={[styles.optionTitle, { color: theme.text }]}>
-                    {language === 'hi' ? 'एआई फसल रोग निदान' : 'AI Crop Disease Diagnosis'}
+                    {language === 'hi' ? 'फसल रोग निदान' : 'Crop Disease Diagnosis'}
                   </ThemedText>
                   <ThemedText type="small" style={[styles.optionDescription, { color: theme.textSecondary }]}>
                     {language === 'hi'
-                      ? 'फसल की बीमारी का निदान करने के लिए पत्ती की फोटो लें और जैविक व रासायनिक उपचार तुरंत पाएं।'
-                      : 'Describe symptoms or take a photo of the infected crop to diagnose the disease and get treatments.'}
+                      ? 'पत्ती फोटो स्कैन कर बीमारी व इलाज पाएं'
+                      : 'Scan leaf photo to diagnose pest & diseases'}
                   </ThemedText>
                 </View>
                 <SymbolView
@@ -736,12 +736,12 @@ export default function ExploreScreen() {
                 </View>
                 <View style={styles.optionContent}>
                   <ThemedText type="smallBold" style={[styles.optionTitle, { color: theme.text, fontSize: 15 }]}>
-                    {language === 'hi' ? 'PM-किसान एवं सब्सिडी फाइंडर (सरकारी योजनाएं)' : 'PM-Kisan & Subsidy Finder (Government Schemes)'}
+                    {language === 'hi' ? 'सरकारी योजनाएं' : 'PM-Kisan & Subsidy Finder'}
                   </ThemedText>
                   <ThemedText type="small" style={[styles.optionDescription, { color: theme.textSecondary }]}>
                     {language === 'hi'
-                      ? 'पीएम किसान, कुसुम सोलर पंप, ड्रिप सिंचाई, ट्रैक्टर व कृषि लोन पर ₹45,000+ सब्सिडी खोजें व आवेदन करें।'
-                      : 'Calculate & apply for PM-Kisan, KUSUM solar pump, drip irrigation & KCC loans subsidies up to ₹45,000+.'}
+                      ? 'पीएम-किसान, सोलर पंप, सिंचाई व लोन सब्सिडी'
+                      : 'PM-Kisan, Solar Pump, Drip & KCC loans'}
                   </ThemedText>
                 </View>
                 <SymbolView
