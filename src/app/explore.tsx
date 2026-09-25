@@ -828,6 +828,19 @@ export default function ExploreScreen() {
               </PressableScale>
             </ScrollView>
           </AnimatedReanimated.View>
+        ) : activeView === 'scheme' || activeView === 'desi' ? (
+          <View style={{ flex: 1, width: '100%' }}>
+            {activeView === 'scheme' && (
+              <AnimatedReanimated.View style={{ flex: 1 }} entering={FadeInRight.duration(300)}>
+                <GovSchemesView embeddedInTab={true} />
+              </AnimatedReanimated.View>
+            )}
+            {activeView === 'desi' && (
+              <AnimatedReanimated.View style={{ flex: 1 }} entering={FadeInRight.duration(300)}>
+                <DesiFarmingView embeddedInTab={true} />
+              </AnimatedReanimated.View>
+            )}
+          </View>
         ) : (
           <ScrollView
             contentContainerStyle={[
@@ -1425,17 +1438,6 @@ export default function ExploreScreen() {
             </AnimatedReanimated.View>
           )}
 
-          {activeView === 'scheme' && (
-            <AnimatedReanimated.View style={{ flex: 1 }} entering={FadeInRight.duration(300)}>
-              <GovSchemesView embeddedInTab={true} />
-            </AnimatedReanimated.View>
-          )}
-
-          {activeView === 'desi' && (
-            <AnimatedReanimated.View style={{ flex: 1 }} entering={FadeInRight.duration(300)}>
-              <DesiFarmingView embeddedInTab={true} />
-            </AnimatedReanimated.View>
-          )}
           </ScrollView>
         )}
       </SafeAreaView>

@@ -9,9 +9,9 @@
 const GROQ_API_KEY = process.env.EXPO_PUBLIC_GROQ_API_KEY || '';
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MODEL_CHAIN = [
-  'llama-3.3-70b-versatile',
   'llama-3.1-8b-instant',
-  'mixtral-8x7b-32768',
+  'llama-3.3-70b-versatile',
+  'deepseek-r1-distill-llama-70b',
 ];
 
 export type SchemeCategory = 'dbt' | 'insurance' | 'machinery' | 'irrigation' | 'solar' | 'loan';

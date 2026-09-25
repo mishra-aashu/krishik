@@ -122,21 +122,21 @@ const MessageItem = React.memo(
       >
         {!isUser && (
           <View style={styles.botHeaderRow}>
-            <View style={[styles.avatarBubble, { backgroundColor: theme.primary, borderColor: theme.borderAccent }]}>
+            <View style={[styles.avatarBubble, { backgroundColor: '#10B981', borderColor: 'rgba(16, 185, 129, 0.25)' }]}>
               <SymbolView
                 name={{ ios: 'laurel.leading', android: 'spa', web: 'spa' } as any}
                 size={13}
-                tintColor={theme.onPrimary}
+                tintColor="#FFFFFF"
               />
             </View>
             <ThemedText type="smallBold" style={[styles.botSenderName, { color: theme.text }]}>
               Krishik Mitra AI
             </ThemedText>
-            <View style={[styles.verifiedTag, { backgroundColor: theme.accentLight }]}>
-              <ThemedText style={[styles.verifiedTagText, { color: theme.accent }]}>
-                VERIFIED
-              </ThemedText>
-            </View>
+            <SymbolView
+              name={{ ios: 'checkmark.seal.fill', android: 'verified', web: 'verified' } as any}
+              size={16}
+              tintColor="#10B981"
+            />
           </View>
         )}
 
