@@ -16,7 +16,7 @@ import { SymbolView } from 'expo-symbols';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import { useLanguage } from '@/context/language-context';
-import { MaxContentWidth } from '@/constants/theme';
+import { BottomTabInset, MaxContentWidth } from '@/constants/theme';
 import { SelectionModal } from '@/components/selection-modal';
 import {
   filterSchemes,
@@ -567,42 +567,39 @@ export function GovSchemesView({ onBack, embeddedInTab = false }: GovSchemesView
                 },
               ]}
             >
-              <View style={styles.schemeCardHeader}>
-                <View style={styles.schemeCategoryTagRow}>
-                  <View
+              <View style={styles.schemeCategoryTagRow}>
+                <View
+                  style={[
+                    styles.categoryBadge,
+                    { backgroundColor: 'rgba(5, 150, 105, 0.12)' },
+                  ]}
+                >
+                  <ThemedText style={[styles.categoryBadgeText, { color: activeGreen }]}>
+                    {scheme.category.toUpperCase()}
+                  </ThemedText>
+                </View>
+                <View
+                  style={[
+                    styles.stateBadge,
+                    {
+                      backgroundColor:
+                        scheme.state === 'All'
+                          ? 'rgba(59, 130, 246, 0.12)'
+                          : 'rgba(245, 158, 11, 0.12)',
+                    },
+                  ]}
+                >
+                  <ThemedText
                     style={[
-                      styles.categoryBadge,
-                      { backgroundColor: 'rgba(5, 150, 105, 0.12)' },
-                    ]}
-                  >
-                    <ThemedText style={[styles.categoryBadgeText, { color: activeGreen }]}>
-                      {scheme.category.toUpperCase()}
-                    </ThemedText>
-                  </View>
-                  <View
-                    style={[
-                      styles.stateBadge,
+                      styles.stateBadgeText,
                       {
-                        backgroundColor:
-                          scheme.state === 'All'
-                            ? 'rgba(59, 130, 246, 0.12)'
-                            : 'rgba(245, 158, 11, 0.12)',
+                        color: scheme.state === 'All' ? '#2563EB' : '#D97706',
                       },
                     ]}
                   >
-                    <ThemedText
-                      style={[
-                        styles.stateBadgeText,
-                        {
-                          color: scheme.state === 'All' ? '#2563EB' : '#D97706',
-                        },
-                      ]}
-                    >
-                      {scheme.state === 'All' ? (isHi ? 'केंद्र सरकार' : 'Central') : scheme.state}
-                    </ThemedText>
-                  </View>
+                    {scheme.state === 'All' ? (isHi ? 'केंद्र सरकार' : 'Central') : scheme.state}
+                  </ThemedText>
                 </View>
-
                 <View
                   style={[
                     styles.subsidyBadge,
@@ -1010,7 +1007,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 12,
-    paddingBottom: 24,
+    paddingBottom: BottomTabInset + 80,
   },
   maxContainer: {
     width: '100%',
@@ -1261,15 +1258,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: 12,
   },
-  schemeCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
   schemeCategoryTagRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
     gap: 6,
+    marginBottom: 8,
   },
   categoryBadge: {
     paddingHorizontal: 8,
@@ -1290,9 +1284,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   subsidyBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    maxWidth: '100%',
   },
   subsidyBadgeText: {
     fontSize: 11,
@@ -1355,11 +1350,12 @@ const styles = StyleSheet.create({
   helplineButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 10,
     borderRadius: 10,
     borderWidth: 1,
     gap: 4,
+    flexShrink: 0,
   },
   helplineButtonText: {
     fontSize: 11,

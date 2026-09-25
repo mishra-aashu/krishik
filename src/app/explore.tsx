@@ -25,6 +25,7 @@ import { ThemedView } from '@/components/themed-view';
 import { SymbolView } from 'expo-symbols';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useLanguage } from '@/context/language-context';
 import { LocalStorage } from '@/utils/storage';
 import { useAuth } from '@/context/auth-context';
 import { PressableScale } from '@/components/pressable-scale';
@@ -38,6 +39,7 @@ import SoilCalculator from '@/components/soil-calculator';
 import OfflineNotice from '@/components/offline-notice';
 import { useNetInfo } from '@react-native-community/netinfo';
 import { GovSchemesView } from '@/components/gov-schemes-view';
+import { DesiFarmingView } from '@/components/desi-farming-view';
 
 // Pests and diseases database
 const PEST_DIRECTORY = [
@@ -200,7 +202,7 @@ export default function ExploreScreen() {
   const safeAreaInsets = useSafeAreaInsets();
   const netInfo = useNetInfo();
   const isOffline = netInfo.isConnected === false;
-  const [language, setLanguage] = useState<'hi' | 'en'>('en');
+  const { language, setLanguage, toggleLanguage, isHi } = useLanguage();
 
   const getTabLabel = (tab: 'calc' | 'pest' | 'scheme') => {
     const isHindi = language === 'hi';
@@ -248,7 +250,7 @@ export default function ExploreScreen() {
     web: { paddingBottom: Spacing.four }
   });
 
-  const [activeView, setActiveView] = useState<'main' | 'calc' | 'soil' | 'pest' | 'scheme'>('main');
+  const [activeView, setActiveView] = useState<'main' | 'calc' | 'soil' | 'pest' | 'scheme' | 'desi'>('main');
 
   const { farmState, farmCrop } = useAuth();
 
@@ -583,12 +585,36 @@ export default function ExploreScreen() {
         <OfflineNotice language={language} />
         {activeView === 'main' ? (
           <View style={styles.header}>
-            <ThemedText type="smallBold" style={styles.headerTitle}>
-              {language === 'hi' ? 'कृषि यूटिलिटीज' : 'Krishi Utilities'}
-            </ThemedText>
-            <ThemedText type="small" style={[styles.headerSub, { color: theme.textSecondary, fontWeight: '600' }]}>
-              {language === 'hi' ? 'कृषि उपकरण और डेटाबेस' : 'Agronomic Tools & Database'}
-            </ThemedText>
+            <View style={{ flex: 1 }}>
+              <ThemedText type="smallBold" style={styles.headerTitle}>
+                {isHi ? 'कृषि उपकरण व किसान गाइड' : 'Simple Farmer Tools'}
+              </ThemedText>
+              <ThemedText type="small" style={[styles.headerSub, { color: theme.textSecondary, fontWeight: '600' }]}>
+                {isHi ? 'आसान कैलकुलेटर व देसी तकनीकें' : 'Easy Calculators & Desi Hacks'}
+              </ThemedText>
+            </View>
+
+            {/* 1-Click Language Switcher Pill */}
+            <Pressable
+              onPress={() => toggleLanguage()}
+              style={({ pressed }) => [
+                styles.langToggleBadge,
+                {
+                  backgroundColor: isHi ? 'rgba(5, 150, 105, 0.15)' : 'rgba(59, 130, 246, 0.15)',
+                  borderColor: isHi ? '#059669' : '#2563EB',
+                },
+                pressed && { opacity: 0.7 },
+              ]}
+            >
+              <SymbolView
+                name={{ ios: 'globe', android: 'language', web: 'language' } as any}
+                size={14}
+                tintColor={isHi ? '#059669' : '#2563EB'}
+              />
+              <ThemedText style={[styles.langToggleText, { color: isHi ? '#059669' : '#2563EB' }]}>
+                {isHi ? 'हिन्दी (1-क्लिक)' : 'English (1-Click)'}
+              </ThemedText>
+            </Pressable>
           </View>
         ) : (
           <View style={styles.subPageHeader}>
@@ -607,13 +633,31 @@ export default function ExploreScreen() {
               />
             </Pressable>
             <View style={{ flex: 1 }}>
-              <ThemedText type="smallBold" style={{ fontSize: 20 }}>
-                {activeView === 'calc' && (language === 'hi' ? 'खुराक कैलकुलेटर' : 'Crop Input Calculator')}
-                {activeView === 'soil' && (language === 'hi' ? 'मिट्टी स्वास्थ्य कैलकुलेटर' : 'Soil Health Calculator')}
-                {activeView === 'pest' && (language === 'hi' ? 'एआई फसल रोग निदान' : 'AI Crop Disease Diagnosis')}
-                {activeView === 'scheme' && (language === 'hi' ? 'सरकारी योजनाएं' : 'Government Schemes')}
+              <ThemedText type="smallBold" style={{ fontSize: 18, fontWeight: '700' }}>
+                {activeView === 'calc' && (isHi ? 'बीज व खाद कैलकुलेटर' : 'Crop & Fertilizer Calculator')}
+                {activeView === 'soil' && (isHi ? 'मिट्टी जांच व खाद खुराक' : 'Soil Test & Fertilizer Prescription')}
+                {activeView === 'pest' && (isHi ? 'फसल बीमारी की फोटो जांच' : 'Crop Disease Scan & Treatment')}
+                {activeView === 'scheme' && (isHi ? 'सरकारी योजना व सब्सिडी' : 'Government Schemes & PM-Kisan')}
+                {activeView === 'desi' && (isHi ? 'कम खर्च की देसी तकनीकें' : 'Low-Cost Desi Farming Hacks')}
               </ThemedText>
             </View>
+
+            {/* 1-Click Language Switcher Pill in SubPage */}
+            <Pressable
+              onPress={() => toggleLanguage()}
+              style={({ pressed }) => [
+                styles.langToggleBadgeSmall,
+                {
+                  backgroundColor: isHi ? 'rgba(5, 150, 105, 0.15)' : 'rgba(59, 130, 246, 0.15)',
+                  borderColor: isHi ? '#059669' : '#2563EB',
+                },
+                pressed && { opacity: 0.7 },
+              ]}
+            >
+              <ThemedText style={[styles.langToggleTextSmall, { color: isHi ? '#059669' : '#2563EB' }]}>
+                {isHi ? 'हिंदी' : 'Eng'}
+              </ThemedText>
+            </Pressable>
           </View>
         )}
 
@@ -723,11 +767,11 @@ export default function ExploreScreen() {
                 onPress={() => setActiveView('scheme')}
                 style={({ pressed }) => [
                   styles.optionCard,
-                  { borderColor: theme.primary, backgroundColor: theme.card, borderWidth: 1.5 },
+                  { borderColor: theme.border, backgroundColor: theme.card },
                   pressed && { opacity: 0.9 }
                 ]}
               >
-                <View style={[styles.optionIconContainer, { backgroundColor: 'rgba(5, 150, 105, 0.15)' }]}>
+                <View style={[styles.optionIconContainer, { backgroundColor: 'rgba(5, 150, 105, 0.12)' }]}>
                   <SymbolView
                     name={{ ios: 'building.columns.fill', android: 'account_balance', web: 'account_balance' } as any}
                     size={22}
@@ -735,7 +779,7 @@ export default function ExploreScreen() {
                   />
                 </View>
                 <View style={styles.optionContent}>
-                  <ThemedText type="smallBold" style={[styles.optionTitle, { color: theme.text, fontSize: 15 }]}>
+                  <ThemedText type="smallBold" style={[styles.optionTitle, { color: theme.text }]}>
                     {language === 'hi' ? 'सरकारी योजनाएं' : 'PM-Kisan & Subsidy Finder'}
                   </ThemedText>
                   <ThemedText type="small" style={[styles.optionDescription, { color: theme.textSecondary }]}>
@@ -747,7 +791,39 @@ export default function ExploreScreen() {
                 <SymbolView
                   name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any}
                   size={18}
-                  tintColor={theme.primary}
+                  tintColor={theme.textSecondary}
+                />
+              </PressableScale>
+
+              <PressableScale
+                onPress={() => setActiveView('desi')}
+                style={({ pressed }) => [
+                  styles.optionCard,
+                  { borderColor: theme.border, backgroundColor: theme.card },
+                  pressed && { opacity: 0.9 }
+                ]}
+              >
+                <View style={[styles.optionIconContainer, { backgroundColor: 'rgba(16, 185, 129, 0.12)' }]}>
+                  <SymbolView
+                    name={{ ios: 'leaf.fill', android: 'eco', web: 'eco' } as any}
+                    size={22}
+                    tintColor="#10B981"
+                  />
+                </View>
+                <View style={styles.optionContent}>
+                  <ThemedText type="smallBold" style={[styles.optionTitle, { color: theme.text }]}>
+                    {language === 'hi' ? 'कम खर्चे वाली देसी तकनीकें' : 'Low-Cost & Desi Farming'}
+                  </ThemedText>
+                  <ThemedText type="small" style={[styles.optionDescription, { color: theme.textSecondary }]}>
+                    {language === 'hi'
+                      ? 'जीवामृत, नीमास्त्र, मट्ठा स्प्रे व देसी तकनीक'
+                      : 'Zero-budget organic hacks & remedies'}
+                  </ThemedText>
+                </View>
+                <SymbolView
+                  name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any}
+                  size={18}
+                  tintColor={theme.textSecondary}
                 />
               </PressableScale>
             </ScrollView>
@@ -1354,6 +1430,12 @@ export default function ExploreScreen() {
               <GovSchemesView embeddedInTab={true} />
             </AnimatedReanimated.View>
           )}
+
+          {activeView === 'desi' && (
+            <AnimatedReanimated.View style={{ flex: 1 }} entering={FadeInRight.duration(300)}>
+              <DesiFarmingView embeddedInTab={true} />
+            </AnimatedReanimated.View>
+          )}
           </ScrollView>
         )}
       </SafeAreaView>
@@ -1377,13 +1459,40 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingTop: Spacing.three,
     paddingBottom: Spacing.two,
-    width: '100%'
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  langToggleBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  langToggleText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  langToggleBadgeSmall: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginLeft: 6,
+  },
+  langToggleTextSmall: {
+    fontSize: 11,
+    fontWeight: '700',
   },
   headerTitle: {
     fontSize: 20
   },
   headerSub: {
-    fontSize: 10,
+    fontSize: 11,
     marginTop: 2
   },
   segmentedControl: {
