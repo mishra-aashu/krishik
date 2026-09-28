@@ -47,10 +47,18 @@
 
   <!-- Farmer Community Chowpal -->
   <url>
-    <loc>https://www.krishikmitra.site/chowpal</loc>
+    <loc>https://www.krishikmitra.site/community</loc>
     <lastmod>2026-09-28</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
+  </url>
+
+  <!-- Farmer Profile & Farm Settings -->
+  <url>
+    <loc>https://www.krishikmitra.site/profile</loc>
+    <lastmod>2026-09-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
   </url>
 
 </urlset>

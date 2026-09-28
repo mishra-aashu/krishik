@@ -18,6 +18,9 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 
+import { SEOHead } from '@/components/seo-head';
+import { SEOJsonLd } from '@/components/seo-json-ld';
+
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { SymbolView } from 'expo-symbols';
@@ -1233,6 +1236,12 @@ export default function ChatScreen() {
 
   return (
     <ThemedView style={styles.container}>
+      <SEOHead
+        title={language === 'hi' ? 'एआई कृषिक मित्र चैट - वैज्ञानिक खेती सलाह' : 'AI Agronomy Chat Assistant - Krishik Mitra'}
+        description={language === 'hi' ? 'अपने खेत, मिट्टी और फसल के अनुसार AI कृषिक मित्र से वैज्ञानिक और देसी सलाह पाएं।' : 'Ask AI Krishik Mitra for crop diagnostic advice, fertilizer calculation, and pest remedies.'}
+        canonicalPath="/chat"
+      />
+      <SEOJsonLd pageType="chat" />
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
         <OfflineNotice language={language} />
         <KeyboardAvoidingView

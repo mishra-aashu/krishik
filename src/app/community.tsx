@@ -19,6 +19,9 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter, useFocusEffect } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 
+import { SEOHead } from '@/components/seo-head';
+import { SEOJsonLd } from '@/components/seo-json-ld';
+
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { SymbolView } from 'expo-symbols';
@@ -550,6 +553,12 @@ export default function CommunityScreen() {
 
   return (
     <ThemedView style={styles.container}>
+      <SEOHead
+        title={language === 'hi' ? 'किसान चौपाल व समुदाय मंच - कृषिक मित्र' : 'Farmer Community & Discussion Chowpal - Krishik Mitra'}
+        description={language === 'hi' ? 'भारतीय किसानों का अपना मंच। अनुभव, फसल सलाह, मंडी भाव व बीज-खाद चर्चा साझा करें।' : 'Farmers Chowpal community forum to share farming advice, mandi updates, and crop experiences.'}
+        canonicalPath="/community"
+      />
+      <SEOJsonLd pageType="home" />
       <SafeAreaView style={styles.safeArea}>
         <OfflineNotice language={language} />
         
