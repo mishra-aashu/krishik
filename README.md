@@ -1,56 +1,107 @@
-# Welcome to your Expo app 👋
+# 🌾 Krishik Mitra (कृषिक मित्र)
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+> **Next-Gen AI Agronomy & Zero-Budget Farming Platform for Indian Farmers**  
+> 🌐 **Live Site:** [https://www.krishikmitra.site](https://www.krishikmitra.site)
 
-## Get started
+---
 
-1. Install dependencies
+## 🌟 Overview (परिचय)
 
-   ```bash
-   npm install
-   ```
+**Krishik Mitra (कृषिक मित्र)** is a mobile-first universal web application designed to empower Indian farmers with scientific agronomy advice, low-cost organic remedies, government scheme subsidies, and AI-driven crop health diagnostic tools. Built with simple, non-technical Hindi and English interfaces, full voice-microphone recognition, and 1-click language switching.
 
-2. Start the app
+---
 
-   ```bash
-   npx expo start
-   ```
+## 🚀 Key Features (मुख्य विशेषताएं)
 
-In the output, you'll find options to open the app in a
+- 🏛️ **PM-Kisan & Subsidy Finder (सरकारी योजना गाइड)**  
+  State-wise & central government scheme finder covering PM-Kisan Samman Nidhi (₹6,000/yr), PM-KUSUM 75% Solar Pump Subsidy, Kisan Credit Card (KCC) loans, and PM Fasal Bima Yojana (Crop Insurance).
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+- 💡 **Low-Cost & Desi Farming Remedies (कम खर्च की देसी तकनीकें)**  
+  Complete database and AI advisor for Zero-Budget Natural Farming (ZBNF) recipes including **Jeevamrut**, **Neemastra**, **Agniastra**, **Bottle Drip Irrigation**, **Yellow Sticky Traps**, and **Fermented Sour Buttermilk Spray**.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+- 🍃 **AI Leaf Scan & Disease Diagnosis (फसल रोग फोटो जांच)**  
+  Instant AI leaf photo diagnostic scanner identifying pests, fungal infestations, and leaf spot diseases with organic and chemical treatment recommendations.
 
-## Get a fresh project
+- 🎙️ **Voice Microphone & 1-Click Language Switcher**  
+  Voice speech-to-text recognition in Hindi and English with crisp 50–70 word AI answers tailored for farmers.
 
-When you're ready, run:
+- 📊 **Crop & Soil Health Calculators (बीज व खाद कैलकुलेटर)**  
+  Precision NPK fertilizer dosage calculation, seed rate estimations, and soil health card prescription recommendations.
 
+- 📈 **Live Mandi Rates & Micro-Weather Forecast**  
+  Real-time commodity market prices across Indian APMC mandis and localized agricultural weather advisories.
+
+- 💬 **Farmers Chowpal (किसान चौपाल)**  
+  Peer-to-peer farmer community discussion board for sharing crop experiences and regional farming updates.
+
+---
+
+## 🛠️ Tech Stack (प्रौद्योगिकी)
+
+- **Framework:** [Expo SDK 57](https://expo.dev) / React Native 0.86 / React 19 / TypeScript 6
+- **Routing & Navigation:** Expo Router (File-based typed routing)
+- **Styling & Animations:** Custom Glassmorphism, React Native Reanimated 4, Expo Symbols
+- **AI Engine:** Groq API (`llama-3.1-8b-instant`, `llama-3.3-70b-versatile`, `deepseek-r1-distill-llama-70b`) with multi-key rotation and intelligent offline agronomy fallback
+- **Backend & Auth:** Supabase (Row Level Security, Authentication, Storage)
+- **Deployment:** Vercel (Static Web Export & Serverless Cron Sync)
+
+---
+
+## 📦 Getting Started (शुरुआत कैसे करें)
+
+### 1. Prerequisites
+- Node.js (v18 or higher)
+- npm or yarn
+
+### 2. Installation
 ```bash
-npm run reset-project
+# Clone repository
+git clone https://github.com/mishra-aashu/krishik.git
+
+# Navigate into directory
+cd krishik
+
+# Install dependencies
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### 3. Environment Setup
+Create a `.env` file in the root directory:
+```env
+EXPO_PUBLIC_GROQ_API_KEY=your_groq_api_key
+EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
 
-### Other setup steps
+### 4. Running Locally
+```bash
+# Start Web Development Server
+npm run web
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+# Start Expo Development Server for Android / iOS
+npx expo start
+```
 
-## Learn more
+### 5. Production Web Export
+```bash
+# Export static web build to /dist
+npm run build
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+---
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## 🔍 SEO & Search Engine Optimization
 
-## Join the community
+This project includes complete SEO optimizations for Google Search Engine indexing:
+- **Canonical Domain:** `https://www.krishikmitra.site`
+- **Sitemap:** `/public/sitemap.xml`
+- **Robots Directives:** `/public/robots.txt`
+- **Structured Data:** Schema.org `Organization`, `WebApplication`, `FAQPage`, and `BreadcrumbList` JSON-LD tags.
 
-Join our community of developers creating universal apps.
+---
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## 📄 License & Credits
+
+Distributed under the MIT License. See `LICENSE` for more information.
+
+Designed with ❤️ for Indian Farmers.
