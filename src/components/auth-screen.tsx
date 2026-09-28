@@ -521,12 +521,12 @@ export function AuthScreen({ onLoginSuccess, onBack }: AuthScreenProps) {
 
             {/* CENTER COLUMN: Auth Form Card & Skip Button */}
             <View style={[styles.centerAuthCol, isDesktop && { flex: 1.2, maxWidth: 460 }]}>
-              {/* Form Container (High-Contrast Solid Frosted Glass Card) */}
+              {/* Form Container (Frosted Glass Translucent Card) */}
               <View style={[
                 styles.authCard,
                 {
-                  backgroundColor: theme.dark ? 'rgba(10, 26, 15, 0.90)' : 'rgba(255, 255, 255, 0.94)',
-                  borderColor: theme.dark ? 'rgba(255, 255, 255, 0.30)' : 'rgba(255, 255, 255, 0.95)'
+                  backgroundColor: theme.dark ? 'rgba(10, 26, 15, 0.62)' : 'rgba(255, 255, 255, 0.65)',
+                  borderColor: theme.dark ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.85)'
                 }
               ]}>
                 {successMsg && (
@@ -581,8 +581,8 @@ export function AuthScreen({ onLoginSuccess, onBack }: AuthScreenProps) {
                     style={({ pressed }) => [
                       styles.googleBtn,
                       {
-                        backgroundColor: theme.dark ? 'rgba(255, 255, 255, 0.09)' : '#FFFFFF',
-                        borderColor: theme.dark ? 'rgba(255, 255, 255, 0.28)' : 'rgba(46, 125, 50, 0.30)',
+                        backgroundColor: theme.dark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.75)',
+                        borderColor: theme.dark ? 'rgba(255, 255, 255, 0.30)' : 'rgba(46, 125, 50, 0.28)',
                       },
                       pressed && { opacity: 0.88, transform: [{ scale: 0.985 }] },
                       (isGoogleLoading || isLoading) && { opacity: 0.7 }
@@ -1002,7 +1002,7 @@ export function AuthScreen({ onLoginSuccess, onBack }: AuthScreenProps) {
                 disabled={isLoading}
                 style={({ pressed }) => [
                   styles.skipBtn,
-                  { backgroundColor: theme.dark ? 'rgba(15, 32, 20, 0.85)' : 'rgba(255, 255, 255, 0.90)', borderColor: theme.dark ? 'rgba(255, 255, 255, 0.35)' : 'rgba(22, 101, 52, 0.35)' },
+                  { backgroundColor: theme.dark ? 'rgba(15, 32, 20, 0.55)' : 'rgba(255, 255, 255, 0.60)', borderColor: theme.dark ? 'rgba(255, 255, 255, 0.30)' : 'rgba(255, 255, 255, 0.75)' },
                   pressed && { opacity: 0.8 }
                 ]}
               >
