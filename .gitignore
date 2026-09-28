@@ -1,5 +1,15 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
+# AI Agent & IDE Configuration Directories (Ignore completely)
+.agents/
+.claude/
+.kiro/
+.vscode/
+.antigravity/
+.gemini/
+.cursor/
+.idea/
+
 # dependencies
 node_modules/
 
@@ -25,17 +35,17 @@ expo-env.d.ts
 npm-debug.*
 yarn-debug.*
 yarn-error.*
+*.log
 
-# macOS
+# macOS & OS files
 .DS_Store
 *.pem
 
 # local env files
 .env
 .env*.local
-
-# Kiro IDE config
-.kiro/
+.env.production
+.env.development
 
 # typescript
 *.tsbuildinfo
