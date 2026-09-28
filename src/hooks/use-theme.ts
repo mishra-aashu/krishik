@@ -15,5 +15,7 @@ export function useTheme() {
   } catch (e) {
     // Fallback if rendered outside ThemeProvider
   }
-  return Colors.dark;
+  const { useColorScheme: useRNColorScheme } = require('react-native');
+  const scheme = useRNColorScheme() === 'dark' ? 'dark' : 'light';
+  return Colors[scheme];
 }

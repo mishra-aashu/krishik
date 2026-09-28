@@ -15,9 +15,9 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const systemScheme = RNuseColorScheme() || 'dark';
-  const [themeMode, setThemeModeState] = useState<ThemeMode>('dark');
-  const [colorScheme, setColorScheme] = useState<'light' | 'dark'>('dark');
+  const systemScheme = RNuseColorScheme() === 'dark' ? 'dark' : 'light';
+  const [themeMode, setThemeModeState] = useState<ThemeMode>('system');
+  const [colorScheme, setColorScheme] = useState<'light' | 'dark'>(systemScheme);
 
   useEffect(() => {
     async function loadTheme() {
@@ -25,7 +25,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       if (savedMode === 'light' || savedMode === 'dark' || savedMode === 'system') {
         setThemeModeState(savedMode);
       } else {
-        setThemeModeState('dark');
+        // Default to 'system' so it follows device OS theme out of the box
+        setThemeModeState('system');
       }
     }
     loadTheme();
