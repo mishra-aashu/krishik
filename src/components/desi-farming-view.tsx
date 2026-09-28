@@ -24,6 +24,10 @@ import {
   type ActiveListeningSession,
 } from '@/services/speech-recognition-service';
 
+import { SEOHead } from '@/components/seo-head';
+import { SEOJsonLd } from '@/components/seo-json-ld';
+import { SEOBreadcrumbs } from '@/components/seo-breadcrumbs';
+
 interface DesiFarmingViewProps {
   onBack?: () => void;
   embeddedInTab?: boolean;
@@ -132,6 +136,13 @@ export function DesiFarmingView({ onBack, embeddedInTab = false }: DesiFarmingVi
 
   return (
     <View style={styles.container}>
+      <SEOHead
+        title={isHi ? 'कम खर्च की देसी तकनीकें व जैविक खेती - कृषिक मित्र' : 'Low-Cost Desi Farming & Organic Remedies - Krishik Mitra'}
+        description={isHi ? 'जीवामृत, नीमास्त्र, अग्न्यास्त्र, मट्ठा स्प्रे, ड्रिप सिंचाई और शून्य बजट प्राकृतिक खेती के सरल देसी नुस्खे।' : 'Zero budget natural farming hacks, Jeevamrut recipe, Neemastra, and organic pest control remedies for Indian farmers.'}
+        canonicalPath="/desi"
+      />
+      <SEOJsonLd pageType="desi" />
+
       {/* Header if standalone */}
       {!embeddedInTab && onBack && (
         <View
@@ -187,6 +198,13 @@ export function DesiFarmingView({ onBack, embeddedInTab = false }: DesiFarmingVi
         showsVerticalScrollIndicator={false}
       >
         <View style={[styles.maxContainer, { maxWidth: MaxContentWidth }]}>
+          {/* SEO Visual Breadcrumbs */}
+          <SEOBreadcrumbs
+            items={[
+              { labelHi: 'कम खर्च की देसी तकनीकें', labelEn: 'Desi Farming Hacks', active: true }
+            ]}
+            onHomePress={onBack}
+          />
           {/* AI Desi Jugad Advisor Box */}
           <Animated.View
             entering={FadeInDown.duration(400)}

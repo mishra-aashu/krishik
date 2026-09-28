@@ -26,6 +26,9 @@ import {
   type SchemeNewsItem,
   type BenefitCalculation,
 } from '@/services/gov-schemes-service';
+import { SEOHead } from '@/components/seo-head';
+import { SEOJsonLd } from '@/components/seo-json-ld';
+import { SEOBreadcrumbs } from '@/components/seo-breadcrumbs';
 
 const ALL_INDIAN_STATES = [
   'All',
@@ -159,6 +162,13 @@ export function GovSchemesView({ onBack, embeddedInTab = false }: GovSchemesView
 
   return (
     <View style={styles.container}>
+      <SEOHead
+        title={isHi ? 'सरकारी योजनाएं एवं पीएम-किसान सब्सिडी खोजें - कृषिक मित्र' : 'PM-Kisan & Agricultural Subsidy Finder - Krishik Mitra'}
+        description={isHi ? 'पीएम-किसान सम्मान निधि, 75% सोलर पंप सब्सिडी, फसल बीमा योजना, केसीसी लोन और राज्य-वार सरकारी कृषि योजनाओं की पूरी जानकारी।' : 'Find Indian government agricultural schemes, PM-Kisan status, solar pump subsidy, crop insurance, and KCC low-interest loans.'}
+        canonicalPath="/schemes"
+      />
+      <SEOJsonLd pageType="schemes" />
+
       {/* Navigation Header if not embedded */}
       {!embeddedInTab && onBack && (
         <View
@@ -200,6 +210,13 @@ export function GovSchemesView({ onBack, embeddedInTab = false }: GovSchemesView
         showsVerticalScrollIndicator={false}
       >
         <View style={[styles.maxContainer, { maxWidth: MaxContentWidth }]}>
+          {/* SEO Visual Breadcrumbs */}
+          <SEOBreadcrumbs
+            items={[
+              { labelHi: 'सरकारी योजनाएं एवं सब्सिडी', labelEn: 'Govt Schemes & Subsidy', active: true }
+            ]}
+            onHomePress={onBack}
+          />
           {/* Dynamic Benefit Hero Banner */}
           <Animated.View
             entering={FadeInDown.duration(400)}

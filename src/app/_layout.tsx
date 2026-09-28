@@ -28,6 +28,9 @@ export default function TabLayout() {
 import { useState, useRef, useEffect } from 'react';
 import { IntroPillOverlay } from '@/components/intro-pill-overlay';
 
+import { SEOHead } from '@/components/seo-head';
+import { SEOJsonLd } from '@/components/seo-json-ld';
+
 function AppContent() {
   const colorScheme = useColorScheme();
   const { isAuthenticated, isLoading, register } = useAuth();
@@ -65,6 +68,8 @@ function AppContent() {
 
   return (
     <NavThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <SEOHead />
+      <SEOJsonLd pageType="home" />
       <AnimatedSplashOverlay />
       {showLoginIntro && (
         <IntroPillOverlay onFinish={() => setShowLoginIntro(false)} />

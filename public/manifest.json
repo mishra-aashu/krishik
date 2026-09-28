@@ -1,0 +1,16 @@
+{
+  "short_name": "KrishikMitra",
+  "name": "Krishik Mitra (कृषिक मित्र) - AI Farmer Assistant",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ],
+  "start_url": "https://www.krishikmitra.site/",
+  "background_color": "#000000",
+  "theme_color": "#059669",
+  "display": "standalone",
+  "orientation": "portrait"
+}

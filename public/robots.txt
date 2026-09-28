@@ -1,0 +1,10 @@
+# https://www.krishikmitra.site/robots.txt
+# Robots.txt file for Krishik Mitra AI (कृषिक मित्र)
+
+User-agent: *
+Allow: /
+Disallow: /api/
+
+# Search Engine Sitemaps
+Sitemap: https://www.krishikmitra.site/sitemap.xml
+Host: https://www.krishikmitra.site
