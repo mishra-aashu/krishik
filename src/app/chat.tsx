@@ -1242,7 +1242,7 @@ export default function ChatScreen() {
         canonicalPath="/chat"
       />
       <SEOJsonLd pageType="chat" />
-      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <SafeAreaView style={styles.safeArea} edges={Platform.OS === 'web' ? ['bottom', 'left', 'right'] : ['top', 'bottom', 'left', 'right']}>
         <OfflineNotice language={language} />
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -1627,7 +1627,7 @@ export default function ChatScreen() {
           )}
 
           {/* Input Bar */}
-          <View style={styles.inputBar}>
+          <View style={[styles.inputBar, { backgroundColor: theme.background, borderTopColor: theme.border }]}>
             <Pressable
               onPress={handleImageSelect}
               disabled={isLoading || isRecording || isTranscribing || isOffline}
@@ -1933,11 +1933,13 @@ const styles = StyleSheet.create({
     height: '100%',
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
+    minHeight: 0,
   },
   keyboardView: {
     flex: 1,
     height: '100%',
     width: '100%',
+    minHeight: 0,
   },
   headerPanel: {
     flexDirection: 'row',
@@ -2147,6 +2149,7 @@ const styles = StyleSheet.create({
   messagesContainer: {
     flex: 1,
     width: '100%',
+    minHeight: 0,
   },
   scrollContent: {
     paddingHorizontal: Spacing.three,
@@ -2326,9 +2329,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two + 2,
+    paddingTop: Spacing.two,
+    paddingBottom: Platform.OS === 'ios' ? Spacing.three : Platform.OS === 'web' ? Spacing.three + 4 : Spacing.three,
     gap: Spacing.two,
-    paddingBottom: Platform.OS === 'ios' ? Spacing.two : Spacing.three,
+    borderTopWidth: 1,
+    flexShrink: 0,
   },
   textInput: {
     flex: 1,
