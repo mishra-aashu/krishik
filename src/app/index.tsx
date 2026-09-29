@@ -1109,47 +1109,59 @@ export default function HomeScreen() {
             {language === 'hi' ? 'खोज से कोई फसल या मंडी नहीं मिली।' : 'No commodities match your search.'}
           </ThemedText>
         ) : (
-          filteredMandiPrices.map((item) => {
-            const isPositive = item.change.startsWith('+');
-            const isZero = item.change === '0';
+          <View style={styles.mandiItemsGridWrap}>
+            {filteredMandiPrices.map((item) => {
+              const isPositive = item.change.startsWith('+');
+              const isZero = item.change === '0';
 
-            const cleanComm = item.commodity.split('(')[0].trim().toLowerCase();
-            const cleanVar = item.variety ? item.variety.trim().toLowerCase() : '';
-            const showVariety = cleanVar && cleanVar !== cleanComm;
+              const cleanComm = item.commodity.split('(')[0].trim().toLowerCase();
+              const cleanVar = item.variety ? item.variety.trim().toLowerCase() : '';
+              const showVariety = cleanVar && cleanVar !== cleanComm;
 
-            return (
-              <Animated.View
-                key={item.id}
-                layout={Layout.springify().damping(15)}
-                entering={FadeInDown.duration(200)}
-                style={[styles.mandiItem, { borderBottomColor: theme.border }]}
-              >
-                <View style={{ flex: 1, paddingRight: Spacing.two }}>
-                  <ThemedText type="smallBold">{formatLabel(item.commodity)}</ThemedText>
-                  <ThemedText type="code" style={{ fontSize: 10, color: theme.textSecondary }}>
-                    {formatState(item.state.replace(' Mandi', ''))} {language === 'hi' ? 'मंडी' : 'Mandi'}{showVariety ? ` • ${item.variety}` : ''}
-                  </ThemedText>
-                </View>
-                <View style={{ alignItems: 'flex-end' }}>
-                  <ThemedText type="smallBold">
-                    ₹{item.price} <ThemedText type="code" style={{ fontSize: 10, color: theme.textSecondary }}>/{item.unit}</ThemedText>
-                  </ThemedText>
-                  {!isZero && (
-                    <ThemedText
-                      type="code"
-                      style={{
-                        fontSize: 11,
-                        color: isPositive ? theme.success : theme.error,
-                        fontWeight: '700'
-                      }}
-                    >
-                      {item.change}
+              return (
+                <Animated.View
+                  key={item.id}
+                  layout={Layout.springify().damping(15)}
+                  entering={FadeInDown.duration(200)}
+                  style={[
+                    styles.mandiItem,
+                    {
+                      width: width >= 640 ? '48.8%' : '100%',
+                      borderBottomColor: theme.border,
+                      backgroundColor: theme.dark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.015)',
+                      borderRadius: 10,
+                      paddingHorizontal: 12,
+                      paddingVertical: 10,
+                    }
+                  ]}
+                >
+                  <View style={{ flex: 1, paddingRight: Spacing.two }}>
+                    <ThemedText type="smallBold">{formatLabel(item.commodity)}</ThemedText>
+                    <ThemedText type="code" style={{ fontSize: 10, color: theme.textSecondary }}>
+                      {formatState(item.state.replace(' Mandi', ''))} {language === 'hi' ? 'मंडी' : 'Mandi'}{showVariety ? ` • ${item.variety}` : ''}
                     </ThemedText>
-                  )}
-                </View>
-              </Animated.View>
-            );
-          })
+                  </View>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <ThemedText type="smallBold">
+                      ₹{item.price} <ThemedText type="code" style={{ fontSize: 10, color: theme.textSecondary }}>/{item.unit}</ThemedText>
+                    </ThemedText>
+                    {!isZero && (
+                      <ThemedText
+                        type="code"
+                        style={{
+                          fontSize: 11,
+                          color: isPositive ? theme.success : theme.error,
+                          fontWeight: '700'
+                        }}
+                      >
+                        {item.change}
+                      </ThemedText>
+                    )}
+                  </View>
+                </Animated.View>
+              );
+            })}
+          </View>
         )}
 
         {allMandiCount > 12 && !mandiSearch && (
@@ -1770,130 +1782,7 @@ export default function HomeScreen() {
           </Animated.View>
 
           {/* Mandi Prices Tracker */}
-          <View style={styles.mandiHeaderRow}>
-            <View style={{ flex: 1, marginRight: Spacing.two }}>
-              <ThemedText type="smallBold" style={styles.sectionTitle}>
-                {language === 'hi' ? 'मंडी बाजार दरें' : 'Mandi Market Rates'}
-              </ThemedText>
-              {mandiLastUpdated && (
-                <ThemedText type="code" style={{ fontSize: 10, color: theme.textSecondary, marginTop: 2 }}>
-                  {formatLastUpdated(mandiLastUpdated)}
-                </ThemedText>
-              )}
-            </View>
-            <PressableScale
-              onPress={refreshMandiPrices}
-              disabled={isRefreshingPrices}
-              style={({ pressed }) => [
-                styles.refreshButton,
-                {
-                  backgroundColor: theme.dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
-                  borderColor: theme.border,
-                },
-                pressed && { opacity: 0.7 }
-              ]}
-            >
-              {isRefreshingPrices ? (
-                <ActivityIndicator size="small" color={theme.primary} />
-              ) : (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.one }}>
-                  <SymbolView
-                    name={{ ios: 'arrow.clockwise', android: 'refresh', web: 'refresh' } as any}
-                    size={12}
-                    tintColor={theme.primary}
-                  />
-                  <ThemedText type="code" style={[styles.refreshBtnText, { color: theme.text }]}>
-                    {language === 'hi' ? 'ताज़ा करें' : 'Refresh'}
-                  </ThemedText>
-                </View>
-              )}
-            </PressableScale>
-          </View>
-
-          <ThemedView type="card" style={[styles.mandiCard, { borderColor: theme.border }]}>
-            <TextInput
-              style={[styles.searchInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.backgroundElement }]}
-              placeholder={language === 'hi' ? 'फसल या मंडी खोजें...' : 'Search commodity or mandi...'}
-              placeholderTextColor={theme.textSecondary}
-              value={mandiSearch}
-              onChangeText={setMandiSearch}
-            />
-
-            {isLoadingMandi ? (
-              <View style={{ paddingVertical: Spacing.four, alignItems: 'center', justifyContent: 'center' }}>
-                <ActivityIndicator size="small" color={theme.primary} />
-                <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: Spacing.two }}>
-                  {language === 'hi' ? 'ताज़ा मंडी भाव लोड हो रहे हैं...' : 'Loading latest market rates...'}
-                </ThemedText>
-              </View>
-            ) : filteredMandiPrices.length === 0 ? (
-              <ThemedText type="small" style={styles.emptyText}>
-                {language === 'hi' ? 'खोज से कोई फसल या मंडी नहीं मिली।' : 'No commodities match your search.'}
-              </ThemedText>
-            ) : (
-              filteredMandiPrices.map((item) => {
-                const isPositive = item.change.startsWith('+');
-                const isZero = item.change === '0';
-
-                const cleanComm = item.commodity.split('(')[0].trim().toLowerCase();
-                const cleanVar = item.variety ? item.variety.trim().toLowerCase() : '';
-                const showVariety = cleanVar && cleanVar !== cleanComm;
-
-                return (
-                  <Animated.View
-                    key={item.id}
-                    layout={Layout.springify().damping(15)}
-                    entering={FadeInDown.duration(200)}
-                    style={[styles.mandiItem, { borderBottomColor: theme.border }]}
-                  >
-                    <View style={{ flex: 1, paddingRight: Spacing.two }}>
-                      <ThemedText type="smallBold">{formatLabel(item.commodity)}</ThemedText>
-                      <ThemedText type="code" style={{ fontSize: 10, color: theme.textSecondary }}>
-                        {formatState(item.state.replace(' Mandi', ''))} {language === 'hi' ? 'मंडी' : 'Mandi'}{showVariety ? ` • ${item.variety}` : ''}
-                      </ThemedText>
-                    </View>
-                    <View style={{ alignItems: 'flex-end' }}>
-                      <ThemedText type="smallBold">
-                        ₹{item.price} <ThemedText type="code" style={{ fontSize: 10, color: theme.textSecondary }}>/{item.unit}</ThemedText>
-                      </ThemedText>
-                      {!isZero && (
-                        <ThemedText
-                          type="code"
-                          style={{
-                            fontSize: 11,
-                            color: isPositive ? theme.success : theme.error,
-                            fontWeight: '700'
-                          }}
-                        >
-                          {item.change}
-                        </ThemedText>
-                      )}
-                    </View>
-                  </Animated.View>
-                );
-              })
-            )}
-
-            {allMandiCount > 12 && !mandiSearch && (
-              <PressableScale
-                onPress={() => setShowAllMandi(prev => !prev)}
-                style={({ pressed }) => [
-                  styles.showMoreMandiBtn,
-                  {
-                    backgroundColor: theme.dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.025)',
-                    borderColor: theme.border
-                  },
-                  pressed && { opacity: 0.7 }
-                ]}
-              >
-                <ThemedText type="smallBold" style={{ color: theme.primary, fontSize: 13, textAlign: 'center' }}>
-                  {showAllMandi
-                    ? (language === 'hi' ? 'कम दिखाएं ▲' : 'Show Less ▲')
-                    : (language === 'hi' ? `देखें सभी मंडी भाव (${allMandiCount}) ▼` : `View All Mandi Rates (${allMandiCount}) ▼`)}
-                </ThemedText>
-              </PressableScale>
-            )}
-          </ThemedView>
+          {mandiCardJSX}
 
           {/* Footer Branding */}
           <View style={styles.footerBranding}>
@@ -2371,6 +2260,12 @@ const styles = StyleSheet.create({
   emptyText: {
     textAlign: 'center',
     paddingVertical: Spacing.three,
+  },
+  mandiItemsGridWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: 8,
   },
   mandiItem: {
     flexDirection: 'row',
