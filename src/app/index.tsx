@@ -63,6 +63,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const theme = useTheme();
   const { width } = useWindowDimensions();
+  const isDesktop = width >= 920;
   const { farmState, farmSoil, farmCrop, updateProfile, logout, userName } = useAuth();
 
   // Language state
@@ -504,6 +505,675 @@ export default function HomeScreen() {
   };
 
 
+
+  const weatherCardJSX = (
+    <Animated.View key="sec-weather" entering={FadeInDown.duration(300).delay(50)}>
+      <ThemedView type="backgroundElement" style={[styles.weatherCard, { borderColor: theme.border }]}>
+        {isLoadingWeather ? (
+          <View style={[styles.weatherCenter, { height: 110 }]}>
+            <ActivityIndicator size="small" color={theme.primary} />
+            <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: Spacing.two }}>
+              {language === 'hi' ? 'मौसम लोड हो रहा है...' : 'Loading weather forecast...'}
+            </ThemedText>
+          </View>
+        ) : weatherError || !weatherData ? (
+          <View style={{ gap: Spacing.two }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <View>
+                <ThemedText type="smallBold" style={{ fontSize: 18, color: theme.error }}>
+                  {language === 'hi' ? 'मौसम लोड करने में त्रुटि' : 'Weather unavailable'}
+                </ThemedText>
+                <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                  {language === 'hi' ? 'कृपया बाद में पुनः प्रयास करें' : 'Please try again later'}
+                </ThemedText>
+              </View>
+              <SymbolView
+                name={{ ios: 'exclamationmark.triangle.fill', android: 'warning', web: 'warning' } as any}
+                size={32}
+                tintColor={theme.error}
+              />
+            </View>
+            <View style={{ height: 1, width: '100%', backgroundColor: theme.border }} />
+            <Pressable
+              onPress={() => {
+                setIsLoadingWeather(true);
+                setWeatherError(null);
+                fetchWeatherData(farmState)
+                  .then(data => {
+                    setWeatherData(data);
+                    setIsLoadingWeather(false);
+                  })
+                  .catch(err => {
+                    console.error('Retry error:', err);
+                    setWeatherError('Failed to load weather');
+                    setIsLoadingWeather(false);
+                  });
+              }}
+              style={({ pressed }) => [
+                styles.retryButton,
+                { borderColor: theme.primary },
+                pressed && { backgroundColor: theme.primary + '1A' }
+              ]}
+            >
+              <ThemedText type="code" style={{ color: theme.primary, fontWeight: '700' }}>
+                {language === 'hi' ? 'पुनः प्रयास करें' : 'Retry'}
+              </ThemedText>
+            </Pressable>
+          </View>
+        ) : (
+          <>
+            <View style={styles.weatherCardHeader}>
+              <Pressable
+                onPress={handleDetectLocation}
+                disabled={isDetectingLocation}
+                style={({ pressed }) => [
+                  styles.locationPill,
+                  {
+                    backgroundColor: liveLocation ? theme.primary + '12' : theme.backgroundElement,
+                    borderColor: liveLocation ? theme.primary + '35' : theme.border,
+                  },
+                  pressed && { opacity: 0.8 }
+                ]}
+              >
+                <SymbolView
+                  name={{ ios: 'mappin.circle.fill', android: 'location_on', web: 'location_on' } as any}
+                  size={15}
+                  tintColor={theme.primary}
+                />
+                <ThemedText style={{ fontSize: 14.5, fontWeight: '700', color: theme.text }} numberOfLines={1}>
+                  {liveLocation?.displayName || formatState(farmState)}
+                </ThemedText>
+                {isDetectingLocation ? (
+                  <ActivityIndicator size={12} color={theme.primary} style={{ marginLeft: 2 }} />
+                ) : (
+                  <View style={[styles.liveGpsTag, { backgroundColor: theme.primary }]}>
+                    <ThemedText style={{ fontSize: 9.5, fontWeight: '800', color: theme.onPrimary }}>
+                      LIVE
+                    </ThemedText>
+                  </View>
+                )}
+              </Pressable>
+            </View>
+
+            {(() => {
+              const cond = getWeatherCondition(weatherData.weatherCode, weatherData.isDay);
+              return (
+                <View style={styles.weatherHeroRow}>
+                  <View style={{ flex: 1, minWidth: 0, marginRight: 8 }}>
+                    <ThemedText numberOfLines={1} style={{ fontSize: 44, fontWeight: '800', lineHeight: 50, color: theme.text }}>
+                      {weatherData.temp}°C
+                    </ThemedText>
+                    <ThemedText numberOfLines={1} style={{ fontSize: 16, fontWeight: '600', color: theme.textSecondary, marginTop: 2 }}>
+                      {language === 'hi' ? cond.hi : cond.en}
+                    </ThemedText>
+                  </View>
+
+                  <View style={[styles.weatherIconCircle, { backgroundColor: theme.primary + '18' }]}>
+                    <SymbolView
+                      name={cond.icon as any}
+                      size={38}
+                      tintColor={theme.primary}
+                    />
+                  </View>
+                </View>
+              );
+            })()}
+
+            <View style={styles.metricsGrid}>
+              {weatherData.daily7d && weatherData.daily7d.length > 0 && (
+                <View style={[styles.metricChip, { backgroundColor: theme.dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.035)' }]}>
+                  <View style={[styles.metricIconBox, { backgroundColor: theme.primary + '15' }]}>
+                    <SymbolView
+                      name={{ ios: 'thermometer.medium', android: 'thermostat', web: 'thermostat' } as any}
+                      size={15}
+                      tintColor={theme.primary}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <ThemedText style={{ fontSize: 11.5, color: theme.textSecondary, fontWeight: '600' }}>
+                      {language === 'hi' ? 'आज का तापमान' : 'Today Range'}
+                    </ThemedText>
+                    <ThemedText style={{ fontSize: 14.5, fontWeight: '700', color: theme.text, marginTop: 1 }}>
+                      {weatherData.daily7d[0].minTemp}° - {weatherData.daily7d[0].maxTemp}°C
+                    </ThemedText>
+                  </View>
+                </View>
+              )}
+
+              <View style={[styles.metricChip, { backgroundColor: theme.dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.035)' }]}>
+                <View style={[styles.metricIconBox, { backgroundColor: theme.primary + '15' }]}>
+                  <SymbolView
+                    name={{ ios: 'humidity', android: 'water_drop', web: 'water_drop' } as any}
+                    size={15}
+                    tintColor={theme.primary}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <ThemedText style={{ fontSize: 11.5, color: theme.textSecondary, fontWeight: '600' }}>
+                    {language === 'hi' ? 'हवा में नमी' : 'Humidity'}
+                  </ThemedText>
+                  <ThemedText style={{ fontSize: 14.5, fontWeight: '700', color: theme.text, marginTop: 1 }}>
+                    {weatherData.humidity}% RH
+                  </ThemedText>
+                </View>
+              </View>
+            </View>
+
+            {weatherData.disasterAlert && (
+              <PressableScale
+                onPress={() => setIsDisasterModalOpen(true)}
+                style={({ pressed }) => [
+                  styles.disasterAlertCard,
+                  {
+                    backgroundColor: theme.dark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+                    borderColor: theme.border,
+                  },
+                  pressed && { opacity: 0.8 }
+                ]}
+              >
+                <View style={styles.disasterHeaderRow}>
+                  <View style={styles.disasterTagLeft}>
+                    <View style={[styles.disasterIconCircle, { backgroundColor: 'rgba(245, 158, 11, 0.15)' }]}>
+                      <SymbolView
+                        name={{ ios: 'exclamationmark.triangle.fill', android: 'warning', web: 'warning' } as any}
+                        size={11}
+                        tintColor="#F59E0B"
+                      />
+                    </View>
+                    <ThemedText style={[styles.disasterTagText, { color: '#F59E0B' }]}>
+                      {language === 'hi' ? 'मौसम चेतावनी' : 'WEATHER ADVISORY'}
+                    </ThemedText>
+                  </View>
+
+                  <View style={[styles.disasterRiskBadge, { backgroundColor: 'rgba(245, 158, 11, 0.15)', borderWidth: 1, borderColor: 'rgba(245, 158, 11, 0.3)' }]}>
+                    <ThemedText style={[styles.disasterRiskText, { color: '#F59E0B' }]}>
+                      {weatherData.disasterAlert.probability}% {language === 'hi' ? 'खतरा' : 'RISK'}
+                    </ThemedText>
+                  </View>
+                </View>
+
+                <ThemedText numberOfLines={1} ellipsizeMode="tail" style={[styles.disasterTitleText, { color: theme.text }]}>
+                  {(language === 'hi' ? weatherData.disasterAlert.titleHi : weatherData.disasterAlert.titleEn).replace(/^(48h|48-घंटे में|48-घंटे)\s*/i, '').replace(/^[^\w\s\u0900-\u097F]+/, '').trim()}
+                </ThemedText>
+
+                <View style={styles.disasterFooterRow}>
+                  <ThemedText numberOfLines={1} style={[styles.disasterFooterText, { color: theme.primary }]}>
+                    {language === 'hi' ? '48h सुरक्षा सलाह व गाइड' : '48h Advisory & Guide'}
+                  </ThemedText>
+                  <View style={[styles.disasterArrowBox, { backgroundColor: theme.primary + '18' }]}>
+                    <SymbolView
+                      name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any}
+                      size={12}
+                      tintColor={theme.primary}
+                    />
+                  </View>
+                </View>
+              </PressableScale>
+            )}
+
+            <View style={[styles.advisoryCallout, { backgroundColor: theme.dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.035)' }]}>
+              <View style={[styles.advisoryIconBadge, { backgroundColor: theme.primary + '18' }]}>
+                <SymbolView
+                  name={{ ios: 'lightbulb.fill', android: 'lightbulb', web: 'lightbulb' } as any}
+                  size={15}
+                  tintColor={theme.primary}
+                />
+              </View>
+              <ThemedText style={[styles.advisoryCalloutText, { color: theme.text }]}>
+                {generateWeatherAdvisory(
+                  weatherData.temp,
+                  weatherData.humidity,
+                  weatherData.weatherCode,
+                  formatState(farmState),
+                  formatLabel(farmCrop),
+                  language
+                )}
+              </ThemedText>
+            </View>
+
+            <Pressable
+              onPress={() => setIsDisasterModalOpen(true)}
+              style={({ pressed }) => [
+                styles.fullForecastBtn,
+                {
+                  backgroundColor: theme.dark ? 'rgba(52, 211, 153, 0.12)' : '#ECFDF5',
+                  borderColor: theme.primary + '35',
+                },
+                pressed && { opacity: 0.88 }
+              ]}
+            >
+              <View style={[styles.advisoryIconBadge, { backgroundColor: theme.primary + '20' }]}>
+                <SymbolView
+                  name={{ ios: 'calendar', android: 'calendar_today', web: 'calendar_today' } as any}
+                  size={14}
+                  tintColor={theme.primary}
+                />
+              </View>
+              <ThemedText numberOfLines={1} style={{ color: theme.text, fontSize: 13.5, fontWeight: '700', flex: 1, textAlign: 'center' }}>
+                {language === 'hi' ? '7-दिवसीय मौसम पूर्वानुमान' : '7-Day Weather Forecast'}
+              </ThemedText>
+              <SymbolView
+                name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any}
+                size={16}
+                tintColor={theme.primary}
+              />
+            </Pressable>
+
+            {weatherCachedAt && (
+              <ThemedText type="code" style={{ fontSize: 9.5, color: theme.textSecondary, textAlign: 'center', marginTop: 1 }}>
+                {formatCacheTime(weatherCachedAt)}
+              </ThemedText>
+            )}
+          </>
+        )}
+      </ThemedView>
+    </Animated.View>
+  );
+
+  const profileCardJSX = (
+    <Animated.View key="sec-profile" entering={FadeInDown.duration(300).delay(150)}>
+      <ThemedView type="card" style={[styles.profileCard, { borderColor: theme.border }]}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.two }}>
+          <ThemedText type="smallBold" style={styles.sectionTitle}>
+            {language === 'hi' ? 'मेरा खेत प्रोफ़ाइल' : 'My Farm Profile'}
+          </ThemedText>
+          <Pressable
+            onPress={logout}
+            style={({ pressed }) => [
+              styles.logoutBtn,
+              { borderColor: theme.error },
+              pressed && { backgroundColor: theme.error + '1A' }
+            ]}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.one }}>
+              <SymbolView
+                name={{ ios: 'arrow.left.square.fill', android: 'logout', web: 'logout' } as any}
+                size={13}
+                tintColor={theme.error}
+              />
+              <ThemedText type="code" style={{ color: theme.error, fontSize: 11, fontWeight: '700' }}>
+                {language === 'hi' ? 'लॉगआउट' : 'Logout'}
+              </ThemedText>
+            </View>
+          </Pressable>
+        </View>
+
+        <View style={styles.profileSelectors}>
+          <PressableScale
+            onPress={() => openModal('state')}
+            style={({ pressed }) => [
+              styles.selectorButton,
+              { backgroundColor: theme.dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.035)' },
+              pressed && { backgroundColor: theme.backgroundSelected }
+            ]}
+          >
+            <View style={styles.selectorLeft}>
+              <SymbolView
+                name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'location_on' } as any}
+                size={18}
+                tintColor={theme.primary}
+              />
+              <View style={styles.selectorLeftContent}>
+                <ThemedText type="code" style={styles.selectorLabel}>
+                  {language === 'hi' ? 'राज्य' : 'STATE'}
+                </ThemedText>
+                <ThemedText type="smallBold" style={styles.selectorValue} numberOfLines={1} ellipsizeMode="tail">
+                  {liveLocation?.district ? `${liveLocation.district} (${formatState(farmState)})` : formatState(farmState)}
+                </ThemedText>
+              </View>
+            </View>
+            <SymbolView
+              name={{ ios: 'chevron.down', android: 'arrow_drop_down', web: 'arrow_drop_down' } as any}
+              size={16}
+              tintColor={theme.textSecondary}
+            />
+          </PressableScale>
+
+          <PressableScale
+            onPress={() => openModal('soil')}
+            style={({ pressed }) => [
+              styles.selectorButton,
+              { backgroundColor: theme.dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.035)' },
+              pressed && { backgroundColor: theme.backgroundSelected }
+            ]}
+          >
+            <View style={styles.selectorLeft}>
+              <SymbolView
+                name={{ ios: 'circle.grid.3x3.fill', android: 'layers', web: 'layers' } as any}
+                size={18}
+                tintColor={theme.primary}
+              />
+              <View style={styles.selectorLeftContent}>
+                <ThemedText type="code" style={styles.selectorLabel}>
+                  {language === 'hi' ? 'मिट्टी का प्रकार' : 'SOIL TYPE'}
+                </ThemedText>
+                <ThemedText type="smallBold" style={styles.selectorValue} numberOfLines={1} ellipsizeMode="tail">
+                  {formatLabel(farmSoil)}
+                </ThemedText>
+              </View>
+            </View>
+            <SymbolView
+              name={{ ios: 'chevron.down', android: 'arrow_drop_down', web: 'arrow_drop_down' } as any}
+              size={16}
+              tintColor={theme.textSecondary}
+            />
+          </PressableScale>
+
+          <PressableScale
+            onPress={() => openModal('crop')}
+            style={({ pressed }) => [
+              styles.selectorButton,
+              { backgroundColor: theme.dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.035)' },
+              pressed && { backgroundColor: theme.backgroundSelected }
+            ]}
+          >
+            <View style={styles.selectorLeft}>
+              <SymbolView
+                name={{ ios: 'leaf.fill', android: 'grass', web: 'grass' } as any}
+                size={18}
+                tintColor={theme.primary}
+              />
+              <View style={styles.selectorLeftContent}>
+                <ThemedText type="code" style={styles.selectorLabel}>
+                  {language === 'hi' ? 'सक्रिय फसल' : 'ACTIVE CROP'}
+                </ThemedText>
+                <ThemedText type="smallBold" style={styles.selectorValue} numberOfLines={1} ellipsizeMode="tail">
+                  {formatLabel(farmCrop)}
+                </ThemedText>
+              </View>
+            </View>
+            <SymbolView
+              name={{ ios: 'chevron.down', android: 'arrow_drop_down', web: 'arrow_drop_down' } as any}
+              size={16}
+              tintColor={theme.textSecondary}
+            />
+          </PressableScale>
+        </View>
+      </ThemedView>
+    </Animated.View>
+  );
+
+  const radioCardJSX = (
+    <Animated.View key="sec-radio" entering={FadeInDown.duration(300).delay(220)}>
+      <PressableScale
+        onPress={() => setIsRadioModalOpen(true)}
+        style={({ pressed }) => [
+          styles.radioBannerCard,
+          { backgroundColor: theme.dark ? 'rgba(16, 185, 129, 0.12)' : '#ECFDF5', borderColor: theme.primary + '35', marginBottom: Spacing.two },
+          pressed && { opacity: 0.9 }
+        ]}
+      >
+        <View style={[styles.radioBannerIconCircle, { backgroundColor: theme.primary }]}>
+          <SymbolView
+            name={{ ios: 'radio.fill', android: 'radio', web: 'radio' } as any}
+            size={20}
+            tintColor={theme.onPrimary}
+          />
+        </View>
+
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <ThemedText numberOfLines={1} style={{ fontSize: 14.5, fontWeight: '800', color: theme.text }}>
+              {language === 'hi' ? 'किसान रेडियो FM' : 'Krishik Radio FM'}
+            </ThemedText>
+            <View style={[styles.liveFmBadge, { backgroundColor: theme.primary }]}>
+              <ThemedText style={{ fontSize: 9, fontWeight: '800', color: theme.onPrimary }}>
+                LIVE FM
+              </ThemedText>
+            </View>
+          </View>
+          <ThemedText numberOfLines={1} ellipsizeMode="tail" style={{ fontSize: 11.5, color: theme.textSecondary, marginTop: 1 }}>
+            {language === 'hi' ? 'कृषि समाचार व मौसम बुलेटिन सुनें' : 'Live farm news, weather & bulletins'}
+          </ThemedText>
+        </View>
+
+        <SymbolView
+          name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as any}
+          size={16}
+          tintColor={theme.primary}
+        />
+      </PressableScale>
+    </Animated.View>
+  );
+
+  const advisoriesCardJSX = (
+    <Animated.View key="sec-advisories" entering={FadeInDown.duration(300).delay(250)}>
+      <ThemedText type="smallBold" style={styles.sectionTitle}>
+        {language === 'hi' ? 'त्वरित परामर्श' : 'Quick Advisories'}
+      </ThemedText>
+
+      <View style={styles.advisoryGrid}>
+        <PressableScale
+          onPress={() => handleQuickAdvice(
+            'Pest',
+            language === 'hi' 
+              ? `मेरी ${formatLabel(farmCrop)} की फसल में रोग / कीड़ों की समस्या है। लक्षण बताएं और इलाज की सलाह दें।`
+              : `I have disease/pest issues in my ${formatLabel(farmCrop)} crop. Show symptoms and suggest treatments.`
+          )}
+          style={({ pressed }) => [
+            styles.advisoryCard,
+            { backgroundColor: theme.dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.035)' },
+            pressed && styles.pressedCard
+          ]}
+        >
+          <View style={[styles.advisoryIconCircle, { backgroundColor: theme.primary + '15' }]}>
+            <SymbolView
+              name={{ ios: 'ladybug.fill', android: 'bug_report', web: 'bug_report' } as any}
+              size={22}
+              tintColor={theme.primary}
+            />
+          </View>
+          <ThemedText style={styles.advisoryTitle}>
+            {language === 'hi' ? 'कीट नियंत्रण' : 'Pest Control'}
+          </ThemedText>
+        </PressableScale>
+
+        <PressableScale
+          onPress={() => handleQuickAdvice(
+            'Watering',
+            language === 'hi'
+              ? `मेरी ${formatLabel(farmCrop)} की फसल में खाद और सिंचाई की सही मात्रा और समय क्या है?`
+              : `What is the correct dosage and time for watering and fertilizing my ${formatLabel(farmCrop)} crop?`
+          )}
+          style={({ pressed }) => [
+            styles.advisoryCard,
+            { backgroundColor: theme.dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.035)' },
+            pressed && styles.pressedCard
+          ]}
+        >
+          <View style={[styles.advisoryIconCircle, { backgroundColor: theme.primary + '18' }]}>
+            <SymbolView
+              name={{ ios: 'drop.fill', android: 'water_drop', web: 'water_drop' } as any}
+              size={22}
+              tintColor={theme.primary}
+            />
+          </View>
+          <ThemedText style={styles.advisoryTitle}>
+            {language === 'hi' ? 'सिंचाई व उर्वरक' : 'Water & Fertilizer'}
+          </ThemedText>
+        </PressableScale>
+
+        <PressableScale
+          onPress={() => handleQuickAdvice(
+            'Organic',
+            language === 'hi'
+              ? `जैविक खेती के तरीके बताएं जो मैं अपने खेत में इस्तेमाल कर सकूं।`
+              : `Tell me organic farming methods I can use in my farm.`
+          )}
+          style={({ pressed }) => [
+            styles.advisoryCard,
+            { backgroundColor: theme.dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.035)' },
+            pressed && styles.pressedCard
+          ]}
+        >
+          <View style={[styles.advisoryIconCircle, { backgroundColor: theme.primary + '18' }]}>
+            <SymbolView
+              name={{ ios: 'leaf.fill', android: 'eco', web: 'eco' } as any}
+              size={22}
+              tintColor={theme.primary}
+            />
+          </View>
+          <ThemedText style={styles.advisoryTitle}>
+            {language === 'hi' ? 'जैविक खेती' : 'Organic Farming'}
+          </ThemedText>
+        </PressableScale>
+
+        <PressableScale
+          onPress={() => handleQuickAdvice(
+            'Schemes',
+            language === 'hi'
+              ? `किसानों के लिए प्रमुख सरकारी योजनाएं क्या हैं और आवेदन कैसे करें?`
+              : `What are the key government schemes for farmers and how to apply?`
+          )}
+          style={({ pressed }) => [
+            styles.advisoryCard,
+            { backgroundColor: theme.dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.035)' },
+            pressed && styles.pressedCard
+          ]}
+        >
+          <View style={[styles.advisoryIconCircle, { backgroundColor: theme.primary + '18' }]}>
+            <SymbolView
+              name={{ ios: 'scroll.fill', android: 'description', web: 'description' } as any}
+              size={22}
+              tintColor={theme.primary}
+            />
+          </View>
+          <ThemedText style={styles.advisoryTitle}>
+            {language === 'hi' ? 'सरकारी योजनाएं' : 'Govt Schemes'}
+          </ThemedText>
+        </PressableScale>
+      </View>
+    </Animated.View>
+  );
+
+  const mandiCardJSX = (
+    <Animated.View key="sec-mandi" entering={FadeInDown.duration(300).delay(300)}>
+      <View style={styles.mandiHeaderRow}>
+        <View style={{ flex: 1, marginRight: Spacing.two }}>
+          <ThemedText type="smallBold" style={styles.sectionTitle}>
+            {language === 'hi' ? 'मंडी बाजार दरें' : 'Mandi Market Rates'}
+          </ThemedText>
+          {mandiLastUpdated && (
+            <ThemedText type="code" style={{ fontSize: 10, color: theme.textSecondary, marginTop: 2 }}>
+              {formatLastUpdated(mandiLastUpdated)}
+            </ThemedText>
+          )}
+        </View>
+        <PressableScale
+          onPress={refreshMandiPrices}
+          disabled={isRefreshingPrices}
+          style={({ pressed }) => [
+            styles.refreshButton,
+            {
+              backgroundColor: theme.dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
+              borderColor: theme.border,
+            },
+            pressed && { opacity: 0.7 }
+          ]}
+        >
+          {isRefreshingPrices ? (
+            <ActivityIndicator size="small" color={theme.primary} />
+          ) : (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.one }}>
+              <SymbolView
+                name={{ ios: 'arrow.clockwise', android: 'refresh', web: 'refresh' } as any}
+                size={12}
+                tintColor={theme.primary}
+              />
+              <ThemedText type="code" style={[styles.refreshBtnText, { color: theme.text }]}>
+                {language === 'hi' ? 'ताज़ा करें' : 'Refresh'}
+              </ThemedText>
+            </View>
+          )}
+        </PressableScale>
+      </View>
+
+      <ThemedView type="card" style={[styles.mandiCard, { borderColor: theme.border }]}>
+        <TextInput
+          style={[styles.searchInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.backgroundElement }]}
+          placeholder={language === 'hi' ? 'फसल या मंडी खोजें...' : 'Search commodity or mandi...'}
+          placeholderTextColor={theme.textSecondary}
+          value={mandiSearch}
+          onChangeText={setMandiSearch}
+        />
+
+        {isLoadingMandi ? (
+          <View style={{ paddingVertical: Spacing.four, alignItems: 'center', justifyContent: 'center' }}>
+            <ActivityIndicator size="small" color={theme.primary} />
+            <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: Spacing.two }}>
+              {language === 'hi' ? 'ताज़ा मंडी भाव लोड हो रहे हैं...' : 'Loading latest market rates...'}
+            </ThemedText>
+          </View>
+        ) : filteredMandiPrices.length === 0 ? (
+          <ThemedText type="small" style={styles.emptyText}>
+            {language === 'hi' ? 'खोज से कोई फसल या मंडी नहीं मिली।' : 'No commodities match your search.'}
+          </ThemedText>
+        ) : (
+          filteredMandiPrices.map((item) => {
+            const isPositive = item.change.startsWith('+');
+            const isZero = item.change === '0';
+
+            const cleanComm = item.commodity.split('(')[0].trim().toLowerCase();
+            const cleanVar = item.variety ? item.variety.trim().toLowerCase() : '';
+            const showVariety = cleanVar && cleanVar !== cleanComm;
+
+            return (
+              <Animated.View
+                key={item.id}
+                layout={Layout.springify().damping(15)}
+                entering={FadeInDown.duration(200)}
+                style={[styles.mandiItem, { borderBottomColor: theme.border }]}
+              >
+                <View style={{ flex: 1, paddingRight: Spacing.two }}>
+                  <ThemedText type="smallBold">{formatLabel(item.commodity)}</ThemedText>
+                  <ThemedText type="code" style={{ fontSize: 10, color: theme.textSecondary }}>
+                    {formatState(item.state.replace(' Mandi', ''))} {language === 'hi' ? 'मंडी' : 'Mandi'}{showVariety ? ` • ${item.variety}` : ''}
+                  </ThemedText>
+                </View>
+                <View style={{ alignItems: 'flex-end' }}>
+                  <ThemedText type="smallBold">
+                    ₹{item.price} <ThemedText type="code" style={{ fontSize: 10, color: theme.textSecondary }}>/{item.unit}</ThemedText>
+                  </ThemedText>
+                  {!isZero && (
+                    <ThemedText
+                      type="code"
+                      style={{
+                        fontSize: 11,
+                        color: isPositive ? theme.success : theme.error,
+                        fontWeight: '700'
+                      }}
+                    >
+                      {item.change}
+                    </ThemedText>
+                  )}
+                </View>
+              </Animated.View>
+            );
+          })
+        )}
+
+        {allMandiCount > 12 && !mandiSearch && (
+          <PressableScale
+            onPress={() => setShowAllMandi(prev => !prev)}
+            style={({ pressed }) => [
+              styles.showMoreMandiBtn,
+              {
+                backgroundColor: theme.dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.025)',
+                borderColor: theme.border
+              },
+              pressed && { opacity: 0.7 }
+            ]}
+          >
+            <ThemedText type="smallBold" style={{ color: theme.primary, fontSize: 13, textAlign: 'center' }}>
+              {showAllMandi
+                ? (language === 'hi' ? 'कम दिखाएं ▲' : 'Show Less ▲')
+                : (language === 'hi' ? `देखें सभी मंडी भाव (${allMandiCount}) ▼` : `View All Mandi Rates (${allMandiCount}) ▼`)}
+            </ThemedText>
+          </PressableScale>
+        )}
+      </ThemedView>
+    </Animated.View>
+  );
 
   return (
     <ThemedView style={styles.container}>
@@ -1319,6 +1989,22 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.three,
     paddingBottom: BottomTabInset + Spacing.four,
     gap: Spacing.three,
+  },
+  desktopRowWrap: {
+    flexDirection: 'row',
+    gap: Spacing.four,
+    alignItems: 'flex-start',
+    width: '100%',
+  },
+  desktopLeftCol: {
+    flex: 1.35,
+    gap: Spacing.three,
+    minWidth: 0,
+  },
+  desktopRightCol: {
+    flex: 1,
+    gap: Spacing.three,
+    minWidth: 0,
   },
   header: {
     flexDirection: 'row',
