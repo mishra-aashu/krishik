@@ -67,9 +67,23 @@ export function ThemedText({ style, type = 'default', themeColor, ...rest }: The
     flatStyle.fontFamily = undefined;
   }
 
+  const accessibilityProps: any = {};
+  if (type === 'title') {
+    accessibilityProps.accessibilityRole = 'header';
+    if (Platform.OS === 'web') {
+      accessibilityProps['aria-level'] = 1;
+    }
+  } else if (type === 'subtitle') {
+    accessibilityProps.accessibilityRole = 'header';
+    if (Platform.OS === 'web') {
+      accessibilityProps['aria-level'] = 2;
+    }
+  }
+
   return (
     <Text
       style={flatStyle}
+      {...accessibilityProps}
       {...rest}
     />
   );
