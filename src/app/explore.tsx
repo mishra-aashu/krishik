@@ -40,6 +40,8 @@ import OfflineNotice from '@/components/offline-notice';
 import { useNetInfo } from '@react-native-community/netinfo';
 import { GovSchemesView } from '@/components/gov-schemes-view';
 import { DesiFarmingView } from '@/components/desi-farming-view';
+import { SEOHead } from '@/components/seo-head';
+import { SEOJsonLd } from '@/components/seo-json-ld';
 
 // Pests and diseases database
 const PEST_DIRECTORY = [
@@ -581,6 +583,12 @@ export default function ExploreScreen() {
 
   return (
     <ThemedView style={styles.container}>
+      <SEOHead
+        title={language === 'hi' ? 'फसल रोग फोटो जांच व कृषि कैलकुलेटर - कृषिक मित्र' : 'Crop Disease Photo Scan & Farm Calculators - Krishik Mitra'}
+        description={language === 'hi' ? 'पत्ती की फोटो खींचकर बीमारी की पहचान करें, खाद व बीज की मात्रा कैलकुलेट करें और 80% सरकारी सब्सिडी खोजें।' : 'Instant AI crop disease diagnosis by photo scan, fertilizer calculator, seed rate calculator, and gov schemes.'}
+        canonicalPath="/explore"
+      />
+      <SEOJsonLd pageType="explore" />
       <SafeAreaView style={styles.safeArea}>
         <OfflineNotice language={language} />
         {activeView === 'main' ? (

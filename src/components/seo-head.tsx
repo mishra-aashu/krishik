@@ -12,10 +12,10 @@ interface SEOHeadProps {
 
 export const DEFAULT_SEO = {
   domain: 'https://www.krishikmitra.site',
-  title: 'Krishik Mitra (कृषिक मित्र) - PM-Kisan, Desi Kheti & AI Agronomy',
-  description: 'भारत के किसानों के लिए AI कृषिक मित्र ऐप। पीएम-किसान सम्मान निधि, 75% सोलर पंप सब्सिडी, फसल बीमारी फोटो स्कैन, लाइव मंडी भाव और कम खर्चे वाली देसी तकनीकें (जीवामृत, नीमास्त्र)।',
+  title: 'Krishik Mitra (कृषिक मित्र / Krishak Mitra) - PM-Kisan 19th Kist, Live Mandi Bhav, Desi Kheti & AI Doctor',
+  description: '🌾 Krishik Mitra (कृषिक मित्र / Krishak Mitra) - भारत का #1 AI कृषि सहायक! PM-Kisan 19वीं किस्त स्टेटस, आज का ताजा मंडी भाव (APMC Rates), फसल बीमारी फोटो स्कैन, 80% सरकारी सब्सिडी व देसी खेती (जीवामृत, नीमास्त्र) के लिए मुफ्त प्रयोग करें।',
   ogImage: 'https://www.krishikmitra.site/assets/images/icon.png',
-  keywords: 'PM Kisan, Krishi Mitra, Desi Kheti, Organic Farming, Mandi Bhav, Crop Disease Scan, Govt Schemes India, Kisan Helpline, Jeevamrut, Neemastra, Solar Pump Subsidy, KCC Loan',
+  keywords: 'Krishik Mitra, Krishak Mitra, कृषिक मित्र, कृषक मित्र, Krishakmitra, krishikmitra.site, PM Kisan 19th Installment, PM Kisan Status Check, Mandi Bhav Today, Live APMC Rates, Crop Disease Photo Scan, Desi Kheti, Organic Farming Remedies, Jeevamrut, Neemastra, Solar Pump Subsidy 80%, PM Kusum Yojana, KCC Loan 4%, Kisan Helpline Toll Free',
 };
 
 export function SEOHead({
